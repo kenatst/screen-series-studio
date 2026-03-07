@@ -1,5 +1,5 @@
-import Landing from "./pages/Landing";
+import { Navigate } from "react-router-dom";
 
-const Index = () => <Landing />;
+const Index = () => <Navigate to="/" replace />;
 
 export default Index;
