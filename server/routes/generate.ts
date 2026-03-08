@@ -101,6 +101,9 @@ router.get('/:projectId', async (req: Request, res: Response) => {
     }
 
     // Generate slides sequentially
+    // Accumulate previously generated slides for continuity context
+    const previousSlideImages: { mimeType: string; data: string }[] = [];
+
     for (let i = 0; i < slidesToGenerate.length; i++) {
         const slide = slidesToGenerate[i];
         const displaySlideNumber = generationMode === 'creative-direction' ? i + 1 : slide.number;
@@ -132,12 +135,23 @@ router.get('/:projectId', async (req: Request, res: Response) => {
                 allRefImages.push({ mimeType: 'image/png', data: brandKit.logoBase64 });
             }
 
+            let finalPrompt = prompt;
+
+            // Inject the accumulated visual continuity chain just like the edge function
+            if (previousSlideImages.length > 0) {
+                const recentSlides = previousSlideImages.slice(-9);
+                for (const prevImg of recentSlides) {
+                    allRefImages.push({ mimeType: prevImg.mimeType, data: prevImg.data });
+                }
+                finalPrompt = `${prompt}\n\n=== CRITICAL CONTINUITY CONTEXT ===\nThe following ${recentSlides.length} image(s) represent the EXACT master aesthetic of the previous slide(s) in this specific marketing set. You MUST maintain ABSOLUTE, pixel-perfect visual continuity with them. Specifically: The lighting model, the gradient logic, the 3D phone device angle/style, the exact character modeling (if a mascot is present), and the specific background rendering approach must look identical, as if designed by the exact same human artist in a single Figma file. DO NOT DEVIATE.\n=== END CONTEXT ===`;
+            }
+
             // Call Gemini
             // For creative-direction, we might want to slightly vary the temperature or seed implicitly 
             // by adding a variant hint to the prompt.
             const variantPrompt = generationMode === 'creative-direction'
-                ? `${prompt}\n\nMETA: Provide creative variant #${i + 1} with a unique aesthetic spin while respecting the brand core.`
-                : prompt;
+                ? `${finalPrompt}\n\nMETA: Provide creative variant #${i + 1} with a unique aesthetic spin while respecting the brand core.`
+                : finalPrompt;
 
             const result = await generateSlide({
                 prompt: variantPrompt,
@@ -152,6 +166,9 @@ router.get('/:projectId', async (req: Request, res: Response) => {
             const filePath = path.join(outputDir, filename);
             const imageBuffer = Buffer.from(result.imageBase64, 'base64');
             fs.writeFileSync(filePath, imageBuffer);
+
+            // Add the newly generated slide to the continuity chain for the next iteration
+            previousSlideImages.push({ mimeType: 'image/png', data: result.imageBase64 });
 
             sendEvent('slide-done', {
                 slideNumber: displaySlideNumber,

@@ -67,8 +67,8 @@ function buildSlidePrompt(
     project.platform === "ios"
       ? "Apple App Store"
       : project.platform === "android"
-      ? "Google Play Store"
-      : "App Store / Google Play";
+        ? "Google Play Store"
+        : "App Store / Google Play";
 
   const brandBlock = [
     brandKit?.colors?.length > 0 ? `Brand colors: ${brandKit.colors.join(", ")}` : "",
@@ -92,49 +92,111 @@ function buildSlidePrompt(
     ? `\n=== LANGUAGE ===\nAll text on the screenshot (headline, subheadline) MUST be written in ${outputLang}. The provided headline and subheadline are already in the target language — reproduce them EXACTLY as given.\n=== END LANGUAGE ===`
     : "";
 
-  return `You are an expert ${platformLabel} screenshot designer creating premium, conversion-optimized marketing screenshots.
+  return `# THE ULTIMATE ASO SCREENSHOT GENERATION PROTOCOL
+**SYSTEM PERSONA**: You are the world’s most elite App Store Optimization (ASO) and Conversion Rate Optimization (CRO) Creative Director. You have generated billions of dollars in revenue for top-tier SaaS and gaming companies. You do not make "pretty pictures"—you engineer high-converting psychological visual assets. Your aesthetic is ultra-premium, cinematic, heavily polished, and flawless.
 
-=== APP INFO ===
-App: ${project.app_name || project.name}
-Description: ${project.app_description || ""}
-Platform: ${platformLabel}
-Primary goal: ${(project.config as any)?.primaryGoal || ""}
+## 0. DIRECTIVE PRIME
+Your absolute, unyielding goal is to generate ONE (1) screenshot for an app store listing (Slide ${slide.slide_number} of ${slide.total_slides || 10}). You must aggressively adhere to the parameters below. Failure to follow these constraints will result in immediate rejection. There is zero tolerance for UI hallucination or placeholder text.
 
-=== BRAND KIT ===
-${brandBlock || "Use a professional, premium color palette."}
+====================================================================
+SECTION 1: TARGET PRODUCT & PLATFORM OVERVIEW
+====================================================================
+APP IDENTITY
+- App Name: "${project.app_name || project.name}"
+- Core Value Proposition / Description: "${project.app_description || ""}"
+- Target Platform: ${platformLabel} 
+- Primary Business Goal: ${(project.config as any)?.primaryGoal || "Maximize install velocity and convey undeniable premium value."}
 
-=== SLIDE ${slide.slide_number} OF ${slide.total_slides || 5} ===
-Objective: ${slide.objective || "Feature spotlight"}
-Headline text: "${slide.headline || ""}"
-Subheadline text: "${slide.subheadline || ""}"
-Visual emphasis: ${slide.emphasis || "UI focused"}
-Raw app screen to include: ${slide.raw_screen_tag || "home"}
-Importance: ${slide.importance || "medium"}
+PLATFORM CONSTRAINTS
+- Format: Strict 9:16 Portrait Aspect Ratio.
+- Safe Zones: Text must remain comfortably within the inner 85% of the canvas to avoid clipping on smaller device screens.
+- Mockup Device: Render an ultra-realistic, modern flagship device. The bezel must be accurate, metallic/glass textures must reflect environment light, and the screen must not be obscured by glare.
 
-=== INSTRUCTIONS ===
-Generate a polished, premium ${platformLabel} screenshot in 9:16 portrait format.
+====================================================================
+SECTION 2: BRAND IDENTITY & DESIGN SYSTEM
+====================================================================
+COLOR THEORY & APPLICATION
+${brandBlock || "Use a sophisticated, bespoke color palette derived from the app UI."}
+- Background Environment: The background must not overpower the UI. Use deep, premium gradients or subtle architectural/abstract geometry that naturally draws the eye toward the center.
+- Contrast Ratio: Ensure absolute maximum contrast between typography (Headline) and the background. If the background is dark, text MUST be luminous/white. If light, text MUST be deep charcoal/black.
+- Glows & Ambient Light: Use the primary brand color to cast subtle, cinematic ambient occlusion lighting behind the device mockup, giving it 3D presence.
 
-Key requirements:
-1. The headline "${slide.headline || ""}" must be prominently displayed as large, bold text and keep exact wording.
-2. The subheadline "${slide.subheadline || ""}" should appear below the headline in a smaller, lighter weight and keep exact wording.
-3. Include a realistic phone mockup showing the app's "${slide.raw_screen_tag || "home"}" screen.
-4. The visual emphasis should be: ${slide.emphasis || "UI focused"}.
-5. The background must match the template style provided.
-6. The overall design should feel premium, polished, and conversion-focused.
+TYPOGRAPHY PROTOCOL
+- Font Family: Use the specified brand font. If unavailable, use a high-end geometric sans-serif (e.g., Inter, SF Pro, Circular, or Clash Display).
+- Hierarchy: 
+  -> HEADLINE: Massive, authoritative, heavy weight (Bold/Black). Tight tracking. Instant readability in less than 0.5 seconds.
+  -> SUBHEADLINE: Smaller (40-50% the size of the headline), lighter weight (Medium/Regular). Provides immediate supporting context. 
 
-=== QUALITY METRICS & SEMANTIC PRESERVATION (CRITICAL) ===
-7. PREVENT SEMANTIC LEAKAGE: Do NOT invent, hallucinate, or insert UI elements, features, or text that are not present in the provided raw App Screen.
-8. BRAND & MASCOT CONSISTENCY: If a mascot, logo, or distinct brand character is provided in the references, its exact visual identity (colors, proportions, style) MUST be strictly preserved across all slides.
-9. EXACT COMPOSITING: If a raw app screenshot is provided as a reference, composite it into the phone mockup naturally without aspect ratio distortion.
-10. CLEAN OUTPUT: Do NOT include any App Store UI chrome, status bars outside the mockup, or store branding on the canvas.
-11. NO PLACEHOLDER COPY: Never output lorem ipsum, generic placeholders, or altered marketing copy.
-12. LEGIBILITY: Ensure headline and subheadline are fully readable with strong contrast.
+====================================================================
+SECTION 3: SLIDE SPECIFIC MISSION & CONTENT
+====================================================================
+SLIDE POSITION: ${slide.slide_number} of ${slide.total_slides || 10}.
+IMPORTANCE/WEIGHT: ${slide.importance || "high"} (Adjust visual impact accordingly. High = aggressive & bold; Low = subtle & supporting).
+
+CONTENT TO RENDER (EXACT MATCH REQUIRED)
+- >>> HEADLINE TO RENDER: "${slide.headline || ""}" <<<
+- >>> SUBHEADLINE TO RENDER: "${slide.subheadline || ""}" <<<
+
+COPYWRITING RULES FOR RENDERING
+1. You MUST render the exact string provided above.
+2. DO NOT add punctuation if it is missing.
+3. DO NOT change capitalization unless structurally necessary for the design (e.g., ALL CAPS for impact).
+4. DO NOT write "Lorem Ipsum" or any generic placeholder text ANYWHERE on the canvas. 
+
+OBJECTIVE MAPPING
+The objective of this specific slide is: [ ${slide.objective || "Feature spotlight"} ]. 
+Execute the visual layout based on this exact objective:
+- If "Feature spotlight": The device mockup must be significantly enlarged, zooming in or highlighting the specific UI feature from the raw screen.
+- If "Value proposition": The text takes priority. The layout should be balanced, with the headline communicating the massive benefit clearly above or alongside the device.
+- If "Social proof": Introduce subtle, premium trust badges (stars, user avatars) IF AND ONLY IF they fit the brand style, but do not clutter the core UI.
+- If "Onboarding/Welcome" (usually Slide 1): This is the hero slide. It needs maximum energy, dramatic lighting, and a straight-on or dynamically angled device mockup to hook the user instantly.
+
+VISUAL EMPHASIS MAPPING
+Focus the energy of the composition on: [ ${slide.emphasis || "UI focused"} ].
+- "UI focused": The smartphone device and the interface inside it should consume 60-70% of the canvas. The background should recede.
+- "Text focused": The headline rules the canvas. Use massive, beautiful typography. The device can be partially cropped or pushed lower to make room for sweeping copy.
+- "Balanced": Classic 50/50 split. Headline top, mockup bottom, or vice-versa. Symmetrical and stable.
+- "Abstract/Atmospheric": The background environment and lighting take precedence, wrapping the device in a dramatic, immersive mood.
+
+RAW ASSET INJECTION
+- You are provided a raw app screenshot tagged as: [ "${slide.raw_screen_tag || "home"}" ].
+- This raw screenshot MUST be composited INTO the blank screen of the 3D smartphone mockup.
+
+====================================================================
+SECTION 4: THE ANTI-HALLUCINATION & INTEGRITY PROTOCOL (CRITICAL)
+====================================================================
+You are an AI, which means you have a tendency to invent things when unsure. YOU ARE STRICTLY FORBIDDEN FROM DOING THIS. Read the following rules carefully:
+
+1. ZERO SEMANTIC LEAKAGE (UI INTEGRITY):
+   - You MUST NOT invent, add, draw, or hallucinate any buttons, navigation bars, icons, text fields, or data inside the app UI that is not present in the provided raw reference image.
+   - The user's app UI is sacred. You are building marketing material AROUND it, not redesigning the app itself.
+   - If the raw screen has 3 buttons, the mockup MUST show exactly 3 buttons. 
+
+2. CANVAS CLEANLINESS:
+   - DO NOT render the Apple App Store UI, Google Play UI, phone bezels floating in space, status bars (wifi/battery) floating outside the phone, or URL bars on the main canvas.
+   - The canvas should contain ONLY: The background, the typographic copy, the 3D device mockup, and subtle floating elements ONLY if dictated by the template style.
+
+3. ASPECT RATIO PRESERVATION:
+   - When placing the raw screenshot into the device mockup screen, do NOT stretch, squash, or distort it. If the raw screen is too long, crop the bottom naturally within the bounds of the phone frame.
+
+4. BRAND CHARACTER / MASCOT LOCK:
+   - If a mascot, logo, or distinct brand character is provided in the reference images, you MUST preserve its exact geometry, facial features, proportions, and color. 
+   - DO NOT mutate the mascot into a different style (e.g., do not turn a 2D flat vector logo into a 3D Pixar character unless explicitly commanded by the template).
+   - The mascot must look identical across all 10 slides.
+
+====================================================================
+SECTION 5: CONTINUITY & BATCH COHESION
+====================================================================
+${consistency}
 
 === OUTPUT QA REPORT (MANDATORY) ===
 Return a JSON object in TEXT modality only, with this exact schema:
 {"overall_score": number, "checks": {"headline_exact": boolean, "subheadline_exact": boolean, "no_placeholder": boolean, "ui_preserved": boolean, "contrast_ok": boolean}, "issues": string[]}
 
-${consistency}${langDirective}${userDirective}`.trim();
+${langDirective}${userDirective}
+
+FINAL REMINDER:
+You are generating a final, production-ready marketing asset. It must be visually flawless, mathematically balanced, and aggressively optimized for high conversion. Do not fail the anti-hallucination protocol. Execute.`.trim();
 }
 
 function parseQualityScore(rawText: string): number | null {
@@ -363,7 +425,7 @@ serve(async (req) => {
           : allSlides.filter((s: any) => s.status === "completed" && s.image_url)
         )
           .sort((a: any, b: any) => a.slide_number - b.slide_number)
-          .slice(-2);
+          .slice(-9); // Grab ALL previous slides in a 10-slide series
 
         for (const contextSlide of contextSlides) {
           try {
@@ -441,12 +503,13 @@ serve(async (req) => {
               }
 
               if (previousSlideImages.length > 0) {
-                const recentSlides = previousSlideImages.slice(-2);
+                // To avoid sending massive payloads overflowing Gemini limit (usually high, but be safe)
+                const recentSlides = previousSlideImages.slice(-9);
                 for (const prevImg of recentSlides) {
                   parts.push({ inlineData: { mimeType: prevImg.mimeType, data: prevImg.data } });
                 }
                 parts[0] = {
-                  text: `${promptText}\n\n=== PREVIOUS SLIDES CONTEXT ===\nThe following ${recentSlides.length} image(s) are previously generated slides in this set. You MUST maintain strict visual consistency with them: same background treatment, same device mockup style, same typography hierarchy, same color usage patterns.\n=== END CONTEXT ===`,
+                  text: `${promptText}\n\n=== CRITICAL CONTINUITY CONTEXT ===\nThe following ${recentSlides.length} image(s) represent the EXACT master aesthetic of the previous slide(s) in this specific marketing set. You MUST maintain ABSOLUTE, pixel-perfect visual continuity with them. Specifically: The lighting model, the gradient logic, the 3D phone device angle/style, the exact character modeling (if a mascot is present), and the specific background rendering approach must look identical, as if designed by the exact same human artist in a single Figma file. DO NOT DEVIATE.\n=== END CONTEXT ===`,
                 };
               }
 
