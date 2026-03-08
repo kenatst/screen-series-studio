@@ -522,7 +522,7 @@ serve(async (req) => {
             });
           } catch (error: any) {
             console.error(`Error generating slide ${displayNum}:`, error);
-            await adminClient.from("project_slides").update({ status: "error" }).eq("id", slide.id);
+            await adminClient.from("project_slides").update({ status: "error", last_error: error.message || "Generation failed" }).eq("id", slide.id);
             sendEvent("slide-error", { slideNumber: displayNum, message: error.message || "Generation failed" });
           }
         }
