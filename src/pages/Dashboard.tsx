@@ -2,10 +2,12 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import { Plus, LayoutTemplate, Copy, Play, Loader2 } from "lucide-react";
+import { Plus, LayoutTemplate, Copy, Play, Loader2, Crown } from "lucide-react";
 import { motion } from "framer-motion";
 import { useProjects } from "@/hooks/useProjects";
 import { useAuth } from "@/hooks/useAuth";
+import { canCreateProject, getPlanById } from "@/lib/plans";
+import { useToast } from "@/hooks/use-toast";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
