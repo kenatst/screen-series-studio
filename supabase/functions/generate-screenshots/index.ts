@@ -557,27 +557,31 @@ serve(async (req) => {
 
             previousSlideImages.push({ mimeType: "image/png", data: attempt.imageBase64 });
 
-            const filename = `${userId}/${projectId}/slide-${displayNum}.png`;
+            const storagePath = `${userId}/${projectId}/slide-${displayNum}.png`;
             const imageBytes = Uint8Array.from(atob(attempt.imageBase64), (c) => c.charCodeAt(0));
-            await adminClient.storage.from("generated-outputs").upload(filename, imageBytes, {
+            await adminClient.storage.from("generated-outputs").upload(storagePath, imageBytes, {
               contentType: "image/png",
               upsert: true,
             });
 
-            const { data: signedData } = await adminClient.storage.from("generated-outputs").createSignedUrl(filename, 60 * 60 * 24 * 7);
-            const imageUrl = signedData?.signedUrl || "";
-
+            // Store the storage path (not a signed URL) so it never expires
             const generationMs = Date.now() - slideStartMs;
             await adminClient.from("project_slides").update({
               status: "completed",
-              image_url: imageUrl,
+              image_url: storagePath,
               quality_score: attempt.qualityScore,
               generation_ms: generationMs,
               last_error: null,
             }).eq("id", slide.id);
+
+            // Send a fresh signed URL to the client for immediate display
+            const { data: signedData } = await adminClient.storage.from("generated-outputs").createSignedUrl(storagePath, 60 * 60 * 2);
+            const displayUrl = signedData?.signedUrl || "";
+
             sendEvent("slide-done", {
               slideNumber: displayNum,
-              imageUrl,
+              imageUrl: displayUrl,
+              storagePath,
               text: attempt.text,
               qualityScore: attempt.qualityScore,
             });
