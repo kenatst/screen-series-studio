@@ -99,23 +99,23 @@ const features = [
         visual: (
             <div className="w-full h-full p-4 flex items-center justify-center bg-zinc-900 border border-border rounded-2xl shadow-elevated relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent" />
-                <div className="relative z-10 flex items-center gap-4 w-full justify-center">
+                <div className="relative z-10 flex items-center gap-3 sm:gap-6 h-[90%] justify-center">
                     {/* EN */}
-                    <div className="relative w-[140px] md:w-[180px] aspect-[9/19.5] rounded-xl overflow-hidden border border-border shadow-2xl">
+                    <div className="relative h-full w-auto aspect-[9/19.5] rounded-xl overflow-hidden border border-border shadow-2xl shrink-0">
                         <img src={locEn} alt="English Version" className="w-full h-full object-cover" />
-                        <div className="absolute top-2 left-2">
+                        <div className="absolute top-2 left-2 scale-75 sm:scale-100 origin-top-left">
                              <Badge className="bg-black/60 text-white backdrop-blur-md border-white/10">English</Badge>
                         </div>
                     </div>
 
-                    <div className="text-primary font-bold bg-black/50 p-2 rounded-full backdrop-blur-md z-20 shadow-xl border border-white/10 hidden sm:block">
-                        <ArrowRight className="w-5 h-5" />
+                    <div className="text-primary font-bold bg-black/50 p-2 sm:p-3 rounded-full backdrop-blur-md z-20 shadow-xl border border-white/10 shrink-0">
+                        <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
                     </div>
 
                     {/* JP */}
-                    <div className="relative w-[140px] md:w-[180px] aspect-[9/19.5] rounded-xl overflow-hidden border-2 border-primary shadow-[0_0_30px_-5px_hsl(var(--primary)/0.3)]">
+                    <div className="relative h-full w-auto aspect-[9/19.5] rounded-xl overflow-hidden border-2 border-primary shadow-[0_0_30px_-5px_hsl(var(--primary)/0.3)] shrink-0">
                         <img src={locJp} alt="Japanese Version" className="w-full h-full object-cover" />
-                        <div className="absolute top-2 left-2">
+                        <div className="absolute top-2 left-2 scale-75 sm:scale-100 origin-top-left">
                              <Badge className="bg-primary text-primary-foreground backdrop-blur-md border-primary-foreground/20">Japanese</Badge>
                         </div>
                     </div>
