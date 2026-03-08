@@ -1350,7 +1350,7 @@ const NewProject = () => {
                           generation_mode: generationMode,
                           status: 'draft' as const,
                           brand_kit: { colors: brandColors, fontFamily: brandFont } as any,
-                          config: { primaryGoal, tone: selectedTone, shortDescription, valueProposition, keyFeatures: keyFeatures.split('\n').filter(Boolean), topBenefits: topBenefits.split('\n').filter(Boolean), outputLanguage } as any,
+                          config: { primaryGoal, tone: selectedTone, shortDescription, valueProposition, keyFeatures: keyFeatures.split('\n').filter(Boolean), topBenefits: topBenefits.split('\n').filter(Boolean), outputLanguage, appCategory, targetAudience } as any,
                           output_language: outputLanguage,
                         };
 
