@@ -291,31 +291,27 @@ serve(async (req) => {
 
         const ai = new GoogleGenAI({ apiKey: geminiApiKey });
         const brandKit = project.brand_kit as any || {};
-        const genMode = singleSlideId ? "single" : (project.generation_mode || "full");
-        let slidesToGenerate = slides;
-
-        if (genMode === "first-3" && !singleSlideId) {
-          slidesToGenerate = slides.slice(0, 3);
-        } else if (genMode === "creative-direction" && slides.length > 0 && !singleSlideId) {
-          slidesToGenerate = [slides[0], slides[0], slides[0]];
-        }
 
         // Track previously generated images for context chaining
         const previousSlideImages: { mimeType: string; data: string }[] = [];
 
-        // For single slide regen, gather existing sibling slides as context
-        if (singleSlideId) {
-          for (const sibling of allSlides.filter((s: any) => s.id !== singleSlideId && s.status === "completed" && s.image_url)) {
-            try {
-              const sibPath = `${userId}/${projectId}/slide-${sibling.slide_number}.png`;
-              const { data: sibData } = await adminClient.storage.from("generated-outputs").download(sibPath);
-              if (sibData) {
-                const ab = await sibData.arrayBuffer();
-                const b64 = btoa(String.fromCharCode(...new Uint8Array(ab)));
-                previousSlideImages.push({ mimeType: "image/png", data: b64 });
-              }
-            } catch { /* skip */ }
-            if (previousSlideImages.length >= 2) break;
+        const contextSlides = (singleSlideId
+          ? allSlides.filter((s: any) => s.id !== singleSlideId && s.status === "completed" && s.image_url)
+          : allSlides.filter((s: any) => s.status === "completed" && s.image_url)
+        )
+          .sort((a: any, b: any) => a.slide_number - b.slide_number)
+          .slice(-2);
+
+        for (const contextSlide of contextSlides) {
+          try {
+            const contextPath = `${userId}/${projectId}/slide-${contextSlide.slide_number}.png`;
+            const { data: contextData } = await adminClient.storage.from("generated-outputs").download(contextPath);
+            if (!contextData) continue;
+            const ab = await contextData.arrayBuffer();
+            const b64 = btoa(String.fromCharCode(...new Uint8Array(ab)));
+            previousSlideImages.push({ mimeType: "image/png", data: b64 });
+          } catch {
+            // ignore context download failures
           }
         }
 
