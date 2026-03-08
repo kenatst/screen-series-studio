@@ -12,6 +12,7 @@ import { motion } from "framer-motion";
 import { useProject, useProjectSlides } from "@/hooks/useProjects";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { Lock, Sparkles } from "lucide-react";
 import { TranslationsModal } from "@/components/project/TranslationsModal";
 import { canTranslate, canRegenerate, CREDIT_COSTS } from "@/lib/plans";
 import { useToast } from "@/hooks/use-toast";
@@ -41,7 +42,24 @@ const Results = () => {
   const userPlan = (profile?.plan || 'free') as any;
   const userCredits = profile?.credits ?? 0;
 
+  const [isOpeningPortal, setIsOpeningPortal] = useState(false);
+
   const selectedSlide = slides?.find(s => s.id === selectedSlideId) || slides?.[0];
+
+  const handleUpgrade = async () => {
+    try {
+      setIsOpeningPortal(true);
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
+        body: { plan: 'starter' }, // upgrade free users to starter
+      });
+      if (error) throw error;
+      if (data?.url) window.location.href = data.url;
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+    } finally {
+      setIsOpeningPortal(false);
+    }
+  };
 
   const checkCredits = (cost: number): boolean => {
     if (userCredits < cost) {
@@ -199,6 +217,11 @@ const Results = () => {
     );
   }
 
+  // Freemium Logic
+  const isFreePlan = userPlan === 'free';
+  const selectedSlideIndex = slides.findIndex(s => s.id === selectedSlide?.id);
+  const isSlideLocked = isFreePlan && selectedSlideIndex > 0;
+
   return (
     <DashboardLayout>
       <div className="p-8 max-w-7xl mx-auto">
@@ -319,42 +342,84 @@ const Results = () => {
                 )}
               </div>
             )}
+
+            {/* Freemium Paywall Overlay (Covers the interaction area for locked slides) */}
+            {isSlideLocked && (
+              <div className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 text-center rounded-2xl">
+                {/* Backdrop blur layer */}
+                <div className="absolute inset-0 bg-background/60 backdrop-blur-xl rounded-2xl" />
+
+                {/* Content */}
+                <div className="relative z-10 max-w-sm mx-auto space-y-6">
+                  <div className="mx-auto w-16 h-16 bg-primary/20 rounded-2xl border border-primary/30 flex items-center justify-center shadow-glow">
+                    <Lock className="h-8 w-8 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-black text-foreground tracking-tight mb-2">Débloquez la suite</h3>
+                    <p className="text-muted-foreground font-medium text-sm">
+                      Le plan gratuit vous permet de prévisualiser la première slide. Passez à la version Pro pour générer, traduire et exporter vos sets complets jusqu'à 10 slides.
+                    </p>
+                  </div>
+                  <Button
+                    size="lg"
+                    onClick={handleUpgrade}
+                    disabled={isOpeningPortal}
+                    className="w-full h-14 bg-primary text-black hover:bg-primary/90 text-lg font-black shadow-[0_0_30px_rgba(245,166,35,0.4)] rounded-xl"
+                  >
+                    {isOpeningPortal ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Sparkles className="h-5 w-5 mr-2" />}
+                    Passer Pro pour unlock
+                  </Button>
+                </div>
+              </div>
+            )}
           </motion.div>
 
           {/* Thumbnail rail */}
           <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={2} className="space-y-3">
             <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-4">All Slides</h3>
-            {slides.map((slide) => (
-              <div
-                key={slide.id}
-                onClick={() => setSelectedSlideId(slide.id)}
-                className={`rounded-xl border p-3 cursor-pointer transition-all duration-200 ${
-                  (selectedSlide?.id === slide.id) ? 'border-primary bg-primary/5 shadow-glow' : 'border-border bg-card/40 hover:border-primary/30'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-20 rounded-lg bg-muted border border-border flex items-center justify-center overflow-hidden flex-shrink-0">
-                    {slide.image_url ? (
-                      <img src={slide.image_url} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-xs text-muted-foreground">{slide.slide_number}</span>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-foreground truncate">{slide.headline || `Slide ${slide.slide_number}`}</p>
-                    <p className="text-xs text-muted-foreground truncate">{slide.objective}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge className={`text-[10px] ${slide.status === 'completed' ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
-                        {slide.status}
-                      </Badge>
-                      {canRegenerate(userPlan) && regeneratingSlideId === slide.id && (
-                        <Loader2 className="h-3 w-3 animate-spin text-primary" />
+            {slides.map((slide, index) => {
+              const isLockedThumbnail = isFreePlan && index > 0;
+
+              return (
+                <div
+                  key={slide.id}
+                  onClick={() => setSelectedSlideId(slide.id)}
+                  className={`rounded-xl border p-3 cursor-pointer transition-all duration-200 relative overflow-hidden ${(selectedSlide?.id === slide.id) ? 'border-primary bg-primary/5 shadow-glow' : 'border-border bg-card/40 hover:border-primary/30'
+                    }`}
+                >
+                  <div className={`flex items-center gap-3 ${isLockedThumbnail ? 'blur-[4px] opacity-70' : ''}`}>
+                    <div className="w-12 h-20 rounded-lg bg-muted border border-border flex items-center justify-center overflow-hidden flex-shrink-0">
+                      {slide.image_url ? (
+                        <img src={slide.image_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-xs text-muted-foreground">{slide.slide_number}</span>
                       )}
                     </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-foreground truncate">{slide.headline || `Slide ${slide.slide_number}`}</p>
+                      <p className="text-xs text-muted-foreground truncate">{slide.objective}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge className={`text-[10px] ${slide.status === 'completed' ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                          {slide.status}
+                        </Badge>
+                        {canRegenerate(userPlan) && regeneratingSlideId === slide.id && (
+                          <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                        )}
+                      </div>
+                    </div>
                   </div>
+
+                  {/* Tiny lock icon overlay for thumbnails */}
+                  {isLockedThumbnail && (
+                    <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+                      <div className="bg-black/50 backdrop-blur-md p-2 rounded-full border border-white/10 shadow-xl">
+                        <Lock className="h-4 w-4 text-primary" />
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </motion.div>
         </div>
       </div>

@@ -175,6 +175,8 @@ const NewProject = () => {
     });
   };
 
+  const [visualPreferences, setVisualPreferences] = useState<string[]>([]);
+
   // AI suggestion handlers
   const callSuggestCopy = async (type: string, extra: Record<string, any> = {}) => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -399,10 +401,6 @@ const NewProject = () => {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Long description</label>
-                    <Button variant="ghost" size="sm" onClick={handleAutoFill} disabled={isAutoFilling} className="h-8 text-xs font-bold text-primary hover:text-primary hover:bg-primary/10 rounded-lg">
-                      {isAutoFilling ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Wand2 className="mr-1.5 h-3.5 w-3.5" />}
-                      Auto-fill from store URL
-                    </Button>
                   </div>
                   <Textarea value={appDescription} onChange={e => setAppDescription(e.target.value)} placeholder="Full app description..." className="bg-black/5 border-border text-foreground placeholder:text-foreground/30 shadow-inner min-h-[140px] resize-none focus-visible:ring-primary transition-all rounded-xl p-4" />
                 </div>
@@ -429,16 +427,6 @@ const NewProject = () => {
                       </button>
                     ))}
                   </div>
-                </div>
-                <div className="flex gap-3 pt-4">
-                  <Button variant="secondary" onClick={handleGenerateHooks} disabled={isGeneratingHooks} className="bg-black/5 text-foreground hover:bg-white/10 border border-border font-bold tracking-tight">
-                    {isGeneratingHooks ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4 text-primary" />}
-                    Generate hooks
-                  </Button>
-                  <Button variant="secondary" onClick={handleSuggestStorylines} disabled={isSuggestingStorylines} className="bg-black/5 text-foreground hover:bg-white/10 border border-border font-bold tracking-tight">
-                    {isSuggestingStorylines ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4 text-primary" />}
-                    Suggest storylines
-                  </Button>
                 </div>
               </div>
             )}
@@ -580,7 +568,22 @@ const NewProject = () => {
                   <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Visual preferences</label>
                   <div className="flex flex-wrap gap-3">
                     {['Keep app UI untouched', 'Allow visual enhancement', 'Use premium preset palette', 'Auto-detect from assets'].map(opt => (
-                      <Badge key={opt} className="bg-card/90 text-muted-foreground font-bold border-border cursor-pointer hover:bg-primary/20 hover:text-primary hover:border-primary/40 transition-all duration-300 py-2 px-4 shadow-sm">{opt}</Badge>
+                      <Badge
+                        key={opt}
+                        onClick={() => {
+                          setVisualPreferences(prev =>
+                            prev.includes(opt)
+                              ? prev.filter(p => p !== opt)
+                              : [...prev, opt]
+                          );
+                        }}
+                        className={`font-bold border-border cursor-pointer transition-all duration-300 py-2 px-4 shadow-sm ${visualPreferences.includes(opt)
+                            ? 'bg-primary text-black border-primary shadow-glow'
+                            : 'bg-card/90 text-muted-foreground hover:bg-primary/20 hover:text-primary hover:border-primary/40'
+                          }`}
+                      >
+                        {opt}
+                      </Badge>
                     ))}
                   </div>
                 </div>
@@ -601,11 +604,11 @@ const NewProject = () => {
                 </div>
 
                 {selectedTemplate !== 'reference' ? (
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                    {['Clean SaaS', 'Bold Gaming', 'Premium Gradient', 'Educational Playful', 'Lifestyle',
-                      'Luxury Minimal', 'Feature-Led', 'Comparison', 'Mascot-Led', 'Cinematic'].map(name => (
-                        <button key={name} onClick={() => setSelectedTemplate(name)} className={`aspect-[3/4] rounded-2xl border-2 flex flex-col items-center justify-center p-4 transition-all duration-300 ${selectedTemplate === name ? 'border-primary bg-primary/10 shadow-glow scale-[1.02]' : 'border-border bg-card/90 hover:border-primary/40 hover:scale-[1.02] shadow-sm'}`}>
-                          <div className={`h-16 w-12 rounded-lg mb-3 flex items-center justify-center border transition-all duration-300 ${selectedTemplate === name ? 'bg-primary/20 border-primary/50 shadow-inner' : 'bg-black/5 border-border'}`}>
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {['Clean SaaS', 'Feature Led', 'Modern Fintech', 'Playful EdTech', 'Dark Cinematic',
+                      'Minimal Luxury', 'Neo Brutalism', 'Gradient Flow'].map(name => (
+                        <button key={name} onClick={() => setSelectedTemplate(name)} className={`aspect-[3/4] max-h-[160px] rounded-2xl border-2 flex flex-col items-center justify-center p-4 transition-all duration-300 ${selectedTemplate === name ? 'border-primary bg-primary/10 shadow-glow scale-[1.02]' : 'border-border bg-card/90 hover:border-primary/40 hover:scale-[1.02] shadow-sm'}`}>
+                          <div className={`h-12 w-10 rounded-lg mb-3 flex items-center justify-center border transition-all duration-300 ${selectedTemplate === name ? 'bg-primary/20 border-primary/50 shadow-inner' : 'bg-black/5 border-border'}`}>
                             <LayoutGrid className={`h-5 w-5 ${selectedTemplate === name ? 'text-primary' : 'text-foreground/30'}`} />
                           </div>
                           <span className={`text-xs font-bold text-center leading-tight tracking-tight ${selectedTemplate === name ? 'text-foreground' : 'text-muted-foreground'}`}>{name}</span>
@@ -614,14 +617,9 @@ const NewProject = () => {
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    <div onClick={() => window.open('/inspiration', '_blank')} className="border border-dashed border-primary/40 bg-primary/10 rounded-2xl p-12 text-center hover:border-primary/60 hover:bg-primary/20 hover:shadow-glow transition-all duration-300 cursor-pointer group shadow-inner">
-                      <Sparkles className="h-10 w-10 text-primary mx-auto mb-4 group-hover:scale-110 transition-transform duration-500" />
-                      <p className="text-lg font-bold text-foreground tracking-tight">Browse Inspiration Gallery</p>
-                      <p className="text-sm font-medium text-muted-foreground mt-1">Find high-converting App Store examples</p>
-                    </div>
                     <div className="border border-dashed border-border bg-card/90 rounded-2xl p-8 text-center hover:border-primary/40 hover:bg-black/5 transition-all duration-300 cursor-pointer shadow-inner">
                       <Upload className="h-6 w-6 text-foreground/30 mx-auto mb-3" />
-                      <p className="text-sm font-bold text-muted-foreground tracking-tight">Or upload your own references</p>
+                      <p className="text-sm font-bold text-muted-foreground tracking-tight">Upload your refererence mockups</p>
                     </div>
                     <div className="space-y-3">
                       <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Inspiration notes</label>
@@ -644,15 +642,7 @@ const NewProject = () => {
 
                 <div className="grid md:grid-cols-3 gap-8">
                   <div className="md:col-span-2 space-y-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex gap-2">
-                        <Button variant="secondary" size="sm" onClick={() => handleSlideCountChange(5)} className="text-xs font-bold bg-black/5 hover:bg-white/10 text-foreground border border-border tracking-tight">
-                          <Sparkles className="mr-1.5 h-3.5 w-3.5 text-primary" /> 5-slide storyline
-                        </Button>
-                        <Button variant="secondary" size="sm" onClick={() => handleSlideCountChange(10)} className="text-xs font-bold bg-black/5 hover:bg-white/10 text-foreground border border-border tracking-tight">
-                          <Sparkles className="mr-1.5 h-3.5 w-3.5 text-primary" /> 10-slide storyline
-                        </Button>
-                      </div>
+                    <div className="flex items-center justify-end">
                       <div className="flex items-center gap-3 bg-card/90 px-3 py-1.5 rounded-xl border border-border shadow-inner">
                         <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Slides:</span>
                         <div className="flex gap-1">
@@ -807,7 +797,7 @@ const NewProject = () => {
                       setIsSaving(true);
                       try {
                         const project = await createProject.mutateAsync({
-                          name: projectName || appName || `Project ${Date.now()}`,
+                          name: projectName || appName || `App Screens`,
                           app_name: appName,
                           app_description: appDescription,
                           platform,

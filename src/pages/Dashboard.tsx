@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { Plus, LayoutTemplate, Loader2, Crown, CreditCard, Settings } from "lucide-react";
 import { motion } from "framer-motion";
-import { useProjects } from "@/hooks/useProjects";
+import { useProjects, useProjectSlides } from "@/hooks/useProjects";
 import { useAuth } from "@/hooks/useAuth";
 import { canCreateProject, getPlanById } from "@/lib/plans";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +20,27 @@ const statusColors: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground',
   generating: 'bg-accent/20 text-accent',
   completed: 'bg-primary/20 text-primary',
+};
+
+const ProjectThumbnail = ({ projectId }: { projectId: string }) => {
+  const { data: slides } = useProjectSlides(projectId);
+  const firstSlide = slides?.[0];
+
+  if (firstSlide?.image_url) {
+    return (
+      <img
+        src={firstSlide.image_url}
+        alt="Project thumbnail"
+        className="w-full h-full object-cover"
+      />
+    );
+  }
+
+  return (
+    <div className="w-full h-full bg-muted flex items-center justify-center">
+      <span className="text-4xl filter drop-shadow-md">📱</span>
+    </div>
+  );
 };
 
 const Dashboard = () => {
@@ -155,9 +176,9 @@ const Dashboard = () => {
               <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
                 <div className="flex items-start gap-5">
-                  <span className="text-4xl bg-muted rounded-xl p-4 border border-border shadow-inner group-hover:border-primary/30 transition-colors shadow-xl">
-                    📱
-                  </span>
+                  <div className="w-20 h-28 rounded-xl border border-border shadow-inner group-hover:border-primary/30 transition-colors shadow-xl overflow-hidden flex-shrink-0">
+                    <ProjectThumbnail projectId={currentProject.id} />
+                  </div>
                   <div>
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="text-2xl font-bold text-foreground tracking-tight">{currentProject.name}</h3>
@@ -188,9 +209,11 @@ const Dashboard = () => {
                     else navigate(`/project/${project.id}/planner`);
                   }}
                 >
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className="text-2xl">📱</span>
-                    <h3 className="font-bold text-foreground tracking-tight truncate">{project.name}</h3>
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-12 h-16 rounded-lg border border-border overflow-hidden flex-shrink-0">
+                      <ProjectThumbnail projectId={project.id} />
+                    </div>
+                    <h3 className="font-bold text-lg text-foreground tracking-tight truncate flex-1">{project.name}</h3>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-xs">{project.platform}</Badge>
