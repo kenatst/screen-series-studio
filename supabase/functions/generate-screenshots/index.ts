@@ -158,15 +158,21 @@ serve(async (req) => {
     let projectId: string;
     let singleSlideId: string | undefined;
     let userPrompt: string | undefined;
+    let forceRegenerate = false;
+    let resumeGeneration = false;
 
     if (req.method === "POST") {
       const body = await req.json();
       projectId = body.project_id;
       singleSlideId = body.single_slide_id;
       userPrompt = body.user_prompt;
+      forceRegenerate = body.force_regenerate === true;
+      resumeGeneration = body.resume === true;
     } else {
       const url = new URL(req.url);
       projectId = url.searchParams.get("project_id") || "";
+      forceRegenerate = url.searchParams.get("force_regenerate") === "true";
+      resumeGeneration = url.searchParams.get("resume") === "true";
     }
 
     if (!projectId) {
@@ -187,6 +193,13 @@ serve(async (req) => {
       });
     }
 
+    if (!singleSlideId && project.status === "generating" && !forceRegenerate && !resumeGeneration) {
+      return new Response(JSON.stringify({ error: "Generation already in progress" }), {
+        status: 409,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Fetch slides
     const { data: allSlides, error: slidesError } = await userClient.from("project_slides").select("*").eq("project_id", projectId).order("slide_number", { ascending: true });
     if (slidesError || !allSlides || allSlides.length === 0) {
@@ -197,7 +210,9 @@ serve(async (req) => {
     }
 
     // Determine which slides to generate
-    let slides = allSlides;
+    const genMode = singleSlideId ? "single" : (project.generation_mode || "full");
+    let candidateSlides = allSlides;
+
     if (singleSlideId) {
       const singleSlide = allSlides.find((s: any) => s.id === singleSlideId);
       if (!singleSlide) {
@@ -206,13 +221,31 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      slides = [singleSlide];
+      candidateSlides = [singleSlide];
+    } else if (genMode === "first-3") {
+      candidateSlides = allSlides.slice(0, 3);
+    } else if (genMode === "creative-direction" && allSlides.length > 0) {
+      candidateSlides = [allSlides[0], allSlides[0], allSlides[0]];
+    }
+
+    const slidesToGenerate = (singleSlideId || forceRegenerate)
+      ? candidateSlides
+      : candidateSlides.filter((slide: any) => !(slide.status === "completed" && slide.image_url));
+
+    if (!singleSlideId && resumeGeneration) {
+      const generatingIds = slidesToGenerate.filter((s: any) => s.status === "generating").map((s: any) => s.id);
+      if (generatingIds.length > 0) {
+        await adminClient.from("project_slides").update({ status: "pending" }).in("id", generatingIds);
+        for (const slide of slidesToGenerate) {
+          if (slide.status === "generating") slide.status = "pending";
+        }
+      }
     }
 
     // Check credits
     const { data: profileData } = await adminClient.from("profiles").select("credits, plan").eq("id", userId).single();
     const currentCredits = profileData?.credits ?? 0;
-    const totalCost = slides.length * CREDIT_COST_PER_SLIDE;
+    const totalCost = slidesToGenerate.length * CREDIT_COST_PER_SLIDE;
 
     if (currentCredits < totalCost) {
       return new Response(JSON.stringify({ error: `Crédits insuffisants. Il faut ${totalCost} crédit(s), vous en avez ${currentCredits}.` }), {
@@ -221,8 +254,10 @@ serve(async (req) => {
       });
     }
 
-    // Deduct credits upfront
-    await adminClient.from("profiles").update({ credits: currentCredits - totalCost }).eq("id", userId);
+    // Deduct credits upfront (only when needed)
+    if (totalCost > 0) {
+      await adminClient.from("profiles").update({ credits: currentCredits - totalCost }).eq("id", userId);
+    }
 
     // Fetch reference assets from storage
     const { data: assets } = await userClient.from("assets").select("*").eq("project_id", projectId);
