@@ -28,12 +28,15 @@ const steps = [
 
 const NewProject = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const createProject = useCreateProject();
   const saveSlides = useSaveSlides();
+  const maxSlides = getMaxSlides(profile?.plan || 'free');
   const [currentStep, setCurrentStep] = useState(1);
-  const [slideCount, setSlideCount] = useState(5);
-  const [slides, setSlides] = useState<SlideItem[]>(defaultStorylines['5-slide']);
+  const [slideCount, setSlideCount] = useState(Math.min(5, maxSlides));
+  const [slides, setSlides] = useState<SlideItem[]>(
+    maxSlides === 1 ? defaultStorylines['5-slide'].slice(0, 1) : defaultStorylines['5-slide']
+  );
   const [consistencyLevel, setConsistencyLevel] = useState<'strict' | 'balanced' | 'exploratory'>('balanced');
   const [selectedTone, setSelectedTone] = useState('premium');
   const [selectedTemplate, setSelectedTemplate] = useState('');
