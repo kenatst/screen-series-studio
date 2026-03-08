@@ -97,23 +97,27 @@ const features = [
         title: 'Instant Localization',
         description: 'Duplicate a complete 10-slide set and swap the language. The design adapts intelligently to longer typography without breaking the layout.',
         visual: (
-            <div className="w-full h-full p-6 flex flex-col justify-center bg-zinc-900 border border-border rounded-2xl shadow-elevated">
-                <div className="flex items-center gap-4 w-full">
+            <div className="w-full h-full p-4 flex items-center justify-center bg-zinc-900 border border-border rounded-2xl shadow-elevated relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent" />
+                <div className="relative z-10 flex items-center gap-4 w-full justify-center">
                     {/* EN */}
-                    <div className="flex-1 space-y-3 p-4 bg-black/5 rounded-xl border border-border">
-                        <Badge className="bg-white/10 text-foreground mb-2">English</Badge>
-                        <div className="h-6 w-3/4 bg-white/20 rounded" />
-                        <div className="h-3 w-1/2 bg-white/10 rounded" />
+                    <div className="relative w-[140px] md:w-[180px] aspect-[9/19.5] rounded-xl overflow-hidden border border-border shadow-2xl">
+                        <img src={locEn} alt="English Version" className="w-full h-full object-cover" />
+                        <div className="absolute top-2 left-2">
+                             <Badge className="bg-black/60 text-white backdrop-blur-md border-white/10">English</Badge>
+                        </div>
                     </div>
 
-                    <div className="text-foreground/30 font-bold">→</div>
+                    <div className="text-primary font-bold bg-black/50 p-2 rounded-full backdrop-blur-md z-20 shadow-xl border border-white/10 hidden sm:block">
+                        <ArrowRight className="w-5 h-5" />
+                    </div>
 
                     {/* JP */}
-                    <div className="flex-1 space-y-3 p-4 bg-primary/10 rounded-xl border border-primary/30">
-                        <Badge className="bg-primary/20 text-primary mb-2">Japanese</Badge>
-                        <div className="h-6 w-full bg-primary/40 rounded" />
-                        <div className="h-6 w-2/3 bg-primary/40 rounded" />
-                        <div className="h-3 w-1/2 bg-primary/20 rounded" />
+                    <div className="relative w-[140px] md:w-[180px] aspect-[9/19.5] rounded-xl overflow-hidden border-2 border-primary shadow-[0_0_30px_-5px_hsl(var(--primary)/0.3)]">
+                        <img src={locJp} alt="Japanese Version" className="w-full h-full object-cover" />
+                        <div className="absolute top-2 left-2">
+                             <Badge className="bg-primary text-primary-foreground backdrop-blur-md border-primary-foreground/20">Japanese</Badge>
+                        </div>
                     </div>
                 </div>
             </div>
