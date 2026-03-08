@@ -1,6 +1,10 @@
 import { useRef, useState, useEffect } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-
+import screenforgeLogo from '@/assets/logo-screenforge.png';
+import agency13 from '@/assets/gallery/agency-13-vow.png';
+import agency11 from '@/assets/gallery/agency-11-trainer-ai.png';
+import agency14 from '@/assets/gallery/agency-14-rpg.png';
+import agency22 from '@/assets/gallery/agency-22-mealplan.png';
 const steps = [
     {
         id: 1,
@@ -60,7 +64,7 @@ export const WorkflowScrollytelling = () => {
     return (
         <section id="workflow" ref={containerRef} className="relative bg-background" style={{ height: '300vh' }}>
             {/* Sticky container that stays in view while scrolling */}
-            <div className="sticky top-0 h-screen w-full flex items-center overflow-hidden">
+            <div className="sticky top-0 h-screen w-full flex items-center overflow-visible">
                 {/* Decorative background glow that shifts based on step */}
                 <motion.div
                     className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-[150px] pointer-events-none mix-blend-screen opacity-20"
@@ -73,7 +77,7 @@ export const WorkflowScrollytelling = () => {
                 <div className="container mx-auto px-6 grid md:grid-cols-2 gap-12 lg:gap-24 relative z-10 w-full">
 
                     {/* Left Side: Text Content */}
-                    <div className="flex flex-col justify-center h-full max-w-xl py-20">
+                    <div className="flex flex-col justify-center h-full max-w-xl py-12">
                         <div className="mb-4 inline-block">
                             <span className="text-primary font-bold tracking-widest uppercase text-sm">The Workflow</span>
                         </div>
@@ -145,16 +149,15 @@ export const WorkflowScrollytelling = () => {
                                         transition={{ duration: 0.5, type: "spring" }}
                                         className="w-full h-full flex flex-col items-center justify-center gap-6"
                                     >
-                                        <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-glow flex items-center justify-center border border-border">
-                                            <span className="text-foreground text-3xl font-bold">Acme</span>
-                                        </div>
+                                        <img src={screenforgeLogo} alt="ScreenForge" className="w-24 h-24 rounded-2xl shadow-glow object-cover border border-border" />
                                         <div className="flex gap-4">
-                                            <div className="w-12 h-12 rounded-full bg-blue-600 border border-border shadow-md" />
-                                            <div className="w-12 h-12 rounded-full bg-indigo-600 border border-border shadow-md" />
+                                            <div className="w-12 h-12 rounded-full bg-[hsl(var(--primary))] border border-border shadow-md" />
+                                            <div className="w-12 h-12 rounded-full bg-[hsl(30,90%,45%)] border border-border shadow-md" />
+                                            <div className="w-12 h-12 rounded-full bg-zinc-900 border border-border shadow-md" />
                                             <div className="w-12 h-12 rounded-full bg-zinc-100 border border-border shadow-md" />
                                         </div>
-                                        <div className="w-48 h-12 rounded-lg bg-white/10 border border-border flex items-center px-4 font-mono text-muted-foreground">
-                                            "Inter", sans-serif
+                                        <div className="w-48 h-12 rounded-lg bg-card/50 border border-border flex items-center px-4 font-mono text-muted-foreground text-sm">
+                                            "SF Pro", system-ui
                                         </div>
                                     </motion.div>
                                 )}
@@ -167,12 +170,19 @@ export const WorkflowScrollytelling = () => {
                                         animate={{ opacity: 1, scale: 1, y: 0 }}
                                         exit={{ opacity: 0, scale: 1.1 }}
                                         transition={{ duration: 0.5, type: "spring" }}
-                                        className="w-full h-full grid grid-cols-2 gap-4 p-4"
+                                        className="w-full h-full grid grid-cols-2 gap-3 p-2"
                                     >
-                                        {[1, 2, 3, 4].map(i => (
-                                            <div key={i} className={`rounded-xl border ${i === 1 ? 'border-primary ring-2 ring-primary/20 bg-primary/10' : 'border-border bg-black/5'} p-4 flex flex-col gap-2`}>
-                                                <div className="w-full h-24 rounded bg-white/10" />
-                                                <div className="w-1/2 h-3 rounded bg-white/20" />
+                                        {[
+                                            { src: agency13, name: 'Luxury Elegant' },
+                                            { src: agency11, name: 'Sport & Mascot' },
+                                            { src: agency14, name: 'RPG Gaming' },
+                                            { src: agency22, name: 'Fresh Organic' },
+                                        ].map((t, i) => (
+                                            <div key={i} className={`rounded-xl border overflow-hidden ${i === 0 ? 'border-primary ring-2 ring-primary/20' : 'border-border'} flex flex-col`}>
+                                                <img src={t.src} alt={t.name} className="w-full flex-1 object-cover" />
+                                                <div className="px-3 py-2 bg-card/80 border-t border-border">
+                                                    <span className="text-xs font-medium text-foreground">{t.name}</span>
+                                                </div>
                                             </div>
                                         ))}
                                     </motion.div>
