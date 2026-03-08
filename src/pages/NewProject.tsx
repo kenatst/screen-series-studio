@@ -1081,7 +1081,8 @@ const NewProject = () => {
                       <div className="flex justify-between border-b border-border pb-3"><span>Slides:</span> <span className="font-bold text-foreground">{slideCount}</span></div>
                       <div className="flex justify-between border-b border-border pb-3"><span>Screens:</span> <span className="font-bold text-foreground">{uploadedScreens.length} uploaded</span></div>
                       <div className="flex justify-between border-b border-border pb-3"><span>Brand assets:</span> <span className="font-bold text-foreground">{brandAssets.length} uploaded</span></div>
-                      <div className="flex justify-between pb-1"><span>Consistency:</span> <span className="font-bold text-foreground capitalize">{consistencyLevel}</span></div>
+                      <div className="flex justify-between border-b border-border pb-3"><span>Consistency:</span> <span className="font-bold text-foreground capitalize">{consistencyLevel}</span></div>
+                      <div className="flex justify-between pb-1"><span>Output language:</span> <span className="font-bold text-foreground">{outputLanguage.toUpperCase()}</span></div>
                     </div>
                   </div>
                   <div className="rounded-3xl border border-border bg-card/90 p-8 shadow-elevated space-y-6 hover:border-primary/30 transition-all duration-500">
