@@ -270,7 +270,7 @@ const Results = () => {
                 </div>
 
                 {/* Single slide regeneration */}
-                {canRegenerate(userPlan) && (
+                {(
                   <div className="mt-6 pt-4 border-t border-border">
                     {showRegenPrompt === selectedSlide.id ? (
                       <div className="space-y-3">
