@@ -34,7 +34,7 @@ serve(async (req) => {
     const priceId = PLAN_PRICES[plan];
     if (!priceId) throw new Error(`Invalid plan: ${plan}`);
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_TEST_SECRET") || "", { apiVersion: "2025-08-27.basil" });
+    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2025-08-27.basil" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     let customerId;
     if (customers.data.length > 0) {
