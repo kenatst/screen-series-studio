@@ -314,16 +314,17 @@ const NewProject = () => {
 
       const response = await supabase.functions.invoke('suggest-copy', {
         body: {
-          mode: 'storylines',
-          app_name: appName,
-          app_description: appDescription || shortDescription,
-          slide_count: slideCount,
-          tone: selectedTone,
+          type: 'storylines',
+          appName: appName,
+          appDescription: appDescription || shortDescription,
+          slideCount: slideCount,
+          platform: platform,
         },
       });
 
-      if (response.data?.slides) {
-        const aiSlides = response.data.slides as Array<{ headline: string; subheadline: string; objective?: string }>;
+      const resultData = response.data?.result || response.data;
+      if (resultData?.slides) {
+        const aiSlides = resultData.slides as Array<{ headline: string; subheadline: string; objective?: string }>;
         setSlides(prev => prev.map((s, i) => {
           const ai = aiSlides[i];
           if (!ai) return s;
