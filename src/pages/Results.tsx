@@ -244,7 +244,7 @@ const Results = () => {
             <Button
               className="rounded-xl"
               onClick={handleRegenerateAll}
-              disabled={isRegenerating || !canRegenerate(userPlan)}
+              disabled={isRegenerating}
             >
               {isRegenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
               {!canRegenerate(userPlan) ? (
