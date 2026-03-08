@@ -1,6 +1,9 @@
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
-import { LayoutGrid, Image as ImageIcon, RefreshCw, Globe, CheckCircle2 } from 'lucide-react';
+import { LayoutGrid, Image as ImageIcon, RefreshCw, Globe, CheckCircle2, ArrowRight } from 'lucide-react';
+
+import locEn from '@/assets/features/localization-en.webp';
+import locJp from '@/assets/features/localization-jp.jpeg';
 
 const fadeUp = {
     hidden: { opacity: 0, y: 30 },
