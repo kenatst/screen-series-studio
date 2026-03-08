@@ -109,7 +109,10 @@ serve(async (req) => {
     }
 
     logStep("Active subscription found", { plan, subscriptionEnd });
-    await supabaseClient.from("profiles").update({ plan }).eq("id", user.id);
+
+    const PLAN_CREDITS: Record<string, number> = { free: 3, starter: 50, pro: 200, unlimited: 1000 };
+    const credits = PLAN_CREDITS[plan] || 3;
+    await supabaseClient.from("profiles").update({ plan, credits }).eq("id", user.id);
 
     return new Response(JSON.stringify({
       subscribed: true,
