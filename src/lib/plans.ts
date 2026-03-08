@@ -4,7 +4,7 @@ export interface PlanConfig {
   id: PlanId;
   name: string;
   price: string;
-  priceValue: number; // in cents
+  priceValue: number;
   description: string;
   features: string[];
   notIncluded: string[];
@@ -13,7 +13,7 @@ export interface PlanConfig {
     maxSlidesPerSet: number;
     translations: boolean;
     unlimitedTranslations: boolean;
-    redesigns: number; // -1 = unlimited
+    redesigns: number;
     brandKit: boolean;
     priorityGeneration: boolean;
     watermark: boolean;
@@ -21,7 +21,17 @@ export interface PlanConfig {
   };
   popular: boolean;
   cta: string;
+  /** Credits granted per month with the plan */
+  monthlyCredits: number;
 }
+
+/** Credit costs per action */
+export const CREDIT_COSTS = {
+  generateSlide: 1,
+  regenerateSlide: 1,
+  translateSlide: 2,
+  exportSet: 0,
+} as const;
 
 export const PLANS: PlanConfig[] = [
   {
@@ -31,7 +41,7 @@ export const PLANS: PlanConfig[] = [
     priceValue: 0,
     description: 'Test the power of ScreenForge.',
     features: [
-      '1 sample slide',
+      '3 credits included',
       'Standard templates',
       'Watermarked export',
     ],
@@ -43,7 +53,7 @@ export const PLANS: PlanConfig[] = [
     ],
     limits: {
       maxProjects: 1,
-      maxSlidesPerSet: 1,
+      maxSlidesPerSet: 3,
       translations: false,
       unlimitedTranslations: false,
       redesigns: 0,
@@ -54,6 +64,7 @@ export const PLANS: PlanConfig[] = [
     },
     popular: false,
     cta: 'Try free',
+    monthlyCredits: 3,
   },
   {
     id: 'starter',
@@ -63,9 +74,9 @@ export const PLANS: PlanConfig[] = [
     description: 'Perfect for launching one app.',
     features: [
       '1 app workspace',
+      '50 credits/month',
+      'HD export, no watermark',
       'Up to 10 slides per set',
-      'HD export',
-      'Limited redesigns (3)',
     ],
     notIncluded: [
       '1-Click Translations',
@@ -85,6 +96,7 @@ export const PLANS: PlanConfig[] = [
     },
     popular: false,
     cta: 'Get started',
+    monthlyCredits: 50,
   },
   {
     id: 'pro',
@@ -94,14 +106,14 @@ export const PLANS: PlanConfig[] = [
     description: 'For builders shipping multiple apps.',
     features: [
       '3 app workspaces',
+      '200 credits/month',
       '1-Click Translations',
       'Full Brand Kit control',
       'Priority generation',
-      'More redesigns (10)',
     ],
     notIncluded: [
       'Unlimited workspaces',
-      'Unlimited translations',
+      'Unlimited credits',
     ],
     limits: {
       maxProjects: 3,
@@ -116,6 +128,7 @@ export const PLANS: PlanConfig[] = [
     },
     popular: true,
     cta: 'Go Pro',
+    monthlyCredits: 200,
   },
   {
     id: 'unlimited',
@@ -124,9 +137,9 @@ export const PLANS: PlanConfig[] = [
     priceValue: 39900,
     description: 'No limits for premium ASO teams.',
     features: [
-      'Unlimited app workspaces',
+      'Unlimited workspaces',
+      '1000 credits/month',
       'Unlimited translations',
-      'Unlimited redesigns',
       'Priority queue',
       'Agency-scale usage',
     ],
@@ -144,6 +157,7 @@ export const PLANS: PlanConfig[] = [
     },
     popular: false,
     cta: 'Go Unlimited',
+    monthlyCredits: 1000,
   },
 ];
 
@@ -173,4 +187,8 @@ export function canRedesign(plan: PlanId, usedRedesigns: number): boolean {
 
 export function hasWatermark(plan: PlanId): boolean {
   return getPlanById(plan).limits.watermark;
+}
+
+export function canRegenerate(plan: PlanId): boolean {
+  return plan !== 'free';
 }
