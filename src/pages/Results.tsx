@@ -6,13 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  Download, RefreshCw, Globe, Loader2, Wand2, Send
+  Download, RefreshCw, Globe, Loader2, Wand2, Send, Lock, Sparkles
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useProject, useProjectSlides } from "@/hooks/useProjects";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Lock, Sparkles } from "lucide-react";
 import { TranslationsModal } from "@/components/project/TranslationsModal";
 import { canTranslate, canRegenerate, CREDIT_COSTS } from "@/lib/plans";
 import { useToast } from "@/hooks/use-toast";
@@ -50,7 +49,7 @@ const Results = () => {
     try {
       setIsOpeningPortal(true);
       const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { plan: 'starter' }, // upgrade free users to starter
+        body: { plan: 'starter' },
       });
       if (error) throw error;
       if (data?.url) window.location.href = data.url;
@@ -121,7 +120,6 @@ const Results = () => {
 
   const handleRegenerateAll = async () => {
     const totalCost = (slides?.length || 0) * CREDIT_COSTS.regenerateSlide;
-    if (!checkCredits(totalCost)) return;
     if (!checkCredits(totalCost)) return;
 
     setIsRegenerating(true);
@@ -259,7 +257,7 @@ const Results = () => {
 
         <div className="grid lg:grid-cols-[1fr_350px] gap-8">
           {/* Main preview */}
-          <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1}>
+          <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1} className="relative">
             {selectedSlide && (
               <div className="rounded-2xl border border-border bg-card/40 p-6 backdrop-blur-sm">
                 {selectedSlide.image_url ? (
@@ -267,9 +265,9 @@ const Results = () => {
                     <img
                       src={selectedSlide.image_url}
                       alt={`Slide ${selectedSlide.slide_number}`}
-                      className="w-full max-w-md mx-auto rounded-xl shadow-elevated"
+                      className={`w-full max-w-md mx-auto rounded-xl shadow-elevated ${isSlideLocked ? 'blur-xl' : ''}`}
                     />
-                    {userPlan === 'free' && (
+                    {userPlan === 'free' && !isSlideLocked && (
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none max-w-md mx-auto">
                         <span className="text-4xl font-black text-white/30 rotate-[-30deg] select-none tracking-widest uppercase">
                           ScreenForge
@@ -293,7 +291,7 @@ const Results = () => {
                 </div>
 
                 {/* Single slide regeneration */}
-                {(
+                {!isSlideLocked && (
                   <div className="mt-6 pt-4 border-t border-border">
                     {showRegenPrompt === selectedSlide.id ? (
                       <div className="space-y-3">
@@ -343,13 +341,10 @@ const Results = () => {
               </div>
             )}
 
-            {/* Freemium Paywall Overlay (Covers the interaction area for locked slides) */}
+            {/* Freemium Paywall Overlay */}
             {isSlideLocked && (
               <div className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 text-center rounded-2xl">
-                {/* Backdrop blur layer */}
                 <div className="absolute inset-0 bg-background/60 backdrop-blur-xl rounded-2xl" />
-
-                {/* Content */}
                 <div className="relative z-10 max-w-sm mx-auto space-y-6">
                   <div className="mx-auto w-16 h-16 bg-primary/20 rounded-2xl border border-primary/30 flex items-center justify-center shadow-glow">
                     <Lock className="h-8 w-8 text-primary" />
@@ -409,7 +404,6 @@ const Results = () => {
                     </div>
                   </div>
 
-                  {/* Tiny lock icon overlay for thumbnails */}
                   {isLockedThumbnail && (
                     <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
                       <div className="bg-black/50 backdrop-blur-md p-2 rounded-full border border-white/10 shadow-xl">

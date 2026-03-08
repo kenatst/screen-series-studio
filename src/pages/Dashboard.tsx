@@ -9,7 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { canCreateProject, getPlanById } from "@/lib/plans";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -22,10 +22,63 @@ const statusColors: Record<string, string> = {
   completed: 'bg-primary/20 text-primary',
 };
 
+/** Shows the app logo (from uploaded brand assets) or falls back to first slide thumbnail */
 const ProjectThumbnail = ({ projectId }: { projectId: string }) => {
   const { data: slides } = useProjectSlides(projectId);
-  const firstSlide = slides?.[0];
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
+  useEffect(() => {
+    const fetchLogo = async () => {
+      // Try to find a logo asset for this project
+      const { data: assets } = await supabase
+        .from('assets')
+        .select('storage_path')
+        .eq('project_id', projectId)
+        .eq('asset_type', 'logo')
+        .limit(1);
+
+      if (assets && assets.length > 0) {
+        const { data } = await supabase.storage
+          .from('raw-uploads')
+          .createSignedUrl(assets[0].storage_path, 3600);
+        if (data?.signedUrl) {
+          setLogoUrl(data.signedUrl);
+          return;
+        }
+      }
+
+      // Fallback: try icon
+      const { data: iconAssets } = await supabase
+        .from('assets')
+        .select('storage_path')
+        .eq('project_id', projectId)
+        .eq('asset_type', 'icon')
+        .limit(1);
+
+      if (iconAssets && iconAssets.length > 0) {
+        const { data } = await supabase.storage
+          .from('raw-uploads')
+          .createSignedUrl(iconAssets[0].storage_path, 3600);
+        if (data?.signedUrl) {
+          setLogoUrl(data.signedUrl);
+        }
+      }
+    };
+
+    fetchLogo();
+  }, [projectId]);
+
+  if (logoUrl) {
+    return (
+      <img
+        src={logoUrl}
+        alt="App logo"
+        className="w-full h-full object-contain p-1"
+      />
+    );
+  }
+
+  const firstSlide = slides?.[0];
   if (firstSlide?.image_url) {
     return (
       <img
@@ -181,7 +234,7 @@ const Dashboard = () => {
                   </div>
                   <div>
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-2xl font-bold text-foreground tracking-tight">{currentProject.name}</h3>
+                      <h3 className="text-2xl font-bold text-foreground tracking-tight">{currentProject.app_name || currentProject.name}</h3>
                       <Badge className={statusColors[currentProject.status] || statusColors.draft}>{currentProject.status}</Badge>
                     </div>
                     <p className="text-muted-foreground font-medium">{currentProject.app_name || 'App'} · {currentProject.platform}</p>
@@ -213,7 +266,7 @@ const Dashboard = () => {
                     <div className="w-12 h-16 rounded-lg border border-border overflow-hidden flex-shrink-0">
                       <ProjectThumbnail projectId={project.id} />
                     </div>
-                    <h3 className="font-bold text-lg text-foreground tracking-tight truncate flex-1">{project.name}</h3>
+                    <h3 className="font-bold text-lg text-foreground tracking-tight truncate flex-1">{project.app_name || project.name}</h3>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-xs">{project.platform}</Badge>

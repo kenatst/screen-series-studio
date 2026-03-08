@@ -1,6 +1,6 @@
 import {
-  LayoutDashboard, FolderOpen, LayoutGrid, Image, Palette, Globe,
-  GitBranch, Settings, CreditCard, Layers, HelpCircle,
+  LayoutDashboard, FolderOpen, LayoutGrid,
+  Settings, HelpCircle, Layers,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -14,7 +14,6 @@ const mainItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Projects", url: "/dashboard/projects", icon: FolderOpen },
   { title: "Templates", url: "/templates", icon: LayoutGrid },
-  { title: "Exports", url: "/dashboard/sets", icon: Image },
 ];
 
 const bottomItems = [

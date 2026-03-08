@@ -12,7 +12,6 @@ import NewProject from "./pages/NewProject";
 import Generating from "./pages/Generating";
 import Results from "./pages/Results";
 import Templates from "./pages/Templates";
-import Inspiration from "./pages/Inspiration";
 import NotFound from "./pages/NotFound";
 import Settings from "./pages/Settings";
 
@@ -36,7 +35,6 @@ const App = () => (
             <Route path="/project/:projectId/results" element={<ProtectedRoute><Results /></ProtectedRoute>} />
             <Route path="/project/:projectId/planner" element={<ProtectedRoute><NewProject /></ProtectedRoute>} />
             <Route path="/templates" element={<Templates />} />
-            <Route path="/inspiration" element={<Inspiration />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
