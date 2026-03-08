@@ -136,6 +136,8 @@ function extractColorsFromImage(imgSrc: string): Promise<string[]> {
 
 const NewProject = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editProjectId = searchParams.get('project');
   const { user, profile } = useAuth();
   const createProject = useCreateProject();
   const updateProject = useUpdateProject();
@@ -164,8 +166,66 @@ const NewProject = () => {
   const [generationMode, setGenerationMode] = useState<'full' | 'creative-direction' | 'first-3'>('full');
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
-  const [savedProjectId, setSavedProjectId] = useState<string | null>(null);
+  const [savedProjectId, setSavedProjectId] = useState<string | null>(editProjectId);
   const [outputLanguage, setOutputLanguage] = useState('en');
+  const [hydrated, setHydrated] = useState(false);
+
+  // Fetch existing project data for draft hydration
+  const { data: existingProject } = useProject(editProjectId || undefined);
+  const { data: existingSlides } = useProjectSlides(editProjectId || undefined);
+
+  // Hydrate state from DB when editing a draft
+  useEffect(() => {
+    if (hydrated || !editProjectId || !existingProject) return;
+    setHydrated(true);
+
+    setAppName(existingProject.app_name || '');
+    setProjectName(existingProject.name || '');
+    setAppDescription(existingProject.app_description || '');
+    setPlatform(existingProject.platform || 'both');
+    setSelectedTemplate(existingProject.template_id || '');
+    setConsistencyLevel((existingProject.consistency_level as any) || 'balanced');
+    setDeviceFormats((existingProject.device_formats as string[]) || ['iphone-6-5', 'iphone-6-9']);
+    setGenerationMode((existingProject.generation_mode as any) || 'full');
+    setOutputLanguage(existingProject.output_language || 'en');
+
+    const config = existingProject.config as any;
+    if (config) {
+      setPrimaryGoal(config.primaryGoal || '');
+      setSelectedTone(config.tone || 'premium');
+      setShortDescription(config.shortDescription || '');
+      setValueProposition(config.valueProposition || '');
+      setKeyFeatures(Array.isArray(config.keyFeatures) ? config.keyFeatures.join('\n') : '');
+      setTopBenefits(Array.isArray(config.topBenefits) ? config.topBenefits.join('\n') : '');
+    }
+
+    const brandKit = existingProject.brand_kit as any;
+    if (brandKit) {
+      setBrandColors(brandKit.colors || []);
+      setBrandFont(brandKit.fontFamily || '');
+    }
+  }, [editProjectId, existingProject, hydrated]);
+
+  // Hydrate slides from DB
+  useEffect(() => {
+    if (!editProjectId || !existingSlides?.length || hydrated === false) return;
+
+    const hydratedSlides: SlideItem[] = existingSlides.map((s) => ({
+      id: s.id,
+      number: s.slide_number,
+      objective: s.objective || 'Feature spotlight',
+      headline: s.headline || '',
+      subheadline: s.subheadline || '',
+      keyMessage: '',
+      rawScreenTag: s.raw_screen_tag || 'home',
+      emphasis: s.emphasis || 'UI focused',
+      importance: (s.importance as any) || 'medium',
+      status: s.status || 'pending',
+      locked: [],
+    }));
+    setSlides(hydratedSlides);
+    setSlideCount(hydratedSlides.length);
+  }, [editProjectId, existingSlides, hydrated]);
 
   // Template filtering
   const [templateMoodFilter, setTemplateMoodFilter] = useState<string>('All');
