@@ -1,7 +1,8 @@
 import {
   LayoutDashboard, FolderOpen, LayoutGrid,
-  Settings, HelpCircle, Layers,
+  Settings, HelpCircle,
 } from "lucide-react";
+import screenforgeLogo from "@/assets/logo-screenforge.png";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import {
