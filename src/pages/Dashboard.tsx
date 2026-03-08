@@ -101,9 +101,15 @@ const Dashboard = () => {
   const plan = getPlanById(profile?.plan || 'free');
   const [isCheckingSub, setIsCheckingSub] = useState(false);
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
+  const unarchiveProject = useUnarchiveProject();
+  const archiveProject = useArchiveProject();
+
+  const activeProjects = projects?.filter(p => p.status !== 'archived') || [];
+  const archivedProjects = projects?.filter(p => p.status === 'archived') || [];
 
   const handleNewProject = () => {
-    if (!canCreateProject(profile?.plan || 'free', projects?.length || 0)) {
+    if (!canCreateProject(profile?.plan || 'free', activeProjects.length)) {
       toast({ title: "Limite atteinte", description: `Votre plan ${plan.name} permet ${plan.limits.maxProjects} projet(s). Passez à un plan supérieur.`, variant: "destructive" });
       return;
     }
@@ -142,8 +148,28 @@ const Dashboard = () => {
     toast({ title: "Statut mis à jour", description: `Plan actuel : ${plan.name}` });
   };
 
-  const currentProject = projects?.[0];
-  const recentProjects = projects?.slice(1) || [];
+  const handleUnarchive = async (e: React.MouseEvent, projectId: string) => {
+    e.stopPropagation();
+    try {
+      await unarchiveProject.mutateAsync(projectId);
+      toast({ title: "Projet restauré", description: "Le projet est de nouveau actif." });
+    } catch {
+      toast({ title: "Erreur", description: "Impossible de restaurer le projet.", variant: "destructive" });
+    }
+  };
+
+  const handleArchive = async (e: React.MouseEvent, projectId: string) => {
+    e.stopPropagation();
+    try {
+      await archiveProject.mutateAsync(projectId);
+      toast({ title: "Projet archivé" });
+    } catch {
+      toast({ title: "Erreur", description: "Impossible d'archiver le projet.", variant: "destructive" });
+    }
+  };
+
+  const currentProject = activeProjects[0];
+  const recentProjects = activeProjects.slice(1);
 
   return (
     <DashboardLayout>
