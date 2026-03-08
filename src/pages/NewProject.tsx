@@ -140,6 +140,7 @@ const NewProject = () => {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const createProject = useCreateProject();
+  const updateProject = useUpdateProject();
   const saveSlides = useSaveSlides();
   const { toast } = useToast();
   const maxSlides = getMaxSlides(profile?.plan || 'free');
