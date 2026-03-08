@@ -21,6 +21,7 @@ const statusColors: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground',
   generating: 'bg-accent/20 text-accent',
   completed: 'bg-primary/20 text-primary',
+  archived: 'bg-muted text-muted-foreground/60',
 };
 
 /** Shows the app logo (from uploaded brand assets) or falls back to first slide thumbnail */
