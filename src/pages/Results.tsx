@@ -183,23 +183,46 @@ const Results = () => {
 
       if (response.ok) {
         const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        let lastError = '';
         if (reader) {
-          const decoder = new TextDecoder();
+          let buffer = '';
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-            decoder.decode(value, { stream: true });
+            buffer += decoder.decode(value, { stream: true });
+            // Parse SSE events for errors
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+            for (const line of lines) {
+              if (line.startsWith('event: slide-error')) {
+                const dataLine = lines[lines.indexOf(line) + 1];
+                if (dataLine?.startsWith('data: ')) {
+                  try {
+                    const errData = JSON.parse(dataLine.slice(6));
+                    lastError = errData.message || 'Unknown error';
+                  } catch {}
+                }
+              }
+            }
           }
         }
         await refetchSlides();
         await refreshProfile();
         setRegenPrompt('');
         setShowRegenPrompt(null);
-        toast({ title: "Slide régénérée ✨" });
+        if (lastError) {
+          toast({ title: "Régénération échouée", description: lastError, variant: "destructive" });
+        } else {
+          toast({ title: "Slide régénérée ✨" });
+        }
+      } else {
+        const errBody = await response.json().catch(() => ({ error: "Unknown error" }));
+        toast({ title: "Régénération échouée", description: errBody.error || "Erreur serveur", variant: "destructive" });
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error("Single regen failed", e);
-      toast({ title: "Regeneration failed", variant: "destructive" });
+      toast({ title: "Regeneration failed", description: e.message || "Network error", variant: "destructive" });
     } finally {
       setRegeneratingSlideId(null);
     }
