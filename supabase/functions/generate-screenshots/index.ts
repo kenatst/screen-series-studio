@@ -593,22 +593,12 @@ serve(async (req) => {
         }
 
         if (!singleSlideId) {
-          const { data: remainingSlides } = await adminClient
-            .from("project_slides")
-            .select("status,image_url")
-            .eq("project_id", projectId);
-
-          const pendingOrGenerating = (remainingSlides || []).filter(
-            (s: any) => !s.image_url && (s.status === "pending" || s.status === "generating")
-          );
-
-          const hasMore = !forceRegenerate && pendingOrGenerating.length > 0;
           await adminClient
             .from("projects")
-            .update({ status: hasMore ? "generating" : "completed" })
+            .update({ status: "completed" })
             .eq("id", projectId);
 
-          sendEvent("all-done", { projectId, hasMore, remaining: pendingOrGenerating.length });
+          sendEvent("all-done", { projectId, hasMore: false, remaining: 0 });
         } else {
           sendEvent("all-done", { projectId, hasMore: false, remaining: 0 });
         }
