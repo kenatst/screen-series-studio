@@ -160,11 +160,13 @@ const Dashboard = () => {
 
   const handleArchive = async (e: React.MouseEvent, projectId: string) => {
     e.stopPropagation();
+    e.preventDefault();
     try {
       await archiveProject.mutateAsync(projectId);
       toast({ title: "Projet archivé" });
-    } catch {
-      toast({ title: "Erreur", description: "Impossible d'archiver le projet.", variant: "destructive" });
+    } catch (err: any) {
+      console.error("Archive error:", err);
+      toast({ title: "Erreur", description: err?.message || "Impossible d'archiver le projet.", variant: "destructive" });
     }
   };
 

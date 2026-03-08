@@ -171,18 +171,16 @@ export function useArchiveProject() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("projects")
         .update({ status: "archived" })
-        .eq("id", id)
-        .select()
-        .single();
+        .eq("id", id);
       if (error) throw error;
-      return data as Project;
+      return id;
     },
-    onSuccess: (data) => {
+    onSuccess: (id) => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
-      queryClient.invalidateQueries({ queryKey: ["project", data.id] });
+      queryClient.invalidateQueries({ queryKey: ["project", id] });
     },
   });
 }
@@ -192,18 +190,16 @@ export function useUnarchiveProject() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("projects")
         .update({ status: "draft" })
-        .eq("id", id)
-        .select()
-        .single();
+        .eq("id", id);
       if (error) throw error;
-      return data as Project;
+      return id;
     },
-    onSuccess: (data) => {
+    onSuccess: (id) => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
-      queryClient.invalidateQueries({ queryKey: ["project", data.id] });
+      queryClient.invalidateQueries({ queryKey: ["project", id] });
     },
   });
 }
