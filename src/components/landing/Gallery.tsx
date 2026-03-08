@@ -1,12 +1,27 @@
 import { motion } from 'framer-motion';
 
-const MOCK_GALLERY = [
-    { id: 1, title: 'Neo Banking', color: 'from-blue-600 to-indigo-900', style: 'Dark & Sleek' },
-    { id: 2, title: 'Fitness Tracker', color: 'from-emerald-500 to-teal-900', style: 'High Energy' },
-    { id: 3, title: 'Crypto Wallet', color: 'from-violet-600 to-purple-900', style: 'Premium 3D' },
-    { id: 4, title: 'Meditation App', color: 'from-amber-200 to-orange-500', style: 'Soft Minimal' },
-    { id: 5, title: 'Food Delivery', color: 'from-rose-500 to-red-900', style: 'Bold & Punchy' },
-    { id: 6, title: 'Travel Planner', color: 'from-cyan-400 to-blue-700', style: 'Clean & Bright' },
+import agency01 from '@/assets/gallery/agency-01-habit.png';
+import agency02 from '@/assets/gallery/agency-02-coach.png';
+import agency03 from '@/assets/gallery/agency-03-map.png';
+import agency04 from '@/assets/gallery/agency-04-subs.png';
+import agency05 from '@/assets/gallery/agency-05-water.png';
+import agency06 from '@/assets/gallery/agency-06-sugar.png';
+import agency07 from '@/assets/gallery/agency-07-aura.png';
+import agency08 from '@/assets/gallery/agency-08-scribe.png';
+import agency09 from '@/assets/gallery/agency-09-trainer.png';
+import agency10 from '@/assets/gallery/agency-10-stackr.png';
+
+const GALLERY_ITEMS = [
+    { id: 1, title: 'HabitForge', style: 'Dark & Vibrant', src: agency01 },
+    { id: 2, title: 'Mental Model', style: 'Premium Editorial', src: agency02 },
+    { id: 3, title: 'Zenly Clone', style: 'Playful 3D', src: agency03 },
+    { id: 4, title: 'Recur', style: 'Neon Tech', src: agency04 },
+    { id: 5, title: 'Water Tracker', style: 'Friendly Mascot', src: agency05 },
+    { id: 6, title: 'SugarBreak', style: 'Cinematic Motivation', src: agency06 },
+    { id: 7, title: 'Aura Assistant', style: 'Soft 3D Pastel', src: agency07 },
+    { id: 8, title: 'Scribe AI', style: 'Clean Corporate', src: agency08 },
+    { id: 9, title: 'AI Trainer', style: 'High Energy Sport', src: agency09 },
+    { id: 10, title: 'Stackr', style: 'Bold Brutalist', src: agency10 },
 ];
 
 export const Gallery = () => {
@@ -24,33 +39,29 @@ export const Gallery = () => {
             {/* Infinite Horizontal Marquee */}
             <div className="relative w-full flex overflow-hidden">
                 {/* Left/Right Fades */}
-                <div className="absolute top-0 bottom-0 left-0 w-32 bg-gradient-to-r from-background to-transparent z-10" />
-                <div className="absolute top-0 bottom-0 right-0 w-32 bg-gradient-to-l from-background to-transparent z-10" />
+                <div className="absolute top-0 bottom-0 left-0 w-32 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
+                <div className="absolute top-0 bottom-0 right-0 w-32 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
 
                 <motion.div
                     className="flex gap-6 px-6"
-                    animate={{ x: [0, -2000] }}
-                    transition={{ repeat: Infinity, ease: "linear", duration: 40 }}
+                    animate={{ x: [0, -3000] }}
+                    transition={{ repeat: Infinity, ease: "linear", duration: 50 }}
                 >
-                    {[...MOCK_GALLERY, ...MOCK_GALLERY].map((item, i) => (
+                    {[...GALLERY_ITEMS, ...GALLERY_ITEMS].map((item, i) => (
                         <div
                             key={`${item.id}-${i}`}
-                            className="relative w-[280px] md:w-[320px] aspect-[4/3] rounded-2xl overflow-hidden group flex-shrink-0 cursor-pointer"
+                            className="relative w-[320px] md:w-[480px] aspect-video rounded-2xl overflow-hidden group flex-shrink-0 cursor-pointer border border-border bg-card/50"
                         >
-                            {/* Mock generated image using gradients for now */}
-                            <div className={`absolute inset-0 bg-gradient-to-br ${item.color} opacity-80 group-hover:opacity-100 transition-opacity duration-500`} />
+                            <img 
+                                src={item.src} 
+                                alt={item.title} 
+                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                            />
 
-                            {/* Internal mock app screens */}
-                            <div className="absolute inset-0 flex items-center justify-center gap-4 p-6 perspective-[1000px]">
-                                <div className="w-[80px] h-[160px] bg-card/90 rounded-xl border border-border shadow-2xl rotate-y-[-10deg] rotate-z-[-5deg]" />
-                                <div className="w-[90px] h-[180px] bg-card/90 rounded-xl border border-border shadow-2xl z-10" />
-                                <div className="w-[80px] h-[160px] bg-card/90 rounded-xl border border-border shadow-2xl rotate-y-[10deg] rotate-z-[5deg]" />
-                            </div>
-
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
                                 <div>
-                                    <h4 className="text-foreground font-bold text-lg">{item.title}</h4>
-                                    <span className="text-muted-foreground text-sm">{item.style}</span>
+                                    <h4 className="text-white font-bold text-lg">{item.title}</h4>
+                                    <span className="text-white/80 text-sm font-medium">{item.style}</span>
                                 </div>
                             </div>
                         </div>
