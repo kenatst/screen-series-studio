@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { toneOptions, screenTags, slideObjectives, defaultStorylines, emphasisOptions, demoTemplates, templateMoods } from "@/lib/demo-data";
 import type { SlideItem } from "@/lib/demo-data";
-import { useCreateProject, useSaveSlides } from "@/hooks/useProjects";
+import { useCreateProject, useSaveSlides, useUpdateProject } from "@/hooks/useProjects";
 import { useAuth } from "@/hooks/useAuth";
 import { getMaxSlides } from "@/lib/plans";
 import { supabase } from "@/integrations/supabase/client";
