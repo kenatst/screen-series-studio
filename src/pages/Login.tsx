@@ -79,10 +79,8 @@ const Login = () => {
         className="w-full max-w-md mx-4 relative z-10"
       >
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 mb-6">
-            <div className="h-10 w-10 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center">
-              <Sparkles className="h-5 w-5 text-primary" />
-            </div>
+          <div className="inline-flex items-center gap-3 mb-6">
+            <img src={screenforgeLogo} alt="ScreenForge" className="h-10 w-10 rounded-xl shadow-glow object-cover" />
             <span className="text-xl font-black tracking-tight text-foreground">ScreenForge</span>
           </div>
           <h1 className="text-3xl font-black tracking-tight text-foreground mb-2">
