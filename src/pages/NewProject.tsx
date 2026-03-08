@@ -1136,7 +1136,7 @@ const NewProject = () => {
                     onClick={async () => {
                       setIsSaving(true);
                       try {
-                        const project = await createProject.mutateAsync({
+                        const projectPayload = {
                           name: getFinalProjectName(),
                           app_name: appName,
                           app_description: appDescription,
@@ -1145,12 +1145,23 @@ const NewProject = () => {
                           consistency_level: consistencyLevel,
                           device_formats: deviceFormats as any,
                           generation_mode: generationMode,
-                          status: 'draft',
+                          status: 'draft' as const,
                           brand_kit: { colors: brandColors, fontFamily: brandFont } as any,
-                          config: { primaryGoal, tone: selectedTone, shortDescription, valueProposition, keyFeatures: keyFeatures.split('\n').filter(Boolean), topBenefits: topBenefits.split('\n').filter(Boolean) } as any,
-                        });
+                          config: { primaryGoal, tone: selectedTone, shortDescription, valueProposition, keyFeatures: keyFeatures.split('\n').filter(Boolean), topBenefits: topBenefits.split('\n').filter(Boolean), outputLanguage } as any,
+                          output_language: outputLanguage,
+                        };
+
+                        let projectId: string;
+                        if (savedProjectId) {
+                          await updateProject.mutateAsync({ id: savedProjectId, ...projectPayload });
+                          projectId = savedProjectId;
+                        } else {
+                          const project = await createProject.mutateAsync(projectPayload);
+                          projectId = project.id;
+                        }
+
                         await saveSlides.mutateAsync({
-                          projectId: project.id,
+                          projectId,
                           slides: slides.map((s, i) => ({
                             slide_number: i + 1,
                             objective: s.objective,
@@ -1162,10 +1173,10 @@ const NewProject = () => {
                             status: 'pending',
                           })),
                         });
-                        if (user) {
-                          await uploadAssetsToStorage(project.id, user.id);
+                        if (user && !savedProjectId) {
+                          await uploadAssetsToStorage(projectId, user.id);
                         }
-                        navigate(`/project/${project.id}/generating`);
+                        navigate(`/project/${projectId}/generating`);
                       } catch (e) {
                         console.error("Failed to save project", e);
                         toast({ title: "Erreur", description: "Failed to create project", variant: "destructive" });
