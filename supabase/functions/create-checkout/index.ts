@@ -28,7 +28,7 @@ async function resolvePrice(stripe: Stripe, planId: string): Promise<string> {
 
   // 1. Search for an existing active product by name
   const products = await stripe.products.list({ limit: 100, active: true });
-  let product = products.data.find((p) => p.name === def.name);
+  let product = products.data.find((p: any) => p.name === def.name);
 
   if (!product) {
     logStep("Creating product", { name: def.name });
