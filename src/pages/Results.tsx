@@ -5,13 +5,16 @@ import { Badge } from "@/components/ui/badge";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Download, RefreshCw, Copy, Edit3, Globe, CheckCircle2,
-  X, Loader2
+  X, Loader2, Lock
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import { useProject, useProjectSlides } from "@/hooks/useProjects";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { TranslationsModal } from "@/components/project/TranslationsModal";
+import { canTranslate, canRedesign } from "@/lib/plans";
+import { useToast } from "@/hooks/use-toast";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 15 },
