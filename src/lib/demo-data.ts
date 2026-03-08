@@ -112,7 +112,7 @@ export const demoTemplates: TemplateItem[] = [
   { id: 't24', name: 'LinguaFlow', preview: '', tags: ['playful', 'educational', 'colorful'], bestFor: 'Language learning apps', complexity: 'medium', conversionAngle: 'Fun learning', category: 'Education', slidesSupported: 10, tone: 'playful' },
   { id: 't25', name: 'Nestle Wellness', preview: '', tags: ['organic', 'clean', 'premium'], bestFor: 'Health, corporate wellness', complexity: 'simple', conversionAngle: 'Trusted brand', category: 'Lifestyle', slidesSupported: 10, tone: 'corporate' },
   { id: 't26', name: 'LifePlan Goals', preview: '', tags: ['structured', 'motivating', 'clear'], bestFor: 'Goal tracking, planning', complexity: 'medium', conversionAngle: 'Achievement', category: 'Business', slidesSupported: 10, tone: 'corporate' },
-  { id: 't27', name: 'FoxLearn Kids', preview: '', tags: ['playful', 'character', 'fun'], bestFor: 'Kids education, games', complexity: 'complex', conversionAngle: 'Fun & safe', category: 'Education', slidesSupported: 10, tone: 'playful' },
+  
 ];
 
 export const slideObjectives = [
