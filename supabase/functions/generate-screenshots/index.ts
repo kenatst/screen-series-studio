@@ -87,6 +87,11 @@ function buildSlidePrompt(
     ? `\n\n=== USER DIRECTION ===\nThe user has specifically requested: "${userPrompt}"\nApply this direction while maintaining brand consistency and quality standards.\n=== END USER DIRECTION ===`
     : "";
 
+  const outputLang = project.output_language || (project.config as any)?.outputLanguage || "en";
+  const langDirective = outputLang !== "en"
+    ? `\n=== LANGUAGE ===\nAll text on the screenshot (headline, subheadline) MUST be written in ${outputLang}. The provided headline and subheadline are already in the target language — reproduce them EXACTLY as given.\n=== END LANGUAGE ===`
+    : "";
+
   return `You are an expert ${platformLabel} screenshot designer creating premium, conversion-optimized marketing screenshots.
 
 === APP INFO ===
@@ -129,7 +134,7 @@ Key requirements:
 Return a JSON object in TEXT modality only, with this exact schema:
 {"overall_score": number, "checks": {"headline_exact": boolean, "subheadline_exact": boolean, "no_placeholder": boolean, "ui_preserved": boolean, "contrast_ok": boolean}, "issues": string[]}
 
-${consistency}${userDirective}`.trim();
+${consistency}${langDirective}${userDirective}`.trim();
 }
 
 function parseQualityScore(rawText: string): number | null {
