@@ -80,7 +80,16 @@ serve(async (req) => {
     // Resolve plan from product name
     const product = await stripe.products.retrieve(productId);
     const plan = PRODUCT_NAME_TO_PLAN[product.name] || "starter";
-    const subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
+    
+    // Safely handle subscription end date
+    let subscriptionEnd: string | null = null;
+    if (subscription.current_period_end) {
+      try {
+        subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
+      } catch {
+        subscriptionEnd = null;
+      }
+    }
     logStep("Active subscription found", { plan, productName: product.name, subscriptionEnd });
 
     await supabaseClient.from("profiles").update({ plan }).eq("id", user.id);
