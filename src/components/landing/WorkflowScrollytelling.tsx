@@ -131,11 +131,11 @@ export const WorkflowScrollytelling = () => {
                                         className="w-full h-full border-2 border-dashed border-border rounded-2xl flex flex-col items-center justify-center bg-black/5"
                                     >
                                         <div className="grid grid-cols-2 gap-4 w-3/4">
-                                            <div className="aspect-[9/19.5] bg-zinc-800 rounded-xl shadow-lg border border-border flex items-center justify-center -rotate-6 translate-y-4">
-                                                <div className="h-10 w-10 border-4 border-border rounded-full" />
+                                            <div className="aspect-[9/19.5] rounded-xl shadow-lg border border-border overflow-hidden -rotate-6 translate-y-4">
+                                                <img src={weatherRaw1} alt="Raw screenshot 1" className="w-full h-full object-cover" />
                                             </div>
-                                            <div className="aspect-[9/19.5] bg-zinc-800 rounded-xl shadow-lg border border-border flex items-center justify-center rotate-6 -translate-y-4">
-                                                <div className="w-10 h-2 bg-white/10 rounded-full" />
+                                            <div className="aspect-[9/19.5] rounded-xl shadow-lg border border-border overflow-hidden rotate-6 -translate-y-4">
+                                                <img src={weatherRaw2} alt="Raw screenshot 2" className="w-full h-full object-cover" />
                                             </div>
                                         </div>
                                     </motion.div>
