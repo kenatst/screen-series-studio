@@ -573,20 +573,33 @@ const NewProject = () => {
                     onClick={async () => {
                       setIsSaving(true);
                       try {
-                        const projectData = {
-                          id: projectId,
-                          name: `Project ${projectId.split('-')[1]}`, // fallback name
+                        const project = await createProject.mutateAsync({
+                          name: projectName || `Project ${Date.now()}`,
+                          app_name: appName,
+                          app_description: appDescription,
                           platform,
-                          slides,
-                          brandKit: { colors: [] }, // simplified for demo
-                          templateId: selectedTemplate !== 'reference' ? selectedTemplate.toLowerCase().replace(/\s+/g, '-') : 'clean-saas',
-                          consistencyLevel,
-                          deviceFormats,
-                          generationMode,
-                          status: 'generating'
-                        };
-                        await api.saveProject(projectData);
-                        navigate(`/project/${projectId}/generating`);
+                          template_id: selectedTemplate !== 'reference' ? selectedTemplate.toLowerCase().replace(/\s+/g, '-') : 'clean-saas',
+                          consistency_level: consistencyLevel,
+                          device_formats: deviceFormats as any,
+                          generation_mode: generationMode,
+                          status: 'draft',
+                          brand_kit: { colors: [] } as any,
+                          config: { primaryGoal, tone: selectedTone } as any,
+                        });
+                        await saveSlides.mutateAsync({
+                          projectId: project.id,
+                          slides: slides.map((s, i) => ({
+                            slide_number: i + 1,
+                            objective: s.objective,
+                            headline: s.headline,
+                            subheadline: s.subheadline || '',
+                            raw_screen_tag: s.rawScreenTag,
+                            emphasis: s.emphasis,
+                            importance: s.importance,
+                            status: 'pending',
+                          })),
+                        });
+                        navigate(`/project/${project.id}/generating`);
                       } catch (e) {
                         console.error("Failed to save project", e);
                         setIsSaving(false);
