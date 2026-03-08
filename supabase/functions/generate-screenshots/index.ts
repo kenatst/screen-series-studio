@@ -355,9 +355,8 @@ serve(async (req) => {
       slidesToGenerate = candidateSlides.filter((slide: any) => !(slide.status === "completed" && slide.image_url));
     }
 
-    const invocationSlides = (!singleSlideId && !forceRegenerate)
-      ? slidesToGenerate.slice(0, AUTO_BATCH_SIZE)
-      : slidesToGenerate;
+    // Generate ALL pending slides in a single SSE stream — no more round-tripping
+    const invocationSlides = slidesToGenerate;
 
     // Check credits only for this invocation batch
     const { data: profileData } = await adminClient.from("profiles").select("credits, plan").eq("id", userId).single();
