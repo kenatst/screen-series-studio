@@ -149,16 +149,15 @@ export const WorkflowScrollytelling = () => {
                                         transition={{ duration: 0.5, type: "spring" }}
                                         className="w-full h-full flex flex-col items-center justify-center gap-6"
                                     >
-                                        <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-glow flex items-center justify-center border border-border">
-                                            <span className="text-foreground text-3xl font-bold">Acme</span>
-                                        </div>
+                                        <img src={screenforgeLogo} alt="ScreenForge" className="w-24 h-24 rounded-2xl shadow-glow object-cover border border-border" />
                                         <div className="flex gap-4">
-                                            <div className="w-12 h-12 rounded-full bg-blue-600 border border-border shadow-md" />
-                                            <div className="w-12 h-12 rounded-full bg-indigo-600 border border-border shadow-md" />
+                                            <div className="w-12 h-12 rounded-full bg-[hsl(var(--primary))] border border-border shadow-md" />
+                                            <div className="w-12 h-12 rounded-full bg-[hsl(30,90%,45%)] border border-border shadow-md" />
+                                            <div className="w-12 h-12 rounded-full bg-zinc-900 border border-border shadow-md" />
                                             <div className="w-12 h-12 rounded-full bg-zinc-100 border border-border shadow-md" />
                                         </div>
-                                        <div className="w-48 h-12 rounded-lg bg-white/10 border border-border flex items-center px-4 font-mono text-muted-foreground">
-                                            "Inter", sans-serif
+                                        <div className="w-48 h-12 rounded-lg bg-card/50 border border-border flex items-center px-4 font-mono text-muted-foreground text-sm">
+                                            "SF Pro", system-ui
                                         </div>
                                     </motion.div>
                                 )}
