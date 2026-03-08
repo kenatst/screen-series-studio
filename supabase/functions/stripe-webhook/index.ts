@@ -8,9 +8,9 @@ const corsHeaders = {
 };
 
 const PRICE_TO_PLAN: Record<string, string> = {
-  "price_1T8dfrCGD5S3rFVN3ICqIL16": "starter",
-  "price_1T8dfsCGD5S3rFVN15HwuGyY": "pro",
-  "price_1T8dfuCGD5S3rFVNICPdomP6": "unlimited",
+  "price_1T8kgjCGD5S3rFVNQIKU0KKc": "starter",
+  "price_1T8kgkCGD5S3rFVNbzJcYs22": "pro",
+  "price_1T8kglCGD5S3rFVN3Q3K0ql6": "unlimited",
 };
 
 const PLAN_CREDITS: Record<string, number> = {
@@ -29,7 +29,7 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const stripeKey = Deno.env.get("STRIPE_TEST_SECRET");
+  const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
   const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
   if (!stripeKey || !webhookSecret) {
     logStep("ERROR", { message: "Missing STRIPE_TEST_SECRET or STRIPE_WEBHOOK_SECRET" });

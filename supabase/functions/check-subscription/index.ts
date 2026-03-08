@@ -12,9 +12,9 @@ const logStep = (step: string, details?: any) => {
 };
 
 const PRICE_TO_PLAN: Record<string, string> = {
-  "price_1T8dfrCGD5S3rFVN3ICqIL16": "starter",
-  "price_1T8dfsCGD5S3rFVN15HwuGyY": "pro",
-  "price_1T8dfuCGD5S3rFVNICPdomP6": "unlimited",
+  "price_1T8kgjCGD5S3rFVNQIKU0KKc": "starter",
+  "price_1T8kgkCGD5S3rFVNbzJcYs22": "pro",
+  "price_1T8kglCGD5S3rFVN3Q3K0ql6": "unlimited",
 };
 
 serve(async (req) => {
@@ -31,8 +31,8 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    const stripeKey = Deno.env.get("STRIPE_TEST_SECRET");
-    if (!stripeKey) throw new Error("STRIPE_TEST_SECRET is not set");
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("No authorization header provided");
