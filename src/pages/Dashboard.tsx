@@ -9,7 +9,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { canCreateProject, getPlanById } from "@/lib/plans";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -25,10 +26,10 @@ const statusColors: Record<string, string> = {
 /** Shows the app logo (from uploaded brand assets) or falls back to first slide thumbnail */
 const ProjectThumbnail = ({ projectId }: { projectId: string }) => {
   const { data: slides } = useProjectSlides(projectId);
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchLogo = async () => {
+  const { data: logoUrl } = useQuery({
+    queryKey: ['project-logo', projectId],
+    queryFn: async () => {
       // Try to find a logo asset for this project
       const { data: assets } = await supabase
         .from('assets')
@@ -41,10 +42,7 @@ const ProjectThumbnail = ({ projectId }: { projectId: string }) => {
         const { data } = await supabase.storage
           .from('raw-uploads')
           .createSignedUrl(assets[0].storage_path, 3600);
-        if (data?.signedUrl) {
-          setLogoUrl(data.signedUrl);
-          return;
-        }
+        if (data?.signedUrl) return data.signedUrl;
       }
 
       // Fallback: try icon
@@ -59,14 +57,12 @@ const ProjectThumbnail = ({ projectId }: { projectId: string }) => {
         const { data } = await supabase.storage
           .from('raw-uploads')
           .createSignedUrl(iconAssets[0].storage_path, 3600);
-        if (data?.signedUrl) {
-          setLogoUrl(data.signedUrl);
-        }
+        if (data?.signedUrl) return data.signedUrl;
       }
-    };
-
-    fetchLogo();
-  }, [projectId]);
+      return null;
+    },
+    staleTime: 1000 * 60 * 30, // 30 minutes cache to prevent flickering
+  });
 
   if (logoUrl) {
     return (

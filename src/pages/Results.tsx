@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { TranslationsModal } from "@/components/project/TranslationsModal";
 import { canTranslate, canRegenerate, CREDIT_COSTS } from "@/lib/plans";
 import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 15 },
@@ -42,6 +43,7 @@ const Results = () => {
   const userCredits = profile?.credits ?? 0;
 
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
+  const [showWatermarkWarning, setShowWatermarkWarning] = useState(false);
 
   const selectedSlide = slides?.find(s => s.id === selectedSlideId) || slides?.[0];
 
@@ -68,9 +70,18 @@ const Results = () => {
     return true;
   };
 
-  const handleDownload = async () => {
+  const handleDownloadClick = () => {
+    if (userPlan === 'free') {
+      setShowWatermarkWarning(true);
+    } else {
+      executeDownload();
+    }
+  };
+
+  const executeDownload = async () => {
     if (!projectId) return;
     setIsExporting(true);
+    setShowWatermarkWarning(false);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
@@ -102,9 +113,9 @@ const Results = () => {
         URL.revokeObjectURL(url);
 
         if (userPlan === 'free') {
-          toast({ title: "Export avec filigrane", description: "Passez à un plan payant pour exporter sans filigrane.", variant: "destructive" });
+          toast({ title: "Export with watermark complete" });
         } else {
-          toast({ title: "Export terminé ✨" });
+          toast({ title: "Export complete ✨" });
         }
       } else {
         const data = await res.json();
@@ -201,7 +212,7 @@ const Results = () => {
                   try {
                     const errData = JSON.parse(dataLine.slice(6));
                     lastError = errData.message || 'Unknown error';
-                  } catch {}
+                  } catch { }
                 }
               }
             }
@@ -405,9 +416,9 @@ const Results = () => {
                   </div>
                   <Button
                     size="lg"
-                    onClick={handleUpgrade}
-                    disabled={isOpeningPortal}
-                    className="w-full h-14 bg-primary text-black hover:bg-primary/90 text-lg font-black shadow-[0_0_30px_rgba(245,166,35,0.4)] rounded-xl"
+                    onClick={handleDownloadClick}
+                    disabled={isExporting}
+                    className="w-full sm:w-auto h-14 bg-white text-black hover:bg-white/90 shadow-glow rounded-xl font-black text-base px-8 relative overflow-hidden group"
                   >
                     {isOpeningPortal ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Sparkles className="h-5 w-5 mr-2" />}
                     Passer Pro pour unlock
@@ -471,6 +482,38 @@ const Results = () => {
         onOpenChange={setIsTranslationModalOpen}
         projectId={projectId || ''}
       />
+
+      <Dialog open={showWatermarkWarning} onOpenChange={setShowWatermarkWarning}>
+        <DialogContent className="sm:max-w-md bg-card/95 border border-primary/20 shadow-glow backdrop-blur-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl font-black text-foreground">
+              <Lock className="h-5 w-5 text-primary" /> Export avec filigrane
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground pt-3">
+              Le plan gratuit permet d'exporter vos slides avec un filigrane ScreenForge.
+              Passez à un plan premium pour obtenir des exports parfaits et de haute qualité.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col sm:flex-row gap-3 pt-6">
+            <Button
+              variant="outline"
+              onClick={executeDownload}
+              className="w-full sm:w-auto border-border text-muted-foreground hover:text-foreground hover:bg-white/5"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Télécharger quand même
+            </Button>
+            <Button
+              onClick={handleUpgrade}
+              disabled={isOpeningPortal}
+              className="w-full sm:w-auto bg-primary text-black hover:bg-primary/90 font-bold"
+            >
+              {isOpeningPortal ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
+              Passez Pro
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };
