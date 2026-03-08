@@ -6,6 +6,23 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+/**
+ * Creates an SVG watermark overlay as a data URI.
+ * This can be composited client-side or used as an overlay reference.
+ */
+function createWatermarkSvgDataUri(width = 1290, height = 2796): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+    <defs>
+      <pattern id="wm" patternUnits="userSpaceOnUse" width="400" height="300" patternTransform="rotate(-30)">
+        <text x="10" y="150" font-family="Arial,sans-serif" font-size="48" font-weight="900" fill="rgba(255,255,255,0.15)" letter-spacing="8">ScreenForge</text>
+      </pattern>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#wm)"/>
+  </svg>`;
+  const encoded = btoa(svg);
+  return `data:image/svg+xml;base64,${encoded}`;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -23,14 +40,12 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    // Get user
     const { data: userData, error: userError } = await userClient.auth.getUser();
     if (userError || !userData.user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     const userId = userData.user.id;
 
-    // Get user plan
     const { data: profile } = await userClient.from("profiles").select("plan").eq("id", userId).single();
     const userPlan = profile?.plan || "free";
     const isWatermarked = userPlan === "free";
@@ -43,13 +58,11 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "project_id required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Verify ownership
     const { data: project, error: projError } = await userClient.from("projects").select("id, name, device_formats").eq("id", projectId).single();
     if (projError || !project) {
       return new Response(JSON.stringify({ error: "Project not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Fetch completed slides
     const { data: slides } = await userClient.from("project_slides").select("slide_number, image_url").eq("project_id", projectId).eq("status", "completed").order("slide_number");
     if (!slides?.length) {
       return new Response(JSON.stringify({ error: "No completed slides" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -58,7 +71,6 @@ serve(async (req) => {
     const adminClient = createClient(supabaseUrl, serviceKey);
     const deviceFormats = (project.device_formats as string[]) || ["iphone-6-9"];
 
-    // Build download URLs
     const downloads: { slide: number; url: string; format: string; watermarked: boolean }[] = [];
 
     for (const slide of slides) {
@@ -66,14 +78,9 @@ serve(async (req) => {
         const storagePath = `${userId}/${projectId}/slide-${slide.slide_number}.png`;
         const { data: signedData } = await adminClient.storage.from("generated-outputs").createSignedUrl(storagePath, 60 * 60);
         if (signedData?.signedUrl) {
-          let finalUrl = signedData.signedUrl;
-
-          // For free plan, apply watermark via image transformation query param
-          // Since we can't do server-side image manipulation easily in edge functions,
-          // we'll flag watermarked=true and let the frontend overlay the watermark
           downloads.push({
             slide: slide.slide_number,
-            url: finalUrl,
+            url: signedData.signedUrl,
             format,
             watermarked: isWatermarked,
           });
@@ -85,6 +92,7 @@ serve(async (req) => {
       project_name: project.name,
       locale,
       watermarked: isWatermarked,
+      watermark_overlay: isWatermarked ? createWatermarkSvgDataUri() : null,
       downloads,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
