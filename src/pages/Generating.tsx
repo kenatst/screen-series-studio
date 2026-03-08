@@ -399,7 +399,31 @@ const Generating = () => {
               <span className="text-sm font-bold text-primary">{phases[currentPhase]?.icon}</span>
               <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{phases[currentPhase]?.label}</span>
             </div>
-            <span className="text-sm font-bold text-primary">{progress}%</span>
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-bold text-primary">{progress}%</span>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10 rounded-xl text-xs gap-1.5" disabled={isStopping || progress >= 100}>
+                    {isStopping ? <Loader2 className="h-3 w-3 animate-spin" /> : <StopCircle className="h-3 w-3" />}
+                    Stop & Archive
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Stop generation?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will stop the current generation and archive the project. Already completed slides will be kept. You can unarchive the project later from the dashboard.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Continue generating</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleStopAndArchive} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      Stop & Archive
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </div>
           <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden shadow-inner relative">
             <motion.div
