@@ -144,10 +144,6 @@ const Results = () => {
   };
 
   const handleRegenerateSingle = async (slideId: string) => {
-    if (!canRegenerate(userPlan)) {
-      toast({ title: "Plan requis", description: "La régénération n'est pas disponible sur le plan Free.", variant: "destructive" });
-      return;
-    }
     if (!checkCredits(CREDIT_COSTS.regenerateSlide)) return;
 
     setRegeneratingSlideId(slideId);
