@@ -126,6 +126,43 @@ Key requirements:
 ${consistency}${userDirective}`.trim();
 }
 
+function parseQualityScore(rawText: string): number | null {
+  const trimmed = (rawText || "").trim();
+  if (!trimmed) return null;
+
+  const jsonCandidate = trimmed.match(/\{[\s\S]*\}/)?.[0];
+  if (!jsonCandidate) return null;
+
+  try {
+    const parsed = JSON.parse(jsonCandidate);
+    const score = Number(parsed?.overall_score ?? parsed?.score ?? parsed?.quality_score);
+    if (Number.isFinite(score)) return Math.max(0, Math.min(100, Math.round(score)));
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function hasPlaceholderLeak(slide: any, rawText: string): boolean {
+  const low = (rawText || "").toLowerCase();
+  if (!low) return false;
+
+  const forbidden = [
+    "lorem ipsum",
+    "your headline",
+    "placeholder",
+    "insert text",
+    "sample text",
+    "headline here",
+  ];
+
+  const requiredHeadline = (slide?.headline || "").trim().toLowerCase();
+  if (requiredHeadline && low.includes("headline_mismatch")) return true;
+
+  return forbidden.some((token) => low.includes(token));
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
