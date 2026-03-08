@@ -300,6 +300,8 @@ const NewProject = () => {
   const [savedProjectId, setSavedProjectId] = useState<string | null>(editProjectId);
   const [outputLanguage, setOutputLanguage] = useState('en');
   const [hydrated, setHydrated] = useState(false);
+  const [appCategory, setAppCategory] = useState('');
+  const [targetAudience, setTargetAudience] = useState('');
 
   // Fetch existing project data for draft hydration
   const { data: existingProject } = useProject(editProjectId || undefined);
