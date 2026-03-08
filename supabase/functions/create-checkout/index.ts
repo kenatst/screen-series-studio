@@ -28,7 +28,7 @@ async function resolvePrice(stripe: Stripe, planId: string): Promise<string> {
 
   // 1. Search for an existing active product by name
   const products = await stripe.products.list({ limit: 100, active: true });
-  let product = products.data.find((p) => p.name === def.name);
+  let product = products.data.find((p: any) => p.name === def.name);
 
   if (!product) {
     logStep("Creating product", { name: def.name });
@@ -48,7 +48,7 @@ async function resolvePrice(stripe: Stripe, planId: string): Promise<string> {
     limit: 20,
   });
   let price = prices.data.find(
-    (p) => p.currency === "eur" && p.unit_amount === def.amount && p.recurring?.interval === "month"
+    (p: any) => p.currency === "eur" && p.unit_amount === def.amount && p.recurring?.interval === "month"
   );
 
   if (!price) {
