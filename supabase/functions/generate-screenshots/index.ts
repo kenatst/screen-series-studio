@@ -506,11 +506,14 @@ serve(async (req) => {
             const { data: signedData } = await adminClient.storage.from("generated-outputs").createSignedUrl(filename, 60 * 60 * 24 * 7);
             const imageUrl = signedData?.signedUrl || "";
 
+            const generationMs = Date.now() - slideStartMs;
             await adminClient.from("project_slides").update({
               status: "completed",
               image_url: imageUrl,
+              quality_score: attempt.qualityScore,
+              generation_ms: generationMs,
+              last_error: null,
             }).eq("id", slide.id);
-
             sendEvent("slide-done", {
               slideNumber: displayNum,
               imageUrl,
