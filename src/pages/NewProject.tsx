@@ -1376,7 +1376,7 @@ const NewProject = () => {
                             status: 'pending',
                           })),
                         });
-                        if (user && !savedProjectId) {
+                        if (user) {
                           await uploadAssetsToStorage(projectId, user.id);
                         }
                         navigate(`/project/${projectId}/generating`);
