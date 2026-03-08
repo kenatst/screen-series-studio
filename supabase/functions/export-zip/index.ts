@@ -204,7 +204,7 @@ serve(async (req) => {
     // Create ZIP
     const zipBuffer = createZipBuffer(zipFiles);
 
-    return new Response(zipBuffer, {
+    return new Response(zipBuffer as unknown as BodyInit, {
       headers: {
         ...corsHeaders,
         "Content-Type": "application/zip",

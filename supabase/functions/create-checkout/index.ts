@@ -48,7 +48,7 @@ async function resolvePrice(stripe: Stripe, planId: string): Promise<string> {
     limit: 20,
   });
   let price = prices.data.find(
-    (p) => p.currency === "eur" && p.unit_amount === def.amount && p.recurring?.interval === "month"
+    (p: any) => p.currency === "eur" && p.unit_amount === def.amount && p.recurring?.interval === "month"
   );
 
   if (!price) {
