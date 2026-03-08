@@ -19,6 +19,7 @@ import {
 import { motion } from "framer-motion";
 import { useProject, useProjectSlides } from "@/hooks/useProjects";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const phases = [
   { label: "Analyzing brand identity", icon: "🎨" },
@@ -59,6 +60,7 @@ const Generating = () => {
   const { data: project } = useProject(projectId);
   const { data: dbSlides } = useProjectSlides(projectId);
   const archiveProject = useArchiveProject();
+  const { toast } = useToast();
 
   const startedRef = useRef(false);
   const redirectedRef = useRef(false);
@@ -194,7 +196,7 @@ const Generating = () => {
       }, 2500);
     };
 
-    const startGenerationStream = async (accessToken: string, resume = false): Promise<"done" | "hasMore" | "busy" | "error"> => {
+    const startGenerationStream = async (accessToken: string, resume = false): Promise<"done" | "hasMore" | "busy" | { error: string }> => {
       try {
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
         requestAbortRef.current = new AbortController();
@@ -210,7 +212,15 @@ const Generating = () => {
         });
 
         if (response.status === 409) return "busy";
-        if (!response.ok || !response.body) return "error";
+        if (response.status === 402) return { error: "Insufficient credits. Please upgrade your plan." };
+        if (!response.ok || !response.body) {
+          try {
+            const errData = await response.json();
+            return { error: errData.error || `Server error (${response.status})` };
+          } catch {
+            return { error: `Server error (${response.status})` };
+          }
+        }
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -297,8 +307,9 @@ const Generating = () => {
         }
 
         return hasMore ? "hasMore" : "done";
-      } catch {
-        return "error";
+      } catch (e: any) {
+        if (e.name === 'AbortError') return "busy"; // Ignore abort errors from navigation
+        return { error: "Request failed or aborted." };
       }
     };
 
@@ -317,7 +328,13 @@ const Generating = () => {
         return;
       }
 
-      // error or hasMore — fall back to polling
+      if (typeof result === "object" && result.error) {
+        toast({ title: "Generation Failed", description: result.error, variant: "destructive", duration: 8000 });
+        stopPolling();
+        return;
+      }
+
+      // hasMore — fall back to polling
       startPolling();
     };
 
@@ -358,7 +375,10 @@ const Generating = () => {
         return;
       }
 
-      await processQueue(session.access_token, project?.status === "generating" && hasStarted);
+      const { data: projData } = await supabase.from("projects").select("status").eq("id", projectId).single();
+      const currentStatus = projData?.status;
+
+      await processQueue(session.access_token, currentStatus === "generating" && hasStarted);
     };
 
     const timer = window.setTimeout(bootstrap, 500);
@@ -369,7 +389,7 @@ const Generating = () => {
       stopPolling();
       requestAbortRef.current?.abort();
     };
-  }, [navigate, project?.status, projectId]);
+  }, [navigate, projectId, toast]);
 
   const slideCount = slideStatuses.length || 5;
   const completedCount = slideStatuses.filter(s => s === "completed").length;
@@ -447,13 +467,12 @@ const Generating = () => {
           {phases.map((phase, i) => (
             <div
               key={i}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all ${
-                i < currentPhase
-                  ? "bg-primary/10 text-primary border-primary/20"
-                  : i === currentPhase
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all ${i < currentPhase
+                ? "bg-primary/10 text-primary border-primary/20"
+                : i === currentPhase
                   ? "bg-primary/20 text-primary border-primary/40 shadow-glow"
                   : "bg-card/50 text-foreground/20 border-border"
-              }`}
+                }`}
             >
               {i < currentPhase ? <CheckCircle2 className="h-3 w-3" /> : <span>{phase.icon}</span>}
               <span className="hidden sm:inline">{phase.label}</span>
