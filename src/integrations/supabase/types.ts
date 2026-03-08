@@ -14,7 +14,199 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      assets: {
+        Row: {
+          asset_type: string
+          created_at: string
+          filename: string | null
+          id: string
+          project_id: string
+          storage_path: string
+          tag: string | null
+          user_id: string
+        }
+        Insert: {
+          asset_type: string
+          created_at?: string
+          filename?: string | null
+          id?: string
+          project_id: string
+          storage_path: string
+          tag?: string | null
+          user_id: string
+        }
+        Update: {
+          asset_type?: string
+          created_at?: string
+          filename?: string | null
+          id?: string
+          project_id?: string
+          storage_path?: string
+          tag?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assets_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          credits: number
+          email: string | null
+          id: string
+          plan: string
+          stripe_customer_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          credits?: number
+          email?: string | null
+          id: string
+          plan?: string
+          stripe_customer_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          credits?: number
+          email?: string | null
+          id?: string
+          plan?: string
+          stripe_customer_id?: string | null
+        }
+        Relationships: []
+      }
+      project_slides: {
+        Row: {
+          config: Json | null
+          created_at: string
+          emphasis: string | null
+          headline: string | null
+          id: string
+          image_url: string | null
+          importance: string | null
+          objective: string | null
+          project_id: string
+          raw_screen_tag: string | null
+          slide_number: number
+          status: string
+          subheadline: string | null
+        }
+        Insert: {
+          config?: Json | null
+          created_at?: string
+          emphasis?: string | null
+          headline?: string | null
+          id?: string
+          image_url?: string | null
+          importance?: string | null
+          objective?: string | null
+          project_id: string
+          raw_screen_tag?: string | null
+          slide_number: number
+          status?: string
+          subheadline?: string | null
+        }
+        Update: {
+          config?: Json | null
+          created_at?: string
+          emphasis?: string | null
+          headline?: string | null
+          id?: string
+          image_url?: string | null
+          importance?: string | null
+          objective?: string | null
+          project_id?: string
+          raw_screen_tag?: string | null
+          slide_number?: number
+          status?: string
+          subheadline?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_slides_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          app_description: string | null
+          app_name: string | null
+          brand_kit: Json | null
+          config: Json | null
+          consistency_level: string | null
+          created_at: string
+          device_formats: Json | null
+          generation_mode: string | null
+          id: string
+          name: string
+          platform: string | null
+          status: string
+          template_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          app_description?: string | null
+          app_name?: string | null
+          brand_kit?: Json | null
+          config?: Json | null
+          consistency_level?: string | null
+          created_at?: string
+          device_formats?: Json | null
+          generation_mode?: string | null
+          id?: string
+          name: string
+          platform?: string | null
+          status?: string
+          template_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          app_description?: string | null
+          app_name?: string | null
+          brand_kit?: Json | null
+          config?: Json | null
+          consistency_level?: string | null
+          created_at?: string
+          device_formats?: Json | null
+          generation_mode?: string | null
+          id?: string
+          name?: string
+          platform?: string | null
+          status?: string
+          template_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
