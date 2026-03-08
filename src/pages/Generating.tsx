@@ -315,24 +315,30 @@ const Generating = () => {
         return;
       }
 
-      const { data: latestSlides } = await supabase
+      const { data: latestSlides, error: latestSlidesError } = await supabase
         .from("project_slides")
         .select("slide_number,status,image_url")
         .eq("project_id", projectId)
         .order("slide_number", { ascending: true });
 
-      if (!latestSlides?.length) return;
+      if (latestSlidesError) {
+        console.error("Failed to fetch latest slides before generation:", latestSlidesError);
+      }
 
-      applyLiveSlides(latestSlides);
+      const slidesSnapshot = latestSlides ?? [];
 
-      const hasIncomplete = latestSlides.some(
-        (slide) => normalizeStatus(slide.status, slide.image_url) !== "completed"
-      );
-      const hasStarted = latestSlides.some(
+      if (slidesSnapshot.length > 0) {
+        applyLiveSlides(slidesSnapshot);
+      }
+
+      const hasIncomplete = slidesSnapshot.length > 0
+        ? slidesSnapshot.some((slide) => normalizeStatus(slide.status, slide.image_url) !== "completed")
+        : true;
+      const hasStarted = slidesSnapshot.some(
         (slide) => slide.status === "generating" || normalizeStatus(slide.status, slide.image_url) === "completed"
       );
 
-      if (!hasIncomplete) {
+      if (slidesSnapshot.length > 0 && !hasIncomplete) {
         routeToResults();
         return;
       }
