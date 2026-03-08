@@ -57,6 +57,25 @@ export const HeroSection = () => {
                     </Button>
                 </motion.div>
             </div>
+
+            {/* Scroll hint separator */}
+            <motion.div
+                className="pb-12 flex flex-col items-center gap-3 z-10"
+                initial="hidden" animate="visible" variants={fadeUp} custom={4}
+            >
+                <span className="text-xs uppercase tracking-widest text-muted-foreground font-medium">Scroll to explore</span>
+                <motion.div
+                    className="w-6 h-10 rounded-full border-2 border-muted-foreground/30 flex items-start justify-center p-1.5"
+                    animate={{ opacity: [0.4, 1, 0.4] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                >
+                    <motion.div
+                        className="w-1.5 h-1.5 rounded-full bg-primary"
+                        animate={{ y: [0, 16, 0] }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    />
+                </motion.div>
+            </motion.div>
         </section>
     );
 };
