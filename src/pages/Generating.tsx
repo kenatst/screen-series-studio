@@ -2,7 +2,20 @@ import { useEffect, useRef, useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate, useParams } from "react-router-dom";
-import { Sparkles, CheckCircle2, Loader2, AlertCircle, Clock } from "lucide-react";
+import { Sparkles, CheckCircle2, Loader2, AlertCircle, Clock, StopCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useArchiveProject } from "@/hooks/useProjects";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { motion } from "framer-motion";
 import { useProject, useProjectSlides } from "@/hooks/useProjects";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,6 +58,7 @@ const Generating = () => {
   const { projectId } = useParams();
   const { data: project } = useProject(projectId);
   const { data: dbSlides } = useProjectSlides(projectId);
+  const archiveProject = useArchiveProject();
 
   const startedRef = useRef(false);
   const redirectedRef = useRef(false);
@@ -55,6 +69,7 @@ const Generating = () => {
   const [progress, setProgress] = useState(0);
   const [currentPhase, setCurrentPhase] = useState(0);
   const [slideStatuses, setSlideStatuses] = useState<SlideUiStatus[]>([]);
+  const [isStopping, setIsStopping] = useState(false);
   const [slideImages, setSlideImages] = useState<(string | null)[]>([]);
   const [eta, setEta] = useState<string>("");
 
@@ -63,6 +78,19 @@ const Generating = () => {
       window.clearInterval(pollIntervalRef.current);
       pollIntervalRef.current = null;
     }
+  };
+
+  const handleStopAndArchive = async () => {
+    if (!projectId) return;
+    setIsStopping(true);
+    requestAbortRef.current?.abort();
+    stopPolling();
+    try {
+      await archiveProject.mutateAsync(projectId);
+    } catch {
+      // navigate anyway
+    }
+    navigate("/dashboard/projects");
   };
 
   const routeToResults = () => {
@@ -371,7 +399,31 @@ const Generating = () => {
               <span className="text-sm font-bold text-primary">{phases[currentPhase]?.icon}</span>
               <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{phases[currentPhase]?.label}</span>
             </div>
-            <span className="text-sm font-bold text-primary">{progress}%</span>
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-bold text-primary">{progress}%</span>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10 rounded-xl text-xs gap-1.5" disabled={isStopping || progress >= 100}>
+                    {isStopping ? <Loader2 className="h-3 w-3 animate-spin" /> : <StopCircle className="h-3 w-3" />}
+                    Stop & Archive
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Stop generation?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will stop the current generation and archive the project. Already completed slides will be kept. You can unarchive the project later from the dashboard.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Continue generating</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleStopAndArchive} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      Stop & Archive
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </div>
           <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden shadow-inner relative">
             <motion.div
