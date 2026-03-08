@@ -76,19 +76,19 @@ export const PLANS: PlanConfig[] = [
       '50 credits/month',
       'HD export, no watermark',
       'Up to 10 slides per set',
-    ],
-    notIncluded: [
       '1-Click Translations',
       'Full Brand Kit control',
+    ],
+    notIncluded: [
       'Priority generation',
     ],
     limits: {
       maxProjects: 1,
       maxSlidesPerSet: 10,
-      translations: false,
+      translations: true,
       unlimitedTranslations: false,
       redesigns: 3,
-      brandKit: false,
+      brandKit: true,
       priorityGeneration: false,
       watermark: false,
       hdExport: true,
