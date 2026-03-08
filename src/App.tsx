@@ -3,7 +3,10 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/hooks/useAuth";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Landing from "./pages/Landing";
+import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import NewProject from "./pages/NewProject";
 import Generating from "./pages/Generating";
@@ -16,24 +19,27 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/dashboard/*" element={<Dashboard />} />
-          <Route path="/project/new" element={<NewProject />} />
-          <Route path="/project/:projectId/generating" element={<Generating />} />
-          <Route path="/project/:projectId/results" element={<Results />} />
-          <Route path="/project/:projectId/planner" element={<NewProject />} />
-          <Route path="/templates" element={<Templates />} />
-          <Route path="/inspiration" element={<Inspiration />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Landing />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/dashboard/*" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/project/new" element={<ProtectedRoute><NewProject /></ProtectedRoute>} />
+            <Route path="/project/:projectId/generating" element={<ProtectedRoute><Generating /></ProtectedRoute>} />
+            <Route path="/project/:projectId/results" element={<ProtectedRoute><Results /></ProtectedRoute>} />
+            <Route path="/project/:projectId/planner" element={<ProtectedRoute><NewProject /></ProtectedRoute>} />
+            <Route path="/templates" element={<Templates />} />
+            <Route path="/inspiration" element={<Inspiration />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 
