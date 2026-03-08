@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  Download, RefreshCw, Globe, Loader2, Lock, Wand2, Send
+  Download, RefreshCw, Globe, Loader2, Wand2, Send
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useProject, useProjectSlides } from "@/hooks/useProjects";
