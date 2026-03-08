@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, CheckCircle2, Upload, Sparkles,
-  GripVertical, Lock, Trash2, Plus, LayoutGrid, Image as ImageIcon, FolderOpen, Loader2, X, Save, Wand2
+  Lock, Trash2, Plus, LayoutGrid, Image as ImageIcon, FolderOpen, Loader2, X, Save, Wand2
 } from "lucide-react";
 import { toneOptions, screenTags, slideObjectives, defaultStorylines, emphasisOptions, demoTemplates, templateMoods } from "@/lib/demo-data";
 import type { SlideItem } from "@/lib/demo-data";
