@@ -77,7 +77,7 @@ export const WorkflowScrollytelling = () => {
                 <div className="container mx-auto px-6 grid md:grid-cols-2 gap-12 lg:gap-24 relative z-10 w-full">
 
                     {/* Left Side: Text Content */}
-                    <div className="flex flex-col justify-center h-full max-w-xl py-20">
+                    <div className="flex flex-col justify-center h-full max-w-xl py-12">
                         <div className="mb-4 inline-block">
                             <span className="text-primary font-bold tracking-widest uppercase text-sm">The Workflow</span>
                         </div>
