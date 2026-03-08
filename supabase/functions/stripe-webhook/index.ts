@@ -7,10 +7,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const PRICE_TO_PLAN: Record<string, string> = {
-  "price_1T8kgjCGD5S3rFVNQIKU0KKc": "starter",
-  "price_1T8kgkCGD5S3rFVNbzJcYs22": "pro",
-  "price_1T8kglCGD5S3rFVN3Q3K0ql6": "unlimited",
+/** Map product name → plan id */
+const PRODUCT_NAME_TO_PLAN: Record<string, string> = {
+  "ScreenForge Starter": "starter",
+  "ScreenForge Pro": "pro",
+  "ScreenForge Unlimited": "unlimited",
 };
 
 const PLAN_CREDITS: Record<string, number> = {
@@ -23,6 +24,13 @@ const PLAN_CREDITS: Record<string, number> = {
 const logStep = (step: string, details?: any) => {
   console.log(`[STRIPE-WEBHOOK] ${step}${details ? ` - ${JSON.stringify(details)}` : ''}`);
 };
+
+/** Resolve plan name from a Stripe price's product */
+async function resolvePlanFromPrice(stripe: Stripe, priceId: string): Promise<string> {
+  const price = await stripe.prices.retrieve(priceId, { expand: ["product"] });
+  const product = price.product as Stripe.Product;
+  return PRODUCT_NAME_TO_PLAN[product.name] || "starter";
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -92,7 +100,6 @@ serve(async (req) => {
           }
         }
 
-        // Sync plan and refill credits on recurring payment
         const { data: prof } = await supabase
           .from("profiles")
           .select("id")
@@ -103,7 +110,7 @@ serve(async (req) => {
           const sub = await stripe.subscriptions.list({ customer: customerId, status: "active", limit: 1 });
           if (sub.data.length > 0) {
             const priceId = sub.data[0].items.data[0]?.price?.id;
-            const activePlan = PRICE_TO_PLAN[priceId] || "starter";
+            const activePlan = await resolvePlanFromPrice(stripe, priceId);
             const credits = PLAN_CREDITS[activePlan] || 50;
             await supabase.from("profiles").update({ plan: activePlan, credits }).eq("id", prof.id);
             logStep("Plan synced + credits refilled on invoice.paid", { userId: prof.id, plan: activePlan, credits });
@@ -135,7 +142,7 @@ serve(async (req) => {
 
             if (profileByEmail) {
               const priceId = subscription.items.data[0]?.price?.id;
-              const plan = isActive ? (PRICE_TO_PLAN[priceId] || "starter") : "free";
+              const plan = isActive ? await resolvePlanFromPrice(stripe, priceId) : "free";
               const credits = PLAN_CREDITS[plan] || 3;
               await supabase.from("profiles").update({ plan, stripe_customer_id: customerId, credits }).eq("id", profileByEmail.id);
               logStep("Plan updated via email lookup", { userId: profileByEmail.id, plan, credits });
@@ -145,7 +152,7 @@ serve(async (req) => {
         }
 
         const priceId = subscription.items.data[0]?.price?.id;
-        const plan = isActive ? (PRICE_TO_PLAN[priceId] || "starter") : "free";
+        const plan = isActive ? await resolvePlanFromPrice(stripe, priceId) : "free";
         const credits = PLAN_CREDITS[plan] || 3;
         await supabase.from("profiles").update({ plan, credits }).eq("id", profile.id);
         logStep("Plan updated", { userId: profile.id, plan, credits, status: subscription.status });
