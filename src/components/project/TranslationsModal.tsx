@@ -33,9 +33,11 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId }: Translati
         if (!language) return;
         setIsTranslating(true);
         try {
-            await api.translateProject(projectId, language);
-            toast.success(`Translation to ${LANGUAGES.find(l => l.value === language)?.label} completed successfully!`);
-            // Normally we would redirect or reload the translated project
+            const { data, error } = await supabase.functions.invoke('translate-copy', {
+                body: { project_id: projectId, target_language: language },
+            });
+            if (error) throw error;
+            toast.success(`Translation to ${LANGUAGES.find(l => l.value === language)?.label} completed!`);
             onOpenChange(false);
         } catch (error) {
             toast.error('Failed to translate project');
