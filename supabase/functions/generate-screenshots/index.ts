@@ -524,7 +524,7 @@ serve(async (req) => {
 
             const runAttempt = async (promptText: string) => {
               const response = await ai.models.generateContent({
-                model: "gemini-3-pro-image-preview",
+                model: "gemini-3.1-flash-image-preview",
                 contents: buildContents(promptText),
                 config: {
                   responseModalities: ["TEXT", "IMAGE"],
