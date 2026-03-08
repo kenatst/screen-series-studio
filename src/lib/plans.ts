@@ -49,12 +49,11 @@ export const PLANS: PlanConfig[] = [
       'Full screenshot sets',
       'HD export',
       'Brand Kit integration',
-      'Translations',
     ],
     limits: {
       maxProjects: 1,
       maxSlidesPerSet: 3,
-      translations: false,
+      translations: true,
       unlimitedTranslations: false,
       redesigns: 0,
       brandKit: false,
