@@ -165,6 +165,8 @@ const NewProject = () => {
   const [generationMode, setGenerationMode] = useState<'full' | 'creative-direction' | 'first-3'>('full');
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
+  const [savedProjectId, setSavedProjectId] = useState<string | null>(null);
+  const [outputLanguage, setOutputLanguage] = useState('en');
 
   // Template filtering
   const [templateMoodFilter, setTemplateMoodFilter] = useState<string>('All');
