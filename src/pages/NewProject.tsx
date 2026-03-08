@@ -1,16 +1,17 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, CheckCircle2, Upload, Sparkles,
-  GripVertical, Lock, Trash2, Plus, LayoutGrid, Image as ImageIcon, FolderOpen, Loader2, X
+  GripVertical, Lock, Trash2, Plus, LayoutGrid, Image as ImageIcon, FolderOpen, Loader2, X, Save, Wand2
 } from "lucide-react";
-import { toneOptions, screenTags, slideObjectives, defaultStorylines, emphasisOptions, demoTemplates } from "@/lib/demo-data";
+import { toneOptions, screenTags, slideObjectives, defaultStorylines, emphasisOptions, demoTemplates, templateMoods } from "@/lib/demo-data";
 import type { SlideItem } from "@/lib/demo-data";
 import { useCreateProject, useSaveSlides } from "@/hooks/useProjects";
 import { useAuth } from "@/hooks/useAuth";
@@ -74,7 +75,6 @@ const templatePreviews: Record<string, string> = {
   'LinguaFlow': agency24,
   'Nestle Wellness': agency25,
   'LifePlan Goals': agency26,
-  
 };
 
 const steps = [
@@ -98,6 +98,42 @@ interface BrandAsset {
   type: 'logo' | 'icon' | 'mascot';
   file: File;
   preview: string;
+}
+
+/** Extract dominant colors from an image via canvas sampling */
+function extractColorsFromImage(imgSrc: string): Promise<string[]> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const size = 64;
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { resolve([]); return; }
+      ctx.drawImage(img, 0, 0, size, size);
+      const data = ctx.getImageData(0, 0, size, size).data;
+      const colorMap = new Map<string, number>();
+      for (let i = 0; i < data.length; i += 16) { // sample every 4th pixel
+        const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
+        if (a < 128) continue;
+        // Quantize to reduce noise
+        const qr = Math.round(r / 32) * 32;
+        const qg = Math.round(g / 32) * 32;
+        const qb = Math.round(b / 32) * 32;
+        // Skip near-white and near-black
+        const brightness = (qr + qg + qb) / 3;
+        if (brightness < 30 || brightness > 235) continue;
+        const hex = `#${qr.toString(16).padStart(2, '0')}${qg.toString(16).padStart(2, '0')}${qb.toString(16).padStart(2, '0')}`;
+        colorMap.set(hex, (colorMap.get(hex) || 0) + 1);
+      }
+      const sorted = [...colorMap.entries()].sort((a, b) => b[1] - a[1]);
+      resolve(sorted.slice(0, 5).map(([hex]) => hex));
+    };
+    img.onerror = () => resolve([]);
+    img.src = imgSrc;
+  });
 }
 
 const NewProject = () => {
@@ -127,11 +163,17 @@ const NewProject = () => {
   const [deviceFormats, setDeviceFormats] = useState<string[]>(['iphone-6-5', 'iphone-6-9']);
   const [isSaving, setIsSaving] = useState(false);
   const [generationMode, setGenerationMode] = useState<'full' | 'creative-direction' | 'first-3'>('full');
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const [isAutoFilling, setIsAutoFilling] = useState(false);
+
+  // Template filtering
+  const [templateMoodFilter, setTemplateMoodFilter] = useState<string>('All');
+  const [templateCategoryFilter, setTemplateCategoryFilter] = useState<string>('All');
 
   // Upload states
   const [uploadedScreens, setUploadedScreens] = useState<UploadedScreen[]>([]);
   const [brandAssets, setBrandAssets] = useState<BrandAsset[]>([]);
-  const [brandColors, setBrandColors] = useState<string[]>(['#0B192C', '#6C5CE7', '#00B894', '#E1B382', '#FDFBF7']);
+  const [brandColors, setBrandColors] = useState<string[]>([]);
   const [brandFont, setBrandFont] = useState('');
   const [newColor, setNewColor] = useState('#6C5CE7');
 
@@ -172,10 +214,10 @@ const NewProject = () => {
       id: `s${Date.now()}`,
       number: slides.length + 1,
       objective: 'Feature spotlight',
-      headline: 'New slide headline',
-      subheadline: 'Supporting text',
+      headline: '',
+      subheadline: '',
       keyMessage: '',
-      rawScreenTag: 'home',
+      rawScreenTag: uploadedScreens.length > 0 ? uploadedScreens[0].tag : 'home',
       emphasis: 'UI focused',
       importance: 'medium',
       status: 'pending',
@@ -231,6 +273,119 @@ const NewProject = () => {
 
   const [visualPreferences, setVisualPreferences] = useState<string[]>([]);
 
+  // Auto-extract colors from uploaded screens
+  const handleAutoDetectColors = async () => {
+    if (uploadedScreens.length === 0 && brandAssets.length === 0) {
+      toast({ title: "No assets", description: "Upload screenshots or brand assets first.", variant: "destructive" });
+      return;
+    }
+    const sources = [
+      ...uploadedScreens.map(s => s.preview),
+      ...brandAssets.map(a => a.preview),
+    ].slice(0, 4);
+
+    const allColors: string[] = [];
+    for (const src of sources) {
+      const colors = await extractColorsFromImage(src);
+      allColors.push(...colors);
+    }
+    // Deduplicate and take top 5
+    const unique = [...new Set(allColors)].slice(0, 5);
+    if (unique.length > 0) {
+      setBrandColors(unique);
+      toast({ title: "Colors detected", description: `${unique.length} dominant colors extracted from your assets.` });
+    } else {
+      toast({ title: "No colors found", description: "Could not extract meaningful colors.", variant: "destructive" });
+    }
+  };
+
+  // Auto-fill slides with AI
+  const handleAutoFillSlides = async () => {
+    if (!appName && !appDescription) {
+      toast({ title: "Missing info", description: "Fill in app name and description first (Step 2).", variant: "destructive" });
+      return;
+    }
+    setIsAutoFilling(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { toast({ title: "Not authenticated", variant: "destructive" }); return; }
+
+      const response = await supabase.functions.invoke('suggest-copy', {
+        body: {
+          mode: 'storylines',
+          app_name: appName,
+          app_description: appDescription || shortDescription,
+          slide_count: slideCount,
+          tone: selectedTone,
+        },
+      });
+
+      if (response.data?.slides) {
+        const aiSlides = response.data.slides as Array<{ headline: string; subheadline: string; objective?: string }>;
+        setSlides(prev => prev.map((s, i) => {
+          const ai = aiSlides[i];
+          if (!ai) return s;
+          return {
+            ...s,
+            headline: ai.headline || s.headline,
+            subheadline: ai.subheadline || s.subheadline,
+            objective: ai.objective || s.objective,
+          };
+        }));
+        toast({ title: "Slides auto-filled!", description: "AI-generated headlines based on your app info." });
+      }
+    } catch (e) {
+      console.error("Auto-fill failed:", e);
+      toast({ title: "Auto-fill failed", description: "Try again or fill manually.", variant: "destructive" });
+    } finally {
+      setIsAutoFilling(false);
+    }
+  };
+
+  // Save as draft
+  const handleSaveDraft = async () => {
+    if (!user) { toast({ title: "Not authenticated", variant: "destructive" }); return; }
+    setIsSaving(true);
+    try {
+      const project = await createProject.mutateAsync({
+        name: getFinalProjectName(),
+        app_name: appName,
+        app_description: appDescription,
+        platform,
+        template_id: selectedTemplate !== 'reference' ? selectedTemplate.toLowerCase().replace(/\s+/g, '-') : 'clean-saas',
+        consistency_level: consistencyLevel,
+        device_formats: deviceFormats as any,
+        generation_mode: generationMode,
+        status: 'draft',
+        brand_kit: { colors: brandColors, fontFamily: brandFont } as any,
+        config: { primaryGoal, tone: selectedTone, shortDescription, valueProposition, keyFeatures: keyFeatures.split('\n').filter(Boolean), topBenefits: topBenefits.split('\n').filter(Boolean) } as any,
+      });
+      await saveSlides.mutateAsync({
+        projectId: project.id,
+        slides: slides.map((s, i) => ({
+          slide_number: i + 1,
+          objective: s.objective,
+          headline: s.headline,
+          subheadline: s.subheadline || '',
+          raw_screen_tag: s.rawScreenTag,
+          emphasis: s.emphasis,
+          importance: s.importance,
+          status: 'pending',
+        })),
+      });
+      if (user) {
+        await uploadAssetsToStorage(project.id, user.id);
+      }
+      setLastSavedAt(new Date());
+      toast({ title: "Draft saved ✓", description: `Project "${getFinalProjectName()}" saved as draft.` });
+    } catch (e) {
+      console.error("Draft save failed:", e);
+      toast({ title: "Save failed", description: "Could not save draft.", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const next = () => setCurrentStep(s => Math.min(s + 1, 7));
   const prev = () => setCurrentStep(s => Math.max(s - 1, 1));
 
@@ -238,7 +393,6 @@ const NewProject = () => {
   const uploadAssetsToStorage = async (projectId: string, userId: string) => {
     const assets: { storage_path: string; asset_type: string; tag: string; filename: string }[] = [];
 
-    // Upload screens
     for (const screen of uploadedScreens) {
       const path = `${userId}/${projectId}/screens/${screen.id}-${screen.file.name}`;
       const { error } = await supabase.storage.from('raw-uploads').upload(path, screen.file, { upsert: true });
@@ -247,7 +401,6 @@ const NewProject = () => {
       }
     }
 
-    // Upload brand assets
     for (const asset of brandAssets) {
       const path = `${userId}/${projectId}/brand/${asset.type}-${asset.file.name}`;
       const { error } = await supabase.storage.from('raw-uploads').upload(path, asset.file, { upsert: true });
@@ -256,7 +409,6 @@ const NewProject = () => {
       }
     }
 
-    // Insert asset records
     if (assets.length > 0) {
       await supabase.from('assets').insert(
         assets.map(a => ({ ...a, project_id: projectId, user_id: userId }))
@@ -264,8 +416,24 @@ const NewProject = () => {
     }
   };
 
-  // Derive the final project name: always use appName if set
   const getFinalProjectName = () => appName || projectName || 'App Screens';
+
+  // Build dynamic screen tag options from uploads
+  const getScreenOptions = () => {
+    const baseOptions = screenTags;
+    const uploadOptions = uploadedScreens.map(s => s.tag);
+    const all = [...new Set([...baseOptions, ...uploadOptions])];
+    return all;
+  };
+
+  // Filter templates
+  const filteredTemplates = demoTemplates.filter(t => {
+    if (templateMoodFilter !== 'All' && t.mood !== templateMoodFilter) return false;
+    if (templateCategoryFilter !== 'All' && t.category !== templateCategoryFilter) return false;
+    return true;
+  });
+
+  const templateCategories = ['All', ...new Set(demoTemplates.map(t => t.category))];
 
   return (
     <DashboardLayout>
@@ -287,6 +455,18 @@ const NewProject = () => {
               {i < steps.length - 1 && <div className={`w-6 h-px mx-2 ${currentStep > step.id ? 'bg-success/50' : 'bg-white/10'}`} />}
             </div>
           ))}
+          {/* Save draft button in stepper bar */}
+          <div className="ml-auto flex items-center gap-2">
+            {lastSavedAt && (
+              <span className="text-[10px] text-muted-foreground font-medium">
+                Saved {lastSavedAt.toLocaleTimeString()}
+              </span>
+            )}
+            <Button variant="outline" size="sm" onClick={handleSaveDraft} disabled={isSaving} className="rounded-full text-xs font-bold border-border hover:border-primary/40 h-9 px-4">
+              {isSaving ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : <Save className="h-3 w-3 mr-1.5" />}
+              Save draft
+            </Button>
+          </div>
         </div>
 
         <AnimatePresence mode="wait">
@@ -524,26 +704,43 @@ const NewProject = () => {
                   })}
                 </div>
                 <div className="space-y-4 pt-4">
-                  <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Brand colors</label>
-                  <div className="flex flex-wrap gap-4 p-5 border border-border bg-card/90 rounded-2xl shadow-inner">
-                    {brandColors.map((c, i) => (
-                      <div key={i} className="relative group">
-                        <div className="h-14 w-14 rounded-full border-4 border-black/80 cursor-pointer hover:scale-110 hover:shadow-glow transition-all duration-300 shadow-elevated" style={{ backgroundColor: c }} />
-                        <button
-                          onClick={() => setBrandColors(prev => prev.filter((_, idx) => idx !== i))}
-                          className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ))}
-                    <div className="flex items-center gap-2">
-                      <input type="color" value={newColor} onChange={e => setNewColor(e.target.value)} className="h-14 w-14 rounded-full border-2 border-dashed border-border cursor-pointer bg-transparent" />
-                      <Button variant="ghost" size="sm" onClick={() => { if (!brandColors.includes(newColor)) setBrandColors(prev => [...prev, newColor]); }} className="text-xs font-bold text-primary">
-                        <Plus className="h-4 w-4 mr-1" /> Add
-                      </Button>
-                    </div>
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Brand colors</label>
+                    <Button variant="outline" size="sm" onClick={handleAutoDetectColors} className="text-xs font-bold rounded-lg h-8 border-primary/30 text-primary hover:bg-primary/10">
+                      <Wand2 className="h-3 w-3 mr-1.5" /> Auto-detect from assets
+                    </Button>
                   </div>
+                  {brandColors.length === 0 ? (
+                    <div className="p-6 border border-dashed border-border bg-card/90 rounded-2xl text-center shadow-inner">
+                      <p className="text-sm text-muted-foreground font-medium mb-2">No colors yet — add your brand palette manually or auto-detect from your uploaded assets.</p>
+                      <div className="flex items-center justify-center gap-2 mt-3">
+                        <input type="color" value={newColor} onChange={e => setNewColor(e.target.value)} className="h-10 w-10 rounded-full border-2 border-dashed border-border cursor-pointer bg-transparent" />
+                        <Button variant="ghost" size="sm" onClick={() => { if (!brandColors.includes(newColor)) setBrandColors(prev => [...prev, newColor]); }} className="text-xs font-bold text-primary">
+                          <Plus className="h-4 w-4 mr-1" /> Add color
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-4 p-5 border border-border bg-card/90 rounded-2xl shadow-inner">
+                      {brandColors.map((c, i) => (
+                        <div key={i} className="relative group">
+                          <div className="h-14 w-14 rounded-full border-4 border-black/80 cursor-pointer hover:scale-110 hover:shadow-glow transition-all duration-300 shadow-elevated" style={{ backgroundColor: c }} />
+                          <button
+                            onClick={() => setBrandColors(prev => prev.filter((_, idx) => idx !== i))}
+                            className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                      <div className="flex items-center gap-2">
+                        <input type="color" value={newColor} onChange={e => setNewColor(e.target.value)} className="h-14 w-14 rounded-full border-2 border-dashed border-border cursor-pointer bg-transparent" />
+                        <Button variant="ghost" size="sm" onClick={() => { if (!brandColors.includes(newColor)) setBrandColors(prev => [...prev, newColor]); }} className="text-xs font-bold text-primary">
+                          <Plus className="h-4 w-4 mr-1" /> Add
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-4 pt-4">
                   <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Brand font</label>
@@ -590,28 +787,54 @@ const NewProject = () => {
                 </div>
 
                 {selectedTemplate !== 'reference' ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 max-h-[600px] overflow-y-auto pr-1">
-                    {demoTemplates.map(t => (
-                      <button key={t.id} onClick={() => setSelectedTemplate(t.name)} className={`rounded-2xl border-2 overflow-hidden transition-all duration-300 ${selectedTemplate === t.name ? 'border-primary shadow-glow scale-[1.02]' : 'border-border hover:border-primary/40 hover:scale-[1.02] shadow-sm'}`}>
-                        <div className="aspect-[3/4] relative overflow-hidden bg-card/90">
-                          {templatePreviews[t.name] ? (
-                            <img src={templatePreviews[t.name]} alt={t.name} className="w-full h-full object-contain" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <LayoutGrid className={`h-8 w-8 ${selectedTemplate === t.name ? 'text-primary' : 'text-foreground/30'}`} />
-                            </div>
-                          )}
-                          {selectedTemplate === t.name && (
-                            <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                              <CheckCircle2 className="h-8 w-8 text-primary drop-shadow-lg" />
-                            </div>
-                          )}
-                        </div>
-                        <div className="p-3 bg-card/90 border-t border-border">
-                          <span className={`text-xs font-bold tracking-tight ${selectedTemplate === t.name ? 'text-primary' : 'text-muted-foreground'}`}>{t.name}</span>
-                        </div>
-                      </button>
-                    ))}
+                  <div className="space-y-4">
+                    {/* Filters */}
+                    <div className="flex flex-wrap gap-4">
+                      <div className="flex gap-1.5 items-center">
+                        <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mr-1">Mood:</span>
+                        {templateMoods.map(m => (
+                          <button key={m} onClick={() => setTemplateMoodFilter(m)} className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize border transition-all ${templateMoodFilter === m ? 'bg-primary text-black border-primary' : 'bg-card/90 text-muted-foreground border-border hover:border-primary/30'}`}>
+                            {m === 'All' ? '🎨 All' : m === 'dark' ? '🌙 Dark' : m === 'light' ? '☀️ Light' : m === 'colorful' ? '🌈 Colorful' : '⚪ Neutral'}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex gap-1.5 items-center">
+                        <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mr-1">Category:</span>
+                        {templateCategories.map(c => (
+                          <button key={c} onClick={() => setTemplateCategoryFilter(c)} className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${templateCategoryFilter === c ? 'bg-primary text-black border-primary' : 'bg-card/90 text-muted-foreground border-border hover:border-primary/30'}`}>
+                            {c}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 max-h-[600px] overflow-y-auto pr-1">
+                      {filteredTemplates.map(t => (
+                        <button key={t.id} onClick={() => setSelectedTemplate(t.name)} className={`rounded-2xl border-2 overflow-hidden transition-all duration-300 ${selectedTemplate === t.name ? 'border-primary shadow-glow scale-[1.02]' : 'border-border hover:border-primary/40 hover:scale-[1.02] shadow-sm'}`}>
+                          <div className="aspect-[3/4] relative overflow-hidden bg-card/90">
+                            {templatePreviews[t.name] ? (
+                              <img src={templatePreviews[t.name]} alt={t.name} className="w-full h-full object-contain" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <LayoutGrid className={`h-8 w-8 ${selectedTemplate === t.name ? 'text-primary' : 'text-foreground/30'}`} />
+                              </div>
+                            )}
+                            {selectedTemplate === t.name && (
+                              <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                                <CheckCircle2 className="h-8 w-8 text-primary drop-shadow-lg" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-3 bg-card/90 border-t border-border">
+                            <span className={`text-xs font-bold tracking-tight ${selectedTemplate === t.name ? 'text-primary' : 'text-muted-foreground'}`}>{t.name}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                    {filteredTemplates.length === 0 && (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <p className="text-sm font-medium">No templates match your filters.</p>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-6">
@@ -636,6 +859,15 @@ const NewProject = () => {
                     <h2 className="text-3xl font-black tracking-tight text-foreground mb-2">Screenshot set planner</h2>
                     <p className="text-muted-foreground font-medium">Define each slide's content and objective.</p>
                   </div>
+                  <Button
+                    variant="outline"
+                    onClick={handleAutoFillSlides}
+                    disabled={isAutoFilling}
+                    className="rounded-xl font-bold border-primary/30 text-primary hover:bg-primary/10 h-10 px-4"
+                  >
+                    {isAutoFilling ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Wand2 className="h-4 w-4 mr-2" />}
+                    Auto-fill with AI
+                  </Button>
                 </div>
 
                 <div className="grid md:grid-cols-3 gap-8">
@@ -653,46 +885,101 @@ const NewProject = () => {
                       </div>
                     </div>
 
-                    <div className="space-y-4">
-                      {slides.map((slide) => (
-                        <div key={slide.id} className="rounded-2xl border border-border bg-card/90 p-5 shadow-elevated hover:border-primary/40 hover:shadow-glow transition-all duration-300 group">
-                          <div className="flex items-start gap-4">
-                            <GripVertical className="h-5 w-5 text-foreground/20 mt-3 cursor-grab flex-shrink-0 opacity-40 group-hover:opacity-100 transition-opacity hover:text-foreground" />
-                            <div className="flex-1 space-y-4">
-                              <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 border border-primary/20 shadow-inner">
-                                  <span className="text-sm font-black text-primary">{slide.number}</span>
+                    <TooltipProvider>
+                      <div className="space-y-4">
+                        {slides.map((slide) => (
+                          <div key={slide.id} className="rounded-2xl border border-border bg-card/90 p-5 shadow-elevated hover:border-primary/40 hover:shadow-glow transition-all duration-300 group">
+                            <div className="flex items-start gap-4">
+                              <GripVertical className="h-5 w-5 text-foreground/20 mt-3 cursor-grab flex-shrink-0 opacity-40 group-hover:opacity-100 transition-opacity hover:text-foreground" />
+                              <div className="flex-1 space-y-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 border border-primary/20 shadow-inner">
+                                    <span className="text-sm font-black text-primary">{slide.number}</span>
+                                  </div>
+                                  <select className="flex-1 bg-card/90 border border-border rounded-xl px-4 py-2 text-sm font-bold text-foreground focus:ring-1 focus:ring-primary shadow-inner outline-none transition-all" value={slide.objective} onChange={e => updateSlide(slide.id, 'objective', e.target.value)}>
+                                    {slideObjectives.map(o => <option key={o} value={o}>{o}</option>)}
+                                  </select>
+                                  <Badge className={`shadow-sm px-3 py-1.5 font-bold tracking-tight border ${slide.importance === 'high' ? 'bg-red-500/10 text-red-400 border-red-500/20' : slide.importance === 'medium' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-black/5 text-muted-foreground border-border'}`}>
+                                    {slide.importance}
+                                  </Badge>
                                 </div>
-                                <select className="flex-1 bg-card/90 border border-border rounded-xl px-4 py-2 text-sm font-bold text-foreground focus:ring-1 focus:ring-primary shadow-inner outline-none transition-all" value={slide.objective} onChange={e => updateSlide(slide.id, 'objective', e.target.value)}>
-                                  {slideObjectives.map(o => <option key={o} value={o}>{o}</option>)}
-                                </select>
-                                <Badge className={`shadow-sm px-3 py-1.5 font-bold tracking-tight border ${slide.importance === 'high' ? 'bg-red-500/10 text-red-400 border-red-500/20' : slide.importance === 'medium' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-black/5 text-muted-foreground border-border'}`}>
-                                  {slide.importance}
-                                </Badge>
-                              </div>
-                              <div className="grid md:grid-cols-2 gap-4">
-                                <Input value={slide.headline} onChange={e => updateSlide(slide.id, 'headline', e.target.value)} placeholder="Headline" className="bg-black/5 border-border text-foreground placeholder:text-foreground/30 text-sm font-bold shadow-inner h-11 focus-visible:ring-primary transition-all rounded-xl" />
-                                <Input value={slide.subheadline} onChange={e => updateSlide(slide.id, 'subheadline', e.target.value)} placeholder="Subheadline" className="bg-black/5 border-border text-foreground placeholder:text-foreground/30 text-sm font-medium shadow-inner h-11 focus-visible:ring-primary transition-all rounded-xl" />
-                              </div>
-                              <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
-                                <select className="bg-black/5 border border-border rounded-lg px-3 py-2 text-xs font-bold text-muted-foreground outline-none mt-2 focus:ring-1 focus:ring-primary transition-all" value={slide.rawScreenTag} onChange={e => updateSlide(slide.id, 'rawScreenTag', e.target.value)}>
-                                  {screenTags.map(t => <option key={t} value={t}>{t}</option>)}
-                                </select>
-                                <select className="bg-black/5 border border-border rounded-lg px-3 py-2 text-xs font-bold text-muted-foreground outline-none mt-2 focus:ring-1 focus:ring-primary transition-all" value={slide.emphasis} onChange={e => updateSlide(slide.id, 'emphasis', e.target.value)}>
-                                  {emphasisOptions.map(e => <option key={e} value={e}>{e}</option>)}
-                                </select>
-                                <div className="flex-1" />
-                                <Button variant="ghost" size="sm" className="h-9 text-xs font-bold mt-2 text-muted-foreground hover:text-foreground hover:bg-white/10 rounded-lg"><Lock className="mr-1.5 h-3.5 w-3.5" />Lock</Button>
-                                <Button variant="ghost" size="sm" onClick={() => removeSlide(slide.id)} className="h-9 text-xs font-bold mt-2 text-red-400/70 hover:text-red-400 hover:bg-red-500/10 rounded-lg"><Trash2 className="mr-1.5 h-3.5 w-3.5" />Remove</Button>
+                                {/* Full-width headline & subheadline with tooltips */}
+                                <div className="space-y-3">
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Input
+                                        value={slide.headline}
+                                        onChange={e => updateSlide(slide.id, 'headline', e.target.value)}
+                                        placeholder="Headline — your big hook for this slide"
+                                        className="bg-black/5 border-border text-foreground placeholder:text-foreground/30 text-sm font-bold shadow-inner h-11 focus-visible:ring-primary transition-all rounded-xl w-full"
+                                      />
+                                    </TooltipTrigger>
+                                    {slide.headline.length > 30 && (
+                                      <TooltipContent side="top" className="max-w-sm">
+                                        <p className="text-sm">{slide.headline}</p>
+                                      </TooltipContent>
+                                    )}
+                                  </Tooltip>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Input
+                                        value={slide.subheadline}
+                                        onChange={e => updateSlide(slide.id, 'subheadline', e.target.value)}
+                                        placeholder="Subheadline — supporting text"
+                                        className="bg-black/5 border-border text-foreground placeholder:text-foreground/30 text-sm font-medium shadow-inner h-11 focus-visible:ring-primary transition-all rounded-xl w-full"
+                                      />
+                                    </TooltipTrigger>
+                                    {slide.subheadline.length > 30 && (
+                                      <TooltipContent side="top" className="max-w-sm">
+                                        <p className="text-sm">{slide.subheadline}</p>
+                                      </TooltipContent>
+                                    )}
+                                  </Tooltip>
+                                </div>
+                                <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
+                                  {/* Screen dropdown with thumbnails */}
+                                  <div className="relative mt-2">
+                                    <select
+                                      className="bg-black/5 border border-border rounded-lg pl-3 pr-8 py-2 text-xs font-bold text-muted-foreground outline-none focus:ring-1 focus:ring-primary transition-all appearance-none"
+                                      value={slide.rawScreenTag}
+                                      onChange={e => updateSlide(slide.id, 'rawScreenTag', e.target.value)}
+                                    >
+                                      {getScreenOptions().map(t => {
+                                        const matchingScreen = uploadedScreens.find(s => s.tag === t);
+                                        return (
+                                          <option key={t} value={t}>
+                                            {matchingScreen ? `📱 ${t} (uploaded)` : t}
+                                          </option>
+                                        );
+                                      })}
+                                    </select>
+                                  </div>
+                                  {/* Show thumbnail of selected screen if exists */}
+                                  {uploadedScreens.find(s => s.tag === slide.rawScreenTag) && (
+                                    <div className="mt-2 h-10 w-6 rounded border border-primary/30 overflow-hidden flex-shrink-0">
+                                      <img
+                                        src={uploadedScreens.find(s => s.tag === slide.rawScreenTag)!.preview}
+                                        alt={slide.rawScreenTag}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </div>
+                                  )}
+                                  <select className="bg-black/5 border border-border rounded-lg px-3 py-2 text-xs font-bold text-muted-foreground outline-none mt-2 focus:ring-1 focus:ring-primary transition-all" value={slide.emphasis} onChange={e => updateSlide(slide.id, 'emphasis', e.target.value)}>
+                                    {emphasisOptions.map(e => <option key={e} value={e}>{e}</option>)}
+                                  </select>
+                                  <div className="flex-1" />
+                                  <Button variant="ghost" size="sm" className="h-9 text-xs font-bold mt-2 text-muted-foreground hover:text-foreground hover:bg-white/10 rounded-lg"><Lock className="mr-1.5 h-3.5 w-3.5" />Lock</Button>
+                                  <Button variant="ghost" size="sm" onClick={() => removeSlide(slide.id)} className="h-9 text-xs font-bold mt-2 text-red-400/70 hover:text-red-400 hover:bg-red-500/10 rounded-lg"><Trash2 className="mr-1.5 h-3.5 w-3.5" />Remove</Button>
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
-                      <Button variant="outline" onClick={addSlide} className="w-full rounded-2xl border-dashed border-2 h-14 text-muted-foreground hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-all">
-                        <Plus className="mr-2 h-5 w-5" /> Add slide
-                      </Button>
-                    </div>
+                        ))}
+                        <Button variant="outline" onClick={addSlide} className="w-full rounded-2xl border-dashed border-2 h-14 text-muted-foreground hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-all">
+                          <Plus className="mr-2 h-5 w-5" /> Add slide
+                        </Button>
+                      </div>
+                    </TooltipProvider>
                   </div>
 
                   {/* Sidebar Consistency Engine */}
@@ -762,7 +1049,10 @@ const NewProject = () => {
                       {slides.map(s => (
                         <div key={s.id} className="flex items-start gap-4 text-sm p-3 rounded-xl hover:bg-black/5 transition-colors border border-transparent hover:border-border">
                           <span className="text-primary font-black bg-primary/10 h-7 w-7 rounded-lg flex items-center justify-center flex-shrink-0 shadow-inner border border-primary/20">{s.number}</span>
-                          <span className="text-foreground/90 pt-1 font-bold tracking-tight">{s.headline}</span>
+                          <div className="flex-1 pt-1">
+                            <span className="text-foreground/90 font-bold tracking-tight">{s.headline || <span className="text-foreground/30 italic">No headline set</span>}</span>
+                            {s.subheadline && <p className="text-foreground/50 text-xs mt-0.5">{s.subheadline}</p>}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -787,6 +1077,15 @@ const NewProject = () => {
                 </div>
 
                 <div className="flex gap-4 pt-8 mt-8 border-t border-border">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={handleSaveDraft}
+                    disabled={isSaving}
+                    className="h-16 rounded-2xl text-lg font-bold border-border hover:border-primary/40 px-8"
+                  >
+                    <Save className="mr-3 h-5 w-5" /> Save draft
+                  </Button>
                   <Button
                     size="lg"
                     className="flex-1 h-16 rounded-2xl text-lg font-black bg-primary text-black hover:bg-primary/90 shadow-[0_0_30px_rgba(245,166,35,0.3)] hover:shadow-[0_0_40px_rgba(245,166,35,0.5)] hover:-translate-y-1.5 transition-all duration-300"
@@ -820,7 +1119,6 @@ const NewProject = () => {
                             status: 'pending',
                           })),
                         });
-                        // Upload assets to storage
                         if (user) {
                           await uploadAssetsToStorage(project.id, user.id);
                         }

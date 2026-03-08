@@ -2,20 +2,22 @@ import { useEffect, useRef, useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate, useParams } from "react-router-dom";
-import { Sparkles, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
+import { Sparkles, CheckCircle2, Loader2, AlertCircle, Clock } from "lucide-react";
 import { motion } from "framer-motion";
 import { useProject, useProjectSlides } from "@/hooks/useProjects";
 import { supabase } from "@/integrations/supabase/client";
 
-const stages = [
-  "Analyzing brand identity...",
-  "Analyzing visual references...",
-  "Building creative direction...",
-  "Planning slide compositions...",
-  "Generating slide visuals...",
-  "Harmonizing set consistency...",
-  "Preparing exports...",
+const phases = [
+  { label: "Analyzing brand identity", icon: "🎨" },
+  { label: "Processing visual references", icon: "🖼️" },
+  { label: "Building creative direction", icon: "✨" },
+  { label: "Planning slide compositions", icon: "📐" },
+  { label: "Rendering slide visuals", icon: "🔥" },
+  { label: "Harmonizing set consistency", icon: "🎯" },
+  { label: "Finalizing exports", icon: "✅" },
 ];
+
+const AVG_SECONDS_PER_SLIDE = 35;
 
 const fadeUp = {
   hidden: { opacity: 0, y: 10 },
@@ -48,11 +50,13 @@ const Generating = () => {
   const redirectedRef = useRef(false);
   const pollIntervalRef = useRef<number | null>(null);
   const requestAbortRef = useRef<AbortController | null>(null);
+  const startTimeRef = useRef<number>(Date.now());
 
   const [progress, setProgress] = useState(0);
-  const [currentStage, setCurrentStage] = useState(0);
+  const [currentPhase, setCurrentPhase] = useState(0);
   const [slideStatuses, setSlideStatuses] = useState<SlideUiStatus[]>([]);
   const [slideImages, setSlideImages] = useState<(string | null)[]>([]);
+  const [eta, setEta] = useState<string>("");
 
   const stopPolling = () => {
     if (pollIntervalRef.current) {
@@ -67,6 +71,19 @@ const Generating = () => {
     setTimeout(() => navigate(`/project/${projectId}/results`), 1200);
   };
 
+  // Compute ETA
+  const computeEta = (statuses: SlideUiStatus[]) => {
+    const total = statuses.length;
+    const completed = statuses.filter(s => s === "completed").length;
+    const remaining = total - completed;
+    if (remaining <= 0) { setEta(""); return; }
+    const elapsed = (Date.now() - startTimeRef.current) / 1000;
+    const avgPerSlide = completed > 0 ? elapsed / completed : AVG_SECONDS_PER_SLIDE;
+    const secondsLeft = Math.round(remaining * avgPerSlide);
+    if (secondsLeft < 60) setEta(`~${secondsLeft}s remaining`);
+    else setEta(`~${Math.ceil(secondsLeft / 60)} min remaining`);
+  };
+
   const applyLiveSlides = (slides: Array<{ slide_number: number; status: string; image_url: string | null }>) => {
     if (!slides.length) return;
 
@@ -76,14 +93,16 @@ const Generating = () => {
 
     setSlideStatuses(statuses);
     setSlideImages(images);
+    computeEta(statuses);
 
     const total = statuses.length;
     const completedCount = statuses.filter((s) => s === "completed").length;
     const hasGenerating = statuses.some((s) => s === "generating");
 
     if (completedCount >= total) {
-      setCurrentStage(6);
+      setCurrentPhase(6);
       setProgress(100);
+      setEta("");
       routeToResults();
       return;
     }
@@ -95,13 +114,14 @@ const Generating = () => {
 
     setProgress((prev) => Math.max(prev, nextProgress));
 
-    if (hasGenerating) setCurrentStage(4);
-    else if (completedCount > 0) setCurrentStage(5);
+    // Update phase based on progress
+    if (completedCount === 0 && !hasGenerating) setCurrentPhase(Math.min(currentPhase, 2));
+    else if (hasGenerating) setCurrentPhase(4);
+    else if (completedCount > 0 && completedCount < total) setCurrentPhase(5);
   };
 
   useEffect(() => {
     if (!dbSlides?.length) return;
-
     applyLiveSlides(
       dbSlides.map((slide) => ({
         slide_number: slide.slide_number,
@@ -114,6 +134,7 @@ const Generating = () => {
   useEffect(() => {
     if (!projectId || startedRef.current) return;
     startedRef.current = true;
+    startTimeRef.current = Date.now();
 
     const warmupInterval = window.setInterval(() => {
       setProgress((prev) => {
@@ -123,7 +144,7 @@ const Generating = () => {
         }
         return prev + 5;
       });
-      setCurrentStage((s) => Math.min(s + 1, 3));
+      setCurrentPhase((s) => Math.min(s + 1, 3));
     }, 800);
 
     const startPolling = () => {
@@ -194,7 +215,7 @@ const Generating = () => {
 
               if (eventType === "slide-start") {
                 const index = Math.max(0, (data.slideNumber || 1) - 1);
-                setCurrentStage(4);
+                setCurrentPhase(4);
                 setSlideStatuses((prev) => {
                   const length = Math.max(prev.length, index + 1, data.total || 0);
                   const next = Array.from({ length }, (_, i) => prev[i] ?? "pending") as SlideUiStatus[];
@@ -236,8 +257,9 @@ const Generating = () => {
               if (eventType === "all-done") {
                 hasMore = Boolean(data.hasMore);
                 if (!hasMore) {
-                  setCurrentStage(6);
+                  setCurrentPhase(6);
                   setProgress(100);
+                  setEta("");
                 }
               }
             } catch {
@@ -329,24 +351,33 @@ const Generating = () => {
   }, [navigate, project?.status, projectId]);
 
   const slideCount = slideStatuses.length || 5;
+  const completedCount = slideStatuses.filter(s => s === "completed").length;
 
   return (
     <DashboardLayout>
       <div className="p-8 max-w-7xl mx-auto flex flex-col items-center justify-center min-h-[80vh] relative">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[300px] bg-primary/20 blur-[150px] rounded-full pointer-events-none -z-10" />
 
-        <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0} className="text-center mb-16 relative z-10">
+        <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0} className="text-center mb-12 relative z-10">
           <div className="inline-flex items-center gap-3 mb-8 px-6 py-3 rounded-full bg-card/90 border border-border shadow-elevated backdrop-blur-md">
             <Sparkles className="h-4 w-4 text-primary animate-pulse" />
             <span className="text-xs font-bold text-foreground tracking-widest uppercase">Consistency Engine Active</span>
           </div>
           <h2 className="text-5xl md:text-6xl font-black tracking-tight text-foreground mb-4 drop-shadow-xl">Forging your series</h2>
-          <p className="text-xl text-muted-foreground font-medium max-w-2xl mx-auto leading-relaxed">Live sync active: your existing slides stay intact, and generation resumes without restarting credits.</p>
+          <p className="text-xl text-muted-foreground font-medium max-w-2xl mx-auto leading-relaxed">
+            {completedCount > 0 && completedCount < slideCount
+              ? `${completedCount} of ${slideCount} slides ready`
+              : "Live sync active — your existing slides stay intact."}
+          </p>
         </motion.div>
 
-        <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1} className="w-full max-w-4xl mb-16 relative z-10">
-          <div className="flex items-center justify-between mb-4 px-2">
-            <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{stages[currentStage]}</span>
+        {/* Progress bar with phases */}
+        <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1} className="w-full max-w-4xl mb-6 relative z-10">
+          <div className="flex items-center justify-between mb-3 px-2">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-primary">{phases[currentPhase]?.icon}</span>
+              <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{phases[currentPhase]?.label}</span>
+            </div>
             <span className="text-sm font-bold text-primary">{progress}%</span>
           </div>
           <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden shadow-inner relative">
@@ -357,6 +388,32 @@ const Generating = () => {
               transition={{ ease: "circOut", duration: 0.5 }}
             />
           </div>
+          {/* ETA */}
+          {eta && (
+            <div className="flex items-center justify-center gap-2 mt-3">
+              <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs font-bold text-muted-foreground">{eta}</span>
+            </div>
+          )}
+        </motion.div>
+
+        {/* Phase pills */}
+        <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1.5} className="flex flex-wrap gap-2 mb-12 justify-center relative z-10">
+          {phases.map((phase, i) => (
+            <div
+              key={i}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all ${
+                i < currentPhase
+                  ? "bg-primary/10 text-primary border-primary/20"
+                  : i === currentPhase
+                  ? "bg-primary/20 text-primary border-primary/40 shadow-glow"
+                  : "bg-card/50 text-foreground/20 border-border"
+              }`}
+            >
+              {i < currentPhase ? <CheckCircle2 className="h-3 w-3" /> : <span>{phase.icon}</span>}
+              <span className="hidden sm:inline">{phase.label}</span>
+            </div>
+          ))}
         </motion.div>
 
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-6 w-full max-w-6xl relative z-10">
