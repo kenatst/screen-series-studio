@@ -2,7 +2,7 @@ import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { demoTemplates } from "@/lib/demo-data";
+import { demoTemplates, templateMoods } from "@/lib/demo-data";
 import { Search } from "lucide-react";
 
 // Agency gallery images
@@ -61,7 +61,6 @@ const templatePreviews: Record<string, string> = {
   'LinguaFlow': agency24,
   'Nestle Wellness': agency25,
   'LifePlan Goals': agency26,
-  
 };
 
 const categories = ['All', 'Business', 'Entertainment', 'Education', 'Lifestyle', 'Luxury', 'Media'];
@@ -70,11 +69,13 @@ const tones = ['All', 'corporate', 'bold', 'premium', 'playful', 'minimalist'];
 const Templates = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedTone, setSelectedTone] = useState('All');
+  const [selectedMood, setSelectedMood] = useState<string>('All');
   const [search, setSearch] = useState('');
 
   const filtered = demoTemplates.filter(t => {
     if (selectedCategory !== 'All' && t.category !== selectedCategory) return false;
     if (selectedTone !== 'All' && t.tone !== selectedTone) return false;
+    if (selectedMood !== 'All' && t.mood !== selectedMood) return false;
     if (search && !t.name.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
@@ -112,6 +113,20 @@ const Templates = () => {
           </div>
         </div>
 
+        {/* Mood filter */}
+        <div className="flex gap-2 flex-wrap mb-4">
+          <span className="text-sm text-muted-foreground mr-2">Mood:</span>
+          {templateMoods.map(m => (
+            <button
+              key={m}
+              onClick={() => setSelectedMood(m)}
+              className={`px-3 py-1 rounded-lg text-xs capitalize border transition-colors ${selectedMood === m ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border hover:border-primary/30'}`}
+            >
+              {m === 'dark' ? '🌙 Dark' : m === 'light' ? '☀️ Light' : m === 'colorful' ? '🌈 Colorful' : m === 'neutral' ? '⚪ Neutral' : '🎨 All'}
+            </button>
+          ))}
+        </div>
+
         <div className="flex gap-2 flex-wrap mb-6">
           <span className="text-sm text-muted-foreground mr-2">Tone:</span>
           {tones.map(t => (
@@ -143,7 +158,10 @@ const Templates = () => {
                 )}
               </div>
               <div className="p-4 space-y-3 bg-card/90">
-                <span className="text-sm font-bold text-foreground">{template.name}</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-bold text-foreground">{template.name}</span>
+                  <Badge className="text-[9px] bg-muted text-muted-foreground border-border capitalize">{template.mood}</Badge>
+                </div>
                 <div className="flex flex-wrap gap-1.5">
                   {template.tags.map(tag => (
                     <Badge key={tag} className="bg-black/5 text-muted-foreground text-[10px] border-border uppercase tracking-wider">{tag}</Badge>
@@ -158,6 +176,13 @@ const Templates = () => {
             </div>
           ))}
         </div>
+
+        {filtered.length === 0 && (
+          <div className="text-center py-16 text-muted-foreground">
+            <p className="text-lg font-medium">No templates match your filters.</p>
+            <p className="text-sm mt-1">Try adjusting mood, tone, or category.</p>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );
