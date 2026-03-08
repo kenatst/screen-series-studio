@@ -6,7 +6,7 @@ import type { PlanId } from "@/lib/plans";
 interface Profile {
   plan: PlanId;
   credits: number;
-  subscriptionEnd?: string;
+  subscriptionEnd?: string | null;
 }
 
 interface AuthContextType {
@@ -16,7 +16,7 @@ interface AuthContextType {
   loading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
-  checkSubscription: () => Promise<void>;
+  checkSubscription: (userIdOverride?: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -34,80 +34,98 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = useCallback(async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
       .select("plan, credits")
       .eq("id", userId)
       .single();
+
     if (data) {
-      setProfile(prev => ({
-        plan: data.plan as PlanId,
-        credits: data.credits,
-        subscriptionEnd: prev?.subscriptionEnd,
+      setProfile((prev) => ({
+        plan: (data.plan as PlanId) ?? prev?.plan ?? "free",
+        credits: typeof data.credits === "number" ? data.credits : (prev?.credits ?? 0),
+        subscriptionEnd: prev?.subscriptionEnd ?? null,
       }));
     }
-  };
+  }, []);
 
-  const checkSubscription = useCallback(async () => {
+  const checkSubscription = useCallback(async (userIdOverride?: string) => {
+    const targetUserId = userIdOverride ?? session?.user?.id;
+    if (!targetUserId) return;
+
     try {
       const { data, error } = await supabase.functions.invoke("check-subscription");
       if (error) {
         console.warn("check-subscription error:", error);
         return;
       }
+
       if (data) {
-        setProfile(prev => ({
-          plan: (data.plan || prev?.plan || "free") as PlanId,
-          credits: prev?.credits || 1,
-          subscriptionEnd: data.subscription_end,
+        setProfile((prev) => ({
+          plan: (data.plan ?? prev?.plan ?? "free") as PlanId,
+          credits: typeof data.credits === "number" ? data.credits : (prev?.credits ?? 0),
+          subscriptionEnd: data.subscription_end ?? prev?.subscriptionEnd ?? null,
         }));
       }
     } catch (e) {
       console.warn("check-subscription failed:", e);
     }
-  }, []);
+  }, [session?.user?.id]);
 
-  const refreshProfile = async () => {
-    if (session?.user?.id) {
-      await fetchProfile(session.user.id);
-      await checkSubscription();
-    }
-  };
+  const refreshProfile = useCallback(async () => {
+    const userId = session?.user?.id;
+    if (!userId) return;
+
+    // Subscription first (server truth), then DB read to confirm persisted state
+    await checkSubscription(userId);
+    await fetchProfile(userId);
+  }, [session?.user?.id, checkSubscription, fetchProfile]);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        if (session?.user?.id) {
-          setTimeout(() => fetchProfile(session.user.id), 0);
-          // Check subscription after auth state change
-          setTimeout(() => checkSubscription(), 500);
-        } else {
-          setProfile(null);
-        }
-        setLoading(false);
-      }
-    );
+    const hydrate = async (nextSession: Session | null) => {
+      setSession(nextSession);
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user?.id) {
-        fetchProfile(session.user.id);
-        setTimeout(() => checkSubscription(), 500);
+      if (nextSession?.user?.id) {
+        await checkSubscription(nextSession.user.id);
+        await fetchProfile(nextSession.user.id);
+      } else {
+        setProfile(null);
       }
+
       setLoading(false);
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      void hydrate(nextSession);
+    });
+
+    void supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      void hydrate(initialSession);
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [checkSubscription, fetchProfile]);
 
-  // Periodic subscription check every 60s
+  // More frequent sync to reduce perceived delay after checkout return
   useEffect(() => {
-    if (!session) return;
-    const interval = setInterval(checkSubscription, 60_000);
-    return () => clearInterval(interval);
-  }, [session, checkSubscription]);
+    if (!session?.user?.id) return;
+
+    const interval = setInterval(() => {
+      void checkSubscription(session.user.id);
+    }, 15_000);
+
+    const onFocus = () => {
+      void refreshProfile();
+    };
+
+    window.addEventListener("focus", onFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [session?.user?.id, checkSubscription, refreshProfile]);
 
   const signOut = async () => {
     await supabase.auth.signOut();

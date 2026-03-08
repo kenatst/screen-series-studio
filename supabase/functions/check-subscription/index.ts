@@ -7,14 +7,27 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const logStep = (step: string, details?: any) => {
-  console.log(`[CHECK-SUBSCRIPTION] ${step}${details ? ` - ${JSON.stringify(details)}` : ''}`);
+const logStep = (step: string, details?: unknown) => {
+  console.log(`[CHECK-SUBSCRIPTION] ${step}${details ? ` - ${JSON.stringify(details)}` : ""}`);
 };
 
-const PRODUCT_NAME_TO_PLAN: Record<string, string> = {
+const PRODUCT_NAME_TO_PLAN: Record<string, "starter" | "pro" | "unlimited"> = {
   "ScreenForge Starter": "starter",
   "ScreenForge Pro": "pro",
   "ScreenForge Unlimited": "unlimited",
+};
+
+const PLAN_CREDITS: Record<string, number> = {
+  free: 3,
+  starter: 50,
+  pro: 200,
+  unlimited: 1000,
+};
+
+const safeIsoFromUnixSeconds = (value: unknown): string | null => {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return null;
+  const date = new Date(value * 1000);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
 };
 
 serve(async (req) => {
@@ -29,8 +42,6 @@ serve(async (req) => {
   );
 
   try {
-    logStep("Function started");
-
     const stripeKey = Deno.env.get("STRIPE_TEST_SECRET");
     if (!stripeKey) throw new Error("STRIPE_TEST_SECRET is not set");
 
@@ -40,89 +51,106 @@ serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError) throw new Error(`Authentication error: ${userError.message}`);
+
     const user = userData.user;
     if (!user?.email) throw new Error("User not authenticated or email not available");
-    logStep("User authenticated", { userId: user.id, email: user.email });
+
+    const { data: profileRow } = await supabaseClient
+      .from("profiles")
+      .select("plan, credits")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const currentPlan = profileRow?.plan ?? "free";
+    const currentCredits = profileRow?.credits ?? 0;
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
 
     if (customers.data.length === 0) {
-      logStep("No Stripe customer found");
-      await supabaseClient.from("profiles").update({ plan: "free" }).eq("id", user.id);
-      return new Response(JSON.stringify({ subscribed: false, plan: "free" }), {
+      if (currentPlan !== "free") {
+        await supabaseClient.from("profiles").update({ plan: "free" }).eq("id", user.id);
+      }
+
+      return new Response(JSON.stringify({
+        subscribed: false,
+        plan: "free",
+        credits: currentCredits,
+        subscription_end: null,
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const customerId = customers.data[0].id;
-    logStep("Found Stripe customer", { customerId });
     await supabaseClient.from("profiles").update({ stripe_customer_id: customerId }).eq("id", user.id);
 
-    logStep("Listing subscriptions...");
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
       status: "active",
       limit: 1,
     });
-    logStep("Subscriptions listed", { count: subscriptions.data.length });
 
     if (subscriptions.data.length === 0) {
-      logStep("No active subscription");
-      await supabaseClient.from("profiles").update({ plan: "free" }).eq("id", user.id);
-      return new Response(JSON.stringify({ subscribed: false, plan: "free" }), {
+      if (currentPlan !== "free") {
+        await supabaseClient.from("profiles").update({ plan: "free" }).eq("id", user.id);
+      }
+
+      return new Response(JSON.stringify({
+        subscribed: false,
+        plan: "free",
+        credits: currentCredits,
+        subscription_end: null,
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const subscription = subscriptions.data[0];
-    logStep("Raw subscription data", {
-      id: subscription.id,
-      status: subscription.status,
-      current_period_end: subscription.current_period_end,
-      current_period_end_type: typeof subscription.current_period_end,
-    });
-
     const priceItem = subscription.items?.data?.[0];
     if (!priceItem) {
-      logStep("No price item found in subscription");
-      return new Response(JSON.stringify({ subscribed: true, plan: "starter", subscription_end: null }), {
+      return new Response(JSON.stringify({
+        subscribed: true,
+        plan: currentPlan,
+        credits: currentCredits,
+        subscription_end: null,
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const productId = priceItem.price.product as string;
-    logStep("Retrieving product", { productId });
-
     const product = await stripe.products.retrieve(productId);
-    const plan = PRODUCT_NAME_TO_PLAN[product.name] || "starter";
-    logStep("Product resolved", { productName: product.name, plan });
+    const resolvedPlan = PRODUCT_NAME_TO_PLAN[product.name] ?? "starter";
 
-    // Safely compute subscription end
-    let subscriptionEnd: string | null = null;
-    const rawEnd = subscription.current_period_end;
-    if (rawEnd && typeof rawEnd === "number" && rawEnd > 0) {
-      const d = new Date(rawEnd * 1000);
-      if (!isNaN(d.getTime())) {
-        subscriptionEnd = d.toISOString();
-      }
-    }
+    const monthlyCredits = PLAN_CREDITS[resolvedPlan] ?? 3;
+    const shouldGrantUpgradeCredits = currentPlan === "free" || currentCredits <= 1;
+    const nextCredits = shouldGrantUpgradeCredits ? Math.max(currentCredits, monthlyCredits) : currentCredits;
 
-    logStep("Active subscription found", { plan, subscriptionEnd });
+    const subscriptionEnd = safeIsoFromUnixSeconds(subscription.current_period_end);
 
-    const PLAN_CREDITS: Record<string, number> = { free: 3, starter: 50, pro: 200, unlimited: 1000 };
-    const credits = PLAN_CREDITS[plan] || 3;
-    await supabaseClient.from("profiles").update({ plan, credits }).eq("id", user.id);
+    await supabaseClient
+      .from("profiles")
+      .update({ plan: resolvedPlan, credits: nextCredits, stripe_customer_id: customerId })
+      .eq("id", user.id);
+
+    logStep("Subscription synced", {
+      userId: user.id,
+      plan: resolvedPlan,
+      credits: nextCredits,
+      subscriptionEnd,
+    });
 
     return new Response(JSON.stringify({
       subscribed: true,
-      plan,
+      plan: resolvedPlan,
+      credits: nextCredits,
       subscription_end: subscriptionEnd,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: any) {
-    logStep("ERROR", { message: error.message, stack: error.stack?.slice(0, 500) });
+    logStep("ERROR", { message: error.message });
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
