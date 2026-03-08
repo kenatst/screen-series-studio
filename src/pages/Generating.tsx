@@ -58,6 +58,7 @@ const Generating = () => {
   const { projectId } = useParams();
   const { data: project } = useProject(projectId);
   const { data: dbSlides } = useProjectSlides(projectId);
+  const archiveProject = useArchiveProject();
 
   const startedRef = useRef(false);
   const redirectedRef = useRef(false);
@@ -68,6 +69,7 @@ const Generating = () => {
   const [progress, setProgress] = useState(0);
   const [currentPhase, setCurrentPhase] = useState(0);
   const [slideStatuses, setSlideStatuses] = useState<SlideUiStatus[]>([]);
+  const [isStopping, setIsStopping] = useState(false);
   const [slideImages, setSlideImages] = useState<(string | null)[]>([]);
   const [eta, setEta] = useState<string>("");
 
