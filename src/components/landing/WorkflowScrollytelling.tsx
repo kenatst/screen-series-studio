@@ -170,12 +170,19 @@ export const WorkflowScrollytelling = () => {
                                         animate={{ opacity: 1, scale: 1, y: 0 }}
                                         exit={{ opacity: 0, scale: 1.1 }}
                                         transition={{ duration: 0.5, type: "spring" }}
-                                        className="w-full h-full grid grid-cols-2 gap-4 p-4"
+                                        className="w-full h-full grid grid-cols-2 gap-3 p-2"
                                     >
-                                        {[1, 2, 3, 4].map(i => (
-                                            <div key={i} className={`rounded-xl border ${i === 1 ? 'border-primary ring-2 ring-primary/20 bg-primary/10' : 'border-border bg-black/5'} p-4 flex flex-col gap-2`}>
-                                                <div className="w-full h-24 rounded bg-white/10" />
-                                                <div className="w-1/2 h-3 rounded bg-white/20" />
+                                        {[
+                                            { src: agency13, name: 'Luxury Elegant' },
+                                            { src: agency11, name: 'Sport & Mascot' },
+                                            { src: agency14, name: 'RPG Gaming' },
+                                            { src: agency22, name: 'Fresh Organic' },
+                                        ].map((t, i) => (
+                                            <div key={i} className={`rounded-xl border overflow-hidden ${i === 0 ? 'border-primary ring-2 ring-primary/20' : 'border-border'} flex flex-col`}>
+                                                <img src={t.src} alt={t.name} className="w-full flex-1 object-cover" />
+                                                <div className="px-3 py-2 bg-card/80 border-t border-border">
+                                                    <span className="text-xs font-medium text-foreground">{t.name}</span>
+                                                </div>
                                             </div>
                                         ))}
                                     </motion.div>
