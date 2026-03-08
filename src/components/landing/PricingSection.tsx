@@ -80,9 +80,26 @@ export const PricingSection = () => {
                                 <p className="text-sm text-muted-foreground">{plan.description}</p>
                             </div>
 
-                            <div className="mb-6">
+                            <div className="mb-2">
                                 <span className="text-4xl font-black text-foreground">{plan.price}</span>
                                 {plan.priceValue > 0 && <span className="text-muted-foreground text-sm ml-1">/mo</span>}
+                            </div>
+                            <div className="mb-6 flex items-center gap-1.5">
+                                <span className="text-xs text-muted-foreground">{plan.monthlyCredits} credits/month</span>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Info className="h-3.5 w-3.5 text-muted-foreground/60 cursor-help" />
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="max-w-[220px] text-xs">
+                                        <p className="font-semibold mb-1">How credits work</p>
+                                        <ul className="space-y-0.5 text-muted-foreground">
+                                            <li>• Generate a slide: 1 credit</li>
+                                            <li>• Regenerate a slide: 1 credit</li>
+                                            <li>• Translate a slide: 2 credits</li>
+                                            <li>• Export: free</li>
+                                        </ul>
+                                    </TooltipContent>
+                                </Tooltip>
                             </div>
 
                             <div className="space-y-3 mb-8 flex-1">

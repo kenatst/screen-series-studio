@@ -16,7 +16,7 @@ const Landing = () => {
       <LandingNav />
       <main>
         <HeroSection />
-        <SocialProof />
+        
         <WorkflowScrollytelling />
         <ConsistencyEngine />
         <FeatureShowcase />

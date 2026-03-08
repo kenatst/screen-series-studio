@@ -188,6 +188,6 @@ export function hasWatermark(plan: PlanId): boolean {
   return getPlanById(plan).limits.watermark;
 }
 
-export function canRegenerate(plan: PlanId): boolean {
-  return plan !== 'free';
+export function canRegenerate(_plan: PlanId): boolean {
+  return true;
 }

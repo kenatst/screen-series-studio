@@ -226,16 +226,9 @@ const Results = () => {
             <Button
               variant="outline"
               className="rounded-xl"
-              onClick={() => {
-                if (!canTranslate(userPlan)) {
-                  toast({ title: "Plan requis", description: "Les traductions sont disponibles à partir du plan Pro.", variant: "destructive" });
-                  return;
-                }
-                setIsTranslationModalOpen(true);
-              }}
+              onClick={() => setIsTranslationModalOpen(true)}
             >
-              {!canTranslate(userPlan) && <Lock className="mr-2 h-3 w-3" />}
-              <Globe className="mr-2 h-4 w-4" /> Translate
+              <Globe className="mr-2 h-4 w-4" /> Translate (2 cr./slide)
             </Button>
             <Button
               className="rounded-xl"
