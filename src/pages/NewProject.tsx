@@ -330,6 +330,8 @@ const NewProject = () => {
       setValueProposition(config.valueProposition || '');
       setKeyFeatures(Array.isArray(config.keyFeatures) ? config.keyFeatures.join('\n') : '');
       setTopBenefits(Array.isArray(config.topBenefits) ? config.topBenefits.join('\n') : '');
+      setAppCategory(config.appCategory || '');
+      setTargetAudience(config.targetAudience || '');
     }
 
     const brandKit = existingProject.brand_kit as any;
