@@ -2,17 +2,18 @@ import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  Download, RefreshCw, Globe, CheckCircle2,
-  Loader2, Lock
+  Download, RefreshCw, Globe, Loader2, Lock, Wand2, Send
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useProject, useProjectSlides } from "@/hooks/useProjects";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { TranslationsModal } from "@/components/project/TranslationsModal";
-import { canTranslate } from "@/lib/plans";
+import { canTranslate, canRegenerate, CREDIT_COSTS } from "@/lib/plans";
 import { useToast } from "@/hooks/use-toast";
 
 const fadeUp = {
@@ -23,7 +24,7 @@ const fadeUp = {
 const Results = () => {
   const navigate = useNavigate();
   const { projectId } = useParams();
-  const { profile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const { toast } = useToast();
 
   const { data: project } = useProject(projectId);
@@ -31,12 +32,24 @@ const Results = () => {
 
   const [selectedSlideId, setSelectedSlideId] = useState<string | null>(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [regeneratingSlideId, setRegeneratingSlideId] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isTranslationModalOpen, setIsTranslationModalOpen] = useState(false);
+  const [regenPrompt, setRegenPrompt] = useState('');
+  const [showRegenPrompt, setShowRegenPrompt] = useState<string | null>(null);
 
-  const userPlan = profile?.plan || 'free';
+  const userPlan = (profile?.plan || 'free') as any;
+  const userCredits = profile?.credits ?? 0;
 
   const selectedSlide = slides?.find(s => s.id === selectedSlideId) || slides?.[0];
+
+  const checkCredits = (cost: number): boolean => {
+    if (userCredits < cost) {
+      toast({ title: "Crédits insuffisants", description: `Il vous faut ${cost} crédit(s). Solde actuel : ${userCredits}.`, variant: "destructive" });
+      return false;
+    }
+    return true;
+  };
 
   const handleDownload = async () => {
     if (!projectId) return;
@@ -57,7 +70,6 @@ const Results = () => {
 
       const contentType = res.headers.get("Content-Type");
       if (contentType?.includes("application/zip")) {
-        // Direct ZIP download
         const blob = await res.blob();
         const disposition = res.headers.get("Content-Disposition");
         const filenameMatch = disposition?.match(/filename="?([^"]+)"?/);
@@ -89,7 +101,14 @@ const Results = () => {
     }
   };
 
-  const handleRegenerate = async () => {
+  const handleRegenerateAll = async () => {
+    if (!canRegenerate(userPlan)) {
+      toast({ title: "Plan requis", description: "La régénération n'est pas disponible sur le plan Free.", variant: "destructive" });
+      return;
+    }
+    const totalCost = (slides?.length || 0) * CREDIT_COSTS.regenerateSlide;
+    if (!checkCredits(totalCost)) return;
+
     setIsRegenerating(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -116,6 +135,7 @@ const Results = () => {
           }
         }
         await refetchSlides();
+        await refreshProfile();
         toast({ title: "Régénération terminée ✨" });
       }
     } catch (e) {
@@ -123,6 +143,56 @@ const Results = () => {
       toast({ title: "Regeneration failed", variant: "destructive" });
     } finally {
       setIsRegenerating(false);
+    }
+  };
+
+  const handleRegenerateSingle = async (slideId: string) => {
+    if (!canRegenerate(userPlan)) {
+      toast({ title: "Plan requis", description: "La régénération n'est pas disponible sur le plan Free.", variant: "destructive" });
+      return;
+    }
+    if (!checkCredits(CREDIT_COSTS.regenerateSlide)) return;
+
+    setRegeneratingSlideId(slideId);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || !projectId) return;
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const response = await fetch(`${supabaseUrl}/functions/v1/generate-screenshots`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          project_id: projectId,
+          single_slide_id: slideId,
+          user_prompt: regenPrompt || undefined,
+        }),
+      });
+
+      if (response.ok) {
+        const reader = response.body?.getReader();
+        if (reader) {
+          const decoder = new TextDecoder();
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            decoder.decode(value, { stream: true });
+          }
+        }
+        await refetchSlides();
+        await refreshProfile();
+        setRegenPrompt('');
+        setShowRegenPrompt(null);
+        toast({ title: "Slide régénérée ✨" });
+      }
+    } catch (e) {
+      console.error("Single regen failed", e);
+      toast({ title: "Regeneration failed", variant: "destructive" });
+    } finally {
+      setRegeneratingSlideId(null);
     }
   };
 
@@ -142,11 +212,14 @@ const Results = () => {
         {/* Header */}
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0} className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-black tracking-tight text-foreground">{project.name}</h1>
+            <h1 className="text-3xl font-black tracking-tight text-foreground">{project.app_name || project.name}</h1>
             <div className="flex items-center gap-3 mt-2">
               <Badge className="bg-primary/20 text-primary border-primary/30">{project.status}</Badge>
               <Badge variant="outline">{project.platform}</Badge>
               <Badge variant="outline">{project.consistency_level} consistency</Badge>
+              <Badge variant="outline" className="text-primary border-primary/30">
+                {userCredits} crédits
+              </Badge>
             </div>
           </div>
           <div className="flex gap-3">
@@ -154,23 +227,31 @@ const Results = () => {
               variant="outline"
               className="rounded-xl"
               onClick={() => {
-                if (!canTranslate(userPlan as any)) {
+                if (!canTranslate(userPlan)) {
                   toast({ title: "Plan requis", description: "Les traductions sont disponibles à partir du plan Pro.", variant: "destructive" });
                   return;
                 }
                 setIsTranslationModalOpen(true);
               }}
             >
-              {!canTranslate(userPlan as any) && <Lock className="mr-2 h-3 w-3" />}
+              {!canTranslate(userPlan) && <Lock className="mr-2 h-3 w-3" />}
               <Globe className="mr-2 h-4 w-4" /> Translate
             </Button>
             <Button variant="outline" className="rounded-xl" onClick={handleDownload} disabled={isExporting}>
               {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
               Export ZIP
             </Button>
-            <Button className="rounded-xl" onClick={handleRegenerate} disabled={isRegenerating}>
+            <Button
+              className="rounded-xl"
+              onClick={handleRegenerateAll}
+              disabled={isRegenerating || !canRegenerate(userPlan)}
+            >
               {isRegenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-              Regenerate All
+              {!canRegenerate(userPlan) ? (
+                <><Lock className="mr-1 h-3 w-3" /> Upgrade to regenerate</>
+              ) : (
+                `Regenerate All (${(slides?.length || 0)} cr.)`
+              )}
             </Button>
           </div>
         </motion.div>
@@ -203,12 +284,61 @@ const Results = () => {
                 <div className="mt-6 space-y-2">
                   <h3 className="text-xl font-bold text-foreground">{selectedSlide.headline || `Slide ${selectedSlide.slide_number}`}</h3>
                   <p className="text-muted-foreground">{selectedSlide.subheadline}</p>
-                  <div className="flex gap-2 mt-3">
+                  <div className="flex gap-2 mt-3 flex-wrap">
                     <Badge variant="outline">{selectedSlide.objective}</Badge>
                     <Badge variant="outline">{selectedSlide.emphasis}</Badge>
                     <Badge className={selectedSlide.status === 'completed' ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}>{selectedSlide.status}</Badge>
                   </div>
                 </div>
+
+                {/* Single slide regeneration */}
+                {canRegenerate(userPlan) && (
+                  <div className="mt-6 pt-4 border-t border-border">
+                    {showRegenPrompt === selectedSlide.id ? (
+                      <div className="space-y-3">
+                        <Textarea
+                          value={regenPrompt}
+                          onChange={e => setRegenPrompt(e.target.value)}
+                          placeholder="Décrivez les changements souhaités... (ex: 'rend le fond plus sombre', 'change la headline en bleu')"
+                          className="bg-black/5 border-border text-foreground placeholder:text-foreground/30 min-h-[80px] resize-none focus-visible:ring-primary rounded-xl p-4 text-sm"
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => handleRegenerateSingle(selectedSlide.id)}
+                            disabled={regeneratingSlideId === selectedSlide.id}
+                            className="rounded-lg"
+                          >
+                            {regeneratingSlideId === selectedSlide.id ? (
+                              <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Send className="mr-2 h-3.5 w-3.5" />
+                            )}
+                            Régénérer (1 cr.)
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => { setShowRegenPrompt(null); setRegenPrompt(''); }}
+                            className="rounded-lg text-muted-foreground"
+                          >
+                            Annuler
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowRegenPrompt(selectedSlide.id)}
+                        className="rounded-lg w-full"
+                      >
+                        <Wand2 className="mr-2 h-4 w-4 text-primary" />
+                        Régénérer cette slide avec un prompt
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </motion.div>
@@ -235,9 +365,14 @@ const Results = () => {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-foreground truncate">{slide.headline || `Slide ${slide.slide_number}`}</p>
                     <p className="text-xs text-muted-foreground truncate">{slide.objective}</p>
-                    <Badge className={`mt-1 text-[10px] ${slide.status === 'completed' ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
-                      {slide.status}
-                    </Badge>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge className={`text-[10px] ${slide.status === 'completed' ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                        {slide.status}
+                      </Badge>
+                      {canRegenerate(userPlan) && regeneratingSlideId === slide.id && (
+                        <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
