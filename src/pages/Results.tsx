@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  Download, RefreshCw, Globe, Loader2, Wand2, Send, Lock, Sparkles
+  Download, RefreshCw, Globe, Loader2, Wand2, Send, Lock, Sparkles, ImageDown
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useProject, useProjectSlides } from "@/hooks/useProjects";
@@ -183,23 +183,46 @@ const Results = () => {
 
       if (response.ok) {
         const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        let lastError = '';
         if (reader) {
-          const decoder = new TextDecoder();
+          let buffer = '';
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-            decoder.decode(value, { stream: true });
+            buffer += decoder.decode(value, { stream: true });
+            // Parse SSE events for errors
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+            for (const line of lines) {
+              if (line.startsWith('event: slide-error')) {
+                const dataLine = lines[lines.indexOf(line) + 1];
+                if (dataLine?.startsWith('data: ')) {
+                  try {
+                    const errData = JSON.parse(dataLine.slice(6));
+                    lastError = errData.message || 'Unknown error';
+                  } catch {}
+                }
+              }
+            }
           }
         }
         await refetchSlides();
         await refreshProfile();
         setRegenPrompt('');
         setShowRegenPrompt(null);
-        toast({ title: "Slide régénérée ✨" });
+        if (lastError) {
+          toast({ title: "Régénération échouée", description: lastError, variant: "destructive" });
+        } else {
+          toast({ title: "Slide régénérée ✨" });
+        }
+      } else {
+        const errBody = await response.json().catch(() => ({ error: "Unknown error" }));
+        toast({ title: "Régénération échouée", description: errBody.error || "Erreur serveur", variant: "destructive" });
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error("Single regen failed", e);
-      toast({ title: "Regeneration failed", variant: "destructive" });
+      toast({ title: "Regeneration failed", description: e.message || "Network error", variant: "destructive" });
     } finally {
       setRegeneratingSlideId(null);
     }
@@ -283,10 +306,35 @@ const Results = () => {
                 <div className="mt-6 space-y-2">
                   <h3 className="text-xl font-bold text-foreground">{selectedSlide.headline || `Slide ${selectedSlide.slide_number}`}</h3>
                   <p className="text-muted-foreground">{selectedSlide.subheadline}</p>
-                  <div className="flex gap-2 mt-3 flex-wrap">
+                  <div className="flex gap-2 mt-3 flex-wrap items-center">
                     <Badge variant="outline">{selectedSlide.objective}</Badge>
                     <Badge variant="outline">{selectedSlide.emphasis}</Badge>
                     <Badge className={selectedSlide.status === 'completed' ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}>{selectedSlide.status}</Badge>
+                    {!isSlideLocked && selectedSlide.image_url && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="ml-auto rounded-lg text-xs"
+                        onClick={async () => {
+                          try {
+                            const res = await fetch(selectedSlide.image_url!);
+                            const blob = await res.blob();
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement("a");
+                            a.href = url;
+                            a.download = `${project.app_name || project.name}-slide-${selectedSlide.slide_number}.png`;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                          } catch {
+                            toast({ title: "Download failed", variant: "destructive" });
+                          }
+                        }}
+                      >
+                        <ImageDown className="mr-1.5 h-3.5 w-3.5" /> Save PNG
+                      </Button>
+                    )}
                   </div>
                 </div>
 

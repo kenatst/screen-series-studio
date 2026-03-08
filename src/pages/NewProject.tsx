@@ -5,15 +5,15 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, CheckCircle2, Upload, Sparkles,
-  GripVertical, Lock, Trash2, Plus, LayoutGrid, Image as ImageIcon, FolderOpen, Loader2, X, Save, Wand2
+  Lock, Trash2, Plus, LayoutGrid, Image as ImageIcon, FolderOpen, Loader2, X, Save, Wand2
 } from "lucide-react";
 import { toneOptions, screenTags, slideObjectives, defaultStorylines, emphasisOptions, demoTemplates, templateMoods } from "@/lib/demo-data";
 import type { SlideItem } from "@/lib/demo-data";
-import { useCreateProject, useSaveSlides, useUpdateProject } from "@/hooks/useProjects";
+import { useCreateProject, useSaveSlides, useUpdateProject, useProject, useProjectSlides } from "@/hooks/useProjects";
 import { useAuth } from "@/hooks/useAuth";
 import { getMaxSlides } from "@/lib/plans";
 import { supabase } from "@/integrations/supabase/client";
@@ -107,7 +107,7 @@ function extractColorsFromImage(imgSrc: string): Promise<string[]> {
     img.crossOrigin = "anonymous";
     img.onload = () => {
       const canvas = document.createElement("canvas");
-      const size = 64;
+      const size = 32;
       canvas.width = size;
       canvas.height = size;
       const ctx = canvas.getContext("2d");
@@ -115,14 +115,12 @@ function extractColorsFromImage(imgSrc: string): Promise<string[]> {
       ctx.drawImage(img, 0, 0, size, size);
       const data = ctx.getImageData(0, 0, size, size).data;
       const colorMap = new Map<string, number>();
-      for (let i = 0; i < data.length; i += 16) { // sample every 4th pixel
+      for (let i = 0; i < data.length; i += 16) {
         const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
         if (a < 128) continue;
-        // Quantize to reduce noise
         const qr = Math.round(r / 32) * 32;
         const qg = Math.round(g / 32) * 32;
         const qb = Math.round(b / 32) * 32;
-        // Skip near-white and near-black
         const brightness = (qr + qg + qb) / 3;
         if (brightness < 30 || brightness > 235) continue;
         const hex = `#${qr.toString(16).padStart(2, '0')}${qg.toString(16).padStart(2, '0')}${qb.toString(16).padStart(2, '0')}`;
@@ -138,6 +136,8 @@ function extractColorsFromImage(imgSrc: string): Promise<string[]> {
 
 const NewProject = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editProjectId = searchParams.get('project');
   const { user, profile } = useAuth();
   const createProject = useCreateProject();
   const updateProject = useUpdateProject();
@@ -166,8 +166,66 @@ const NewProject = () => {
   const [generationMode, setGenerationMode] = useState<'full' | 'creative-direction' | 'first-3'>('full');
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
-  const [savedProjectId, setSavedProjectId] = useState<string | null>(null);
+  const [savedProjectId, setSavedProjectId] = useState<string | null>(editProjectId);
   const [outputLanguage, setOutputLanguage] = useState('en');
+  const [hydrated, setHydrated] = useState(false);
+
+  // Fetch existing project data for draft hydration
+  const { data: existingProject } = useProject(editProjectId || undefined);
+  const { data: existingSlides } = useProjectSlides(editProjectId || undefined);
+
+  // Hydrate state from DB when editing a draft
+  useEffect(() => {
+    if (hydrated || !editProjectId || !existingProject) return;
+    setHydrated(true);
+
+    setAppName(existingProject.app_name || '');
+    setProjectName(existingProject.name || '');
+    setAppDescription(existingProject.app_description || '');
+    setPlatform(existingProject.platform || 'both');
+    setSelectedTemplate(existingProject.template_id || '');
+    setConsistencyLevel((existingProject.consistency_level as any) || 'balanced');
+    setDeviceFormats((existingProject.device_formats as string[]) || ['iphone-6-5', 'iphone-6-9']);
+    setGenerationMode((existingProject.generation_mode as any) || 'full');
+    setOutputLanguage(existingProject.output_language || 'en');
+
+    const config = existingProject.config as any;
+    if (config) {
+      setPrimaryGoal(config.primaryGoal || '');
+      setSelectedTone(config.tone || 'premium');
+      setShortDescription(config.shortDescription || '');
+      setValueProposition(config.valueProposition || '');
+      setKeyFeatures(Array.isArray(config.keyFeatures) ? config.keyFeatures.join('\n') : '');
+      setTopBenefits(Array.isArray(config.topBenefits) ? config.topBenefits.join('\n') : '');
+    }
+
+    const brandKit = existingProject.brand_kit as any;
+    if (brandKit) {
+      setBrandColors(brandKit.colors || []);
+      setBrandFont(brandKit.fontFamily || '');
+    }
+  }, [editProjectId, existingProject, hydrated]);
+
+  // Hydrate slides from DB
+  useEffect(() => {
+    if (!editProjectId || !existingSlides?.length || hydrated === false) return;
+
+    const hydratedSlides: SlideItem[] = existingSlides.map((s) => ({
+      id: s.id,
+      number: s.slide_number,
+      objective: s.objective || 'Feature spotlight',
+      headline: s.headline || '',
+      subheadline: s.subheadline || '',
+      keyMessage: '',
+      rawScreenTag: s.raw_screen_tag || 'home',
+      emphasis: s.emphasis || 'UI focused',
+      importance: (s.importance as any) || 'medium',
+      status: (s.status as SlideItem['status']) || 'pending',
+      locked: [],
+    }));
+    setSlides(hydratedSlides);
+    setSlideCount(hydratedSlides.length);
+  }, [editProjectId, existingSlides, hydrated]);
 
   // Template filtering
   const [templateMoodFilter, setTemplateMoodFilter] = useState<string>('All');
@@ -933,7 +991,7 @@ const NewProject = () => {
                         {slides.map((slide) => (
                           <div key={slide.id} className="rounded-2xl border border-border bg-card/90 p-5 shadow-elevated hover:border-primary/40 hover:shadow-glow transition-all duration-300 group">
                             <div className="flex items-start gap-4">
-                              <GripVertical className="h-5 w-5 text-foreground/20 mt-3 cursor-grab flex-shrink-0 opacity-40 group-hover:opacity-100 transition-opacity hover:text-foreground" />
+                              <div className="h-5 w-5 mt-3 flex-shrink-0" />
                               <div className="flex-1 space-y-4">
                                 <div className="flex items-center gap-3">
                                   <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 border border-primary/20 shadow-inner">
