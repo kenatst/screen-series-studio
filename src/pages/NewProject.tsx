@@ -107,7 +107,7 @@ function extractColorsFromImage(imgSrc: string): Promise<string[]> {
     img.crossOrigin = "anonymous";
     img.onload = () => {
       const canvas = document.createElement("canvas");
-      const size = 64;
+      const size = 32;
       canvas.width = size;
       canvas.height = size;
       const ctx = canvas.getContext("2d");
@@ -115,14 +115,12 @@ function extractColorsFromImage(imgSrc: string): Promise<string[]> {
       ctx.drawImage(img, 0, 0, size, size);
       const data = ctx.getImageData(0, 0, size, size).data;
       const colorMap = new Map<string, number>();
-      for (let i = 0; i < data.length; i += 16) { // sample every 4th pixel
+      for (let i = 0; i < data.length; i += 16) {
         const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
         if (a < 128) continue;
-        // Quantize to reduce noise
         const qr = Math.round(r / 32) * 32;
         const qg = Math.round(g / 32) * 32;
         const qb = Math.round(b / 32) * 32;
-        // Skip near-white and near-black
         const brightness = (qr + qg + qb) / 3;
         if (brightness < 30 || brightness > 235) continue;
         const hex = `#${qr.toString(16).padStart(2, '0')}${qg.toString(16).padStart(2, '0')}${qb.toString(16).padStart(2, '0')}`;
