@@ -52,12 +52,12 @@ export const LandingNav = () => {
                     </div>
 
                     <div className="hidden md:flex items-center gap-4">
-                        <Link to="/project/new">
+                        <Link to="/login">
                             <span className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer mr-2">
                                 Log in
                             </span>
                         </Link>
-                        <Link to="/project/new">
+                        <Link to="/login">
                             <Button className="bg-white text-black hover:bg-white/90 font-semibold shadow-glow rounded-full px-6 h-10">
                                 Start free trial
                             </Button>
