@@ -237,10 +237,6 @@ const Results = () => {
               {!canTranslate(userPlan) && <Lock className="mr-2 h-3 w-3" />}
               <Globe className="mr-2 h-4 w-4" /> Translate
             </Button>
-            <Button variant="outline" className="rounded-xl" onClick={handleDownload} disabled={isExporting}>
-              {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-              Export ZIP
-            </Button>
             <Button
               className="rounded-xl"
               onClick={handleRegenerateAll}
