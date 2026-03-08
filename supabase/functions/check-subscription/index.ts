@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
-import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -124,8 +124,9 @@ serve(async (req) => {
     const resolvedPlan = PRODUCT_NAME_TO_PLAN[product.name] ?? "starter";
 
     const monthlyCredits = PLAN_CREDITS[resolvedPlan] ?? 3;
-    const shouldGrantUpgradeCredits = currentPlan === "free" || currentCredits <= 1;
-    const nextCredits = shouldGrantUpgradeCredits ? Math.max(currentCredits, monthlyCredits) : currentCredits;
+    // Always grant full plan credits when plan changes or when credits are below plan allocation
+    const planChanged = currentPlan !== resolvedPlan;
+    const nextCredits = planChanged ? monthlyCredits : Math.max(currentCredits, monthlyCredits);
 
     const subscriptionEnd = safeIsoFromUnixSeconds(subscription.current_period_end);
 
