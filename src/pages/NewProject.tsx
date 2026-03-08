@@ -807,7 +807,7 @@ const NewProject = () => {
                       setIsSaving(true);
                       try {
                         const project = await createProject.mutateAsync({
-                          name: projectName || `Project ${Date.now()}`,
+                          name: projectName || appName || `Project ${Date.now()}`,
                           app_name: appName,
                           app_description: appDescription,
                           platform,

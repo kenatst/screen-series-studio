@@ -7,6 +7,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const CREDIT_COST_PER_SLIDE = 1;
+
 function buildConsistencyBlock(
   level: string,
   brandColors: string[],
@@ -57,7 +59,7 @@ function buildSlidePrompt(
   project: any,
   brandKit: any,
   consistencyLevel: string,
-  templateStyleGuide: string
+  userPrompt?: string
 ): string {
   const platformLabel =
     project.platform === "ios"
@@ -79,6 +81,10 @@ function buildSlidePrompt(
     slide.total_slides || 5
   );
 
+  const userDirective = userPrompt
+    ? `\n\n=== USER DIRECTION ===\nThe user has specifically requested: "${userPrompt}"\nApply this direction while maintaining brand consistency and quality standards.\n=== END USER DIRECTION ===`
+    : "";
+
   return `You are an expert ${platformLabel} screenshot designer creating premium, conversion-optimized marketing screenshots.
 
 === APP INFO ===
@@ -89,9 +95,6 @@ Primary goal: ${(project.config as any)?.primaryGoal || ""}
 
 === BRAND KIT ===
 ${brandBlock || "Use a professional, premium color palette."}
-
-=== TEMPLATE STYLE ===
-${templateStyleGuide || "Premium, modern, conversion-focused design."}
 
 === SLIDE ${slide.slide_number} OF ${slide.total_slides || 5} ===
 Objective: ${slide.objective || "Feature spotlight"}
@@ -118,7 +121,7 @@ Key requirements:
 9. EXACT COMPOSITING: If a raw app screenshot is provided as a reference, composite it INTO the phone mockup screen naturally without distorting its aspect ratio.
 10. CLEAN OUTPUT: Do NOT include any App Store UI chrome, status bars outside the mockup, or store branding on the canvas.
 
-${consistency}`.trim();
+${consistency}${userDirective}`.trim();
 }
 
 serve(async (req) => {
@@ -153,9 +156,14 @@ serve(async (req) => {
     const userId = claimsData.claims.sub as string;
 
     let projectId: string;
+    let singleSlideId: string | undefined;
+    let userPrompt: string | undefined;
+
     if (req.method === "POST") {
       const body = await req.json();
       projectId = body.project_id;
+      singleSlideId = body.single_slide_id;
+      userPrompt = body.user_prompt;
     } else {
       const url = new URL(req.url);
       projectId = url.searchParams.get("project_id") || "";
@@ -180,13 +188,41 @@ serve(async (req) => {
     }
 
     // Fetch slides
-    const { data: slides, error: slidesError } = await userClient.from("project_slides").select("*").eq("project_id", projectId).order("slide_number", { ascending: true });
-    if (slidesError || !slides || slides.length === 0) {
+    const { data: allSlides, error: slidesError } = await userClient.from("project_slides").select("*").eq("project_id", projectId).order("slide_number", { ascending: true });
+    if (slidesError || !allSlides || allSlides.length === 0) {
       return new Response(JSON.stringify({ error: "No slides found" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Determine which slides to generate
+    let slides = allSlides;
+    if (singleSlideId) {
+      const singleSlide = allSlides.find((s: any) => s.id === singleSlideId);
+      if (!singleSlide) {
+        return new Response(JSON.stringify({ error: "Slide not found" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      slides = [singleSlide];
+    }
+
+    // Check credits
+    const { data: profileData } = await adminClient.from("profiles").select("credits, plan").eq("id", userId).single();
+    const currentCredits = profileData?.credits ?? 0;
+    const totalCost = slides.length * CREDIT_COST_PER_SLIDE;
+
+    if (currentCredits < totalCost) {
+      return new Response(JSON.stringify({ error: `Crédits insuffisants. Il faut ${totalCost} crédit(s), vous en avez ${currentCredits}.` }), {
+        status: 402,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Deduct credits upfront
+    await adminClient.from("profiles").update({ credits: currentCredits - totalCost }).eq("id", userId);
 
     // Fetch reference assets from storage
     const { data: assets } = await userClient.from("assets").select("*").eq("project_id", projectId);
@@ -207,12 +243,10 @@ serve(async (req) => {
     }
 
     // Update project status
-    await adminClient.from("projects").update({ status: "generating" }).eq("id", projectId);
+    if (!singleSlideId) {
+      await adminClient.from("projects").update({ status: "generating" }).eq("id", projectId);
+    }
 
-    // Template style guide (stored in config or default)
-    const templateStyleGuide = "";
-
-    // Set up SSE stream
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
@@ -222,17 +256,33 @@ serve(async (req) => {
 
         const ai = new GoogleGenAI({ apiKey: geminiApiKey });
         const brandKit = project.brand_kit as any || {};
-        const genMode = project.generation_mode || "full";
+        const genMode = singleSlideId ? "single" : (project.generation_mode || "full");
         let slidesToGenerate = slides;
 
-        if (genMode === "first-3") {
+        if (genMode === "first-3" && !singleSlideId) {
           slidesToGenerate = slides.slice(0, 3);
-        } else if (genMode === "creative-direction" && slides.length > 0) {
+        } else if (genMode === "creative-direction" && slides.length > 0 && !singleSlideId) {
           slidesToGenerate = [slides[0], slides[0], slides[0]];
         }
 
         // Track previously generated images for context chaining
         const previousSlideImages: { mimeType: string; data: string }[] = [];
+
+        // For single slide regen, gather existing sibling slides as context
+        if (singleSlideId) {
+          for (const sibling of allSlides.filter((s: any) => s.id !== singleSlideId && s.status === "completed" && s.image_url)) {
+            try {
+              const sibPath = `${userId}/${projectId}/slide-${sibling.slide_number}.png`;
+              const { data: sibData } = await adminClient.storage.from("generated-outputs").download(sibPath);
+              if (sibData) {
+                const ab = await sibData.arrayBuffer();
+                const b64 = btoa(String.fromCharCode(...new Uint8Array(ab)));
+                previousSlideImages.push({ mimeType: "image/png", data: b64 });
+              }
+            } catch { /* skip */ }
+            if (previousSlideImages.length >= 2) break;
+          }
+        }
 
         for (let i = 0; i < slidesToGenerate.length; i++) {
           const slide = slidesToGenerate[i];
@@ -243,27 +293,26 @@ serve(async (req) => {
 
           try {
             const prompt = buildSlidePrompt(
-              { ...slide, total_slides: slides.length },
+              { ...slide, total_slides: allSlides.length },
               project,
               brandKit,
               project.consistency_level || "balanced",
-              templateStyleGuide
+              userPrompt
             );
 
             const variantPrompt = genMode === "creative-direction"
               ? `${prompt}\n\nMETA: Provide a creative variant for this specific art direction generation with a unique aesthetic spin, while continuing to strictly respect the brand core and core UI elements.`
               : prompt;
 
-            // Build contents: prompt text + reference images + previous slides for context
             const contents: any[] = [{ text: variantPrompt }];
 
-            // Add reference images (screens matching this slide's tag first)
+            // Add matching screen reference
             const matchingRef = referenceImages.find(r => r.tag === slide.raw_screen_tag);
             if (matchingRef) {
               contents.push({ inlineData: { mimeType: matchingRef.mimeType, data: matchingRef.data } });
             }
 
-            // Add brand assets (logo, icon, mascot)
+            // Add brand assets
             for (const img of referenceImages.filter(r => ['logo', 'icon', 'mascot'].includes(r.tag || ''))) {
               contents.push({ inlineData: { mimeType: img.mimeType, data: img.data } });
             }
@@ -273,31 +322,23 @@ serve(async (req) => {
               contents.push({ inlineData: { mimeType: img.mimeType, data: img.data } });
             }
 
-            // CONTEXT CHAINING: Add previous slide images as reference for consistency
-            // Use last 2 generated slides max to keep within limits
-            if (previousSlideImages.length > 0 && genMode !== "creative-direction") {
+            // Context chaining: add previous slides
+            if (previousSlideImages.length > 0) {
               const recentSlides = previousSlideImages.slice(-2);
               for (const prevImg of recentSlides) {
-                contents.push({
-                  inlineData: { mimeType: prevImg.mimeType, data: prevImg.data },
-                });
+                contents.push({ inlineData: { mimeType: prevImg.mimeType, data: prevImg.data } });
               }
-              // Add context instruction
               contents[0] = {
-                text: `${variantPrompt}\n\n=== PREVIOUS SLIDES CONTEXT ===\nThe following ${recentSlides.length} image(s) are the previously generated slides in this set. You MUST maintain strict visual consistency with them: same background treatment, same device mockup style, same typography hierarchy, same color usage patterns. The new slide should look like it belongs to the exact same set.\n=== END CONTEXT ===`,
+                text: `${variantPrompt}\n\n=== PREVIOUS SLIDES CONTEXT ===\nThe following ${recentSlides.length} image(s) are previously generated slides in this set. You MUST maintain strict visual consistency with them: same background treatment, same device mockup style, same typography hierarchy, same color usage patterns.\n=== END CONTEXT ===`,
               };
             }
 
-            // Cap at 14 inline images total
-            const imageContents = contents.filter((c: any) => c.inlineData);
-            if (imageContents.length > 14) {
-              // Keep only first 14 image contents
-              let imgCount = 0;
-              for (let j = contents.length - 1; j >= 0; j--) {
-                if ((contents[j] as any).inlineData) {
-                  imgCount++;
-                  if (imgCount > 14) contents.splice(j, 1);
-                }
+            // Cap at 14 images
+            let imgCount = 0;
+            for (let j = contents.length - 1; j >= 0; j--) {
+              if ((contents[j] as any).inlineData) {
+                imgCount++;
+                if (imgCount > 14) contents.splice(j, 1);
               }
             }
 
@@ -321,7 +362,7 @@ serve(async (req) => {
 
             if (!imageBase64) throw new Error("No image generated");
 
-            // Store this image for context chaining to next slides
+            // Store for context chaining
             previousSlideImages.push({ mimeType: "image/png", data: imageBase64 });
 
             // Upload to storage
@@ -348,7 +389,9 @@ serve(async (req) => {
           }
         }
 
-        await adminClient.from("projects").update({ status: "completed" }).eq("id", projectId);
+        if (!singleSlideId) {
+          await adminClient.from("projects").update({ status: "completed" }).eq("id", projectId);
+        }
         sendEvent("all-done", { projectId });
         controller.close();
       },
