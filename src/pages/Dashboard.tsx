@@ -264,9 +264,14 @@ const Dashboard = () => {
                     <p className="text-muted-foreground font-medium">{currentProject.app_name || 'App'} · {currentProject.platform}</p>
                   </div>
                 </div>
-                <Button variant="default" className="rounded-xl font-bold px-6">
-                  {currentProject.status === 'completed' ? 'View Results' : currentProject.status === 'generating' ? 'View Progress' : 'Continue'}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="sm" className="rounded-xl text-xs text-muted-foreground hover:text-foreground" onClick={(e) => handleArchive(e, currentProject.id)}>
+                    <Archive className="h-3 w-3 mr-1" /> Archive
+                  </Button>
+                  <Button variant="default" className="rounded-xl font-bold px-6">
+                    {currentProject.status === 'completed' ? 'View Results' : currentProject.status === 'generating' ? 'View Progress' : 'Continue'}
+                  </Button>
+                </div>
               </div>
             </motion.div>
           </div>
