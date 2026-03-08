@@ -2,10 +2,12 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import { Plus, LayoutTemplate, Copy, Play, Loader2 } from "lucide-react";
+import { Plus, LayoutTemplate, Copy, Play, Loader2, Crown } from "lucide-react";
 import { motion } from "framer-motion";
 import { useProjects } from "@/hooks/useProjects";
 import { useAuth } from "@/hooks/useAuth";
+import { canCreateProject, getPlanById } from "@/lib/plans";
+import { useToast } from "@/hooks/use-toast";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -20,8 +22,18 @@ const statusColors: Record<string, string> = {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, signOut, profile } = useAuth();
+  const { toast } = useToast();
   const { data: projects, isLoading } = useProjects();
+  const plan = getPlanById(profile?.plan || 'free');
+
+  const handleNewProject = () => {
+    if (!canCreateProject(profile?.plan || 'free', projects?.length || 0)) {
+      toast({ title: "Limite atteinte", description: `Votre plan ${plan.name} permet ${plan.limits.maxProjects} projet(s). Passez à un plan supérieur.`, variant: "destructive" });
+      return;
+    }
+    navigate('/project/new');
+  };
 
   const currentProject = projects?.[0];
   const recentProjects = projects?.slice(1) || [];
@@ -39,8 +51,11 @@ const Dashboard = () => {
             <p className="text-muted-foreground mt-1 font-medium text-lg">Create, edit, and export your screenshot sets</p>
           </div>
           <div className="flex items-center gap-3">
+            <Badge variant="outline" className="text-xs font-bold uppercase tracking-wider">
+              <Crown className="h-3 w-3 mr-1" /> {plan.name}
+            </Badge>
             <Button variant="outline" size="sm" onClick={signOut} className="rounded-xl">Sign out</Button>
-            <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm rounded-xl px-6" onClick={() => navigate('/project/new')}>
+            <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm rounded-xl px-6" onClick={handleNewProject}>
               <Plus className="mr-2 h-5 w-5" /> New project
             </Button>
           </div>

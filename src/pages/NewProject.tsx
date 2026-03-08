@@ -14,6 +14,7 @@ import { toneOptions, screenTags, slideObjectives, defaultStorylines, emphasisOp
 import type { SlideItem } from "@/lib/demo-data";
 import { useCreateProject, useSaveSlides } from "@/hooks/useProjects";
 import { useAuth } from "@/hooks/useAuth";
+import { getMaxSlides } from "@/lib/plans";
 
 const steps = [
   { id: 1, label: 'Project' },
@@ -27,12 +28,15 @@ const steps = [
 
 const NewProject = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const createProject = useCreateProject();
   const saveSlides = useSaveSlides();
+  const maxSlides = getMaxSlides(profile?.plan || 'free');
   const [currentStep, setCurrentStep] = useState(1);
-  const [slideCount, setSlideCount] = useState(5);
-  const [slides, setSlides] = useState<SlideItem[]>(defaultStorylines['5-slide']);
+  const [slideCount, setSlideCount] = useState(Math.min(5, maxSlides));
+  const [slides, setSlides] = useState<SlideItem[]>(
+    maxSlides === 1 ? defaultStorylines['5-slide'].slice(0, 1) : defaultStorylines['5-slide']
+  );
   const [consistencyLevel, setConsistencyLevel] = useState<'strict' | 'balanced' | 'exploratory'>('balanced');
   const [selectedTone, setSelectedTone] = useState('premium');
   const [selectedTemplate, setSelectedTemplate] = useState('');
@@ -51,10 +55,11 @@ const NewProject = () => {
   };
 
   const handleSlideCountChange = (count: number) => {
-    setSlideCount(count);
-    const key = count <= 5 ? '5-slide' : '10-slide';
+    const clamped = Math.min(count, maxSlides);
+    setSlideCount(clamped);
+    const key = clamped <= 5 ? '5-slide' : '10-slide';
     const base = defaultStorylines[key];
-    setSlides(base.slice(0, count));
+    setSlides(base.slice(0, clamped));
   };
 
   const updateSlide = (id: string, field: keyof SlideItem, value: string) => {

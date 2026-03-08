@@ -5,13 +5,16 @@ import { Badge } from "@/components/ui/badge";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Download, RefreshCw, Copy, Edit3, Globe, CheckCircle2,
-  X, Loader2
+  X, Loader2, Lock
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import { useProject, useProjectSlides } from "@/hooks/useProjects";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { TranslationsModal } from "@/components/project/TranslationsModal";
+import { canTranslate, canRedesign } from "@/lib/plans";
+import { useToast } from "@/hooks/use-toast";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 15 },
@@ -21,6 +24,8 @@ const fadeUp = {
 const Results = () => {
   const navigate = useNavigate();
   const { projectId } = useParams();
+  const { profile } = useAuth();
+  const { toast } = useToast();
 
   const { data: project } = useProject(projectId);
   const { data: slides, refetch: refetchSlides } = useProjectSlides(projectId);
@@ -29,6 +34,8 @@ const Results = () => {
   const [editingSlide, setEditingSlide] = useState<string | null>(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isTranslationModalOpen, setIsTranslationModalOpen] = useState(false);
+
+  const userPlan = profile?.plan || 'free';
 
   const selectedSlide = slides?.find(s => s.id === selectedSlideId) || slides?.[0];
 
@@ -112,7 +119,18 @@ const Results = () => {
             </div>
           </div>
           <div className="flex gap-3">
-            <Button variant="outline" className="rounded-xl" onClick={() => setIsTranslationModalOpen(true)}>
+            <Button
+              variant="outline"
+              className="rounded-xl"
+              onClick={() => {
+                if (!canTranslate(userPlan)) {
+                  toast({ title: "Plan requis", description: "Les traductions sont disponibles à partir du plan Pro.", variant: "destructive" });
+                  return;
+                }
+                setIsTranslationModalOpen(true);
+              }}
+            >
+              {!canTranslate(userPlan) && <Lock className="mr-2 h-3 w-3" />}
               <Globe className="mr-2 h-4 w-4" /> Translate
             </Button>
             <Button variant="outline" className="rounded-xl" onClick={handleDownload}>

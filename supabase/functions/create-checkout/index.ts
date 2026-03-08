@@ -7,10 +7,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// TODO: Replace with actual Stripe price IDs after creating products
+// Price IDs will be set after creating Stripe products
+// TODO: Replace with actual Stripe price IDs
 const PLAN_PRICES: Record<string, string> = {
-  single: "price_single_placeholder",
-  multi: "price_multi_placeholder",
+  starter: "price_starter_placeholder",
+  pro: "price_pro_placeholder",
   unlimited: "price_unlimited_placeholder",
 };
 
