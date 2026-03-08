@@ -593,9 +593,9 @@ const NewProject = () => {
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     {demoTemplates.map(t => (
                       <button key={t.id} onClick={() => setSelectedTemplate(t.name)} className={`rounded-2xl border-2 overflow-hidden transition-all duration-300 ${selectedTemplate === t.name ? 'border-primary shadow-glow scale-[1.02]' : 'border-border hover:border-primary/40 hover:scale-[1.02] shadow-sm'}`}>
-                        <div className="aspect-[9/16] relative overflow-hidden bg-card/90">
+                        <div className="aspect-[3/4] relative overflow-hidden bg-card/90">
                           {templatePreviews[t.name] ? (
-                            <img src={templatePreviews[t.name]} alt={t.name} className="w-full h-full object-cover" />
+                            <img src={templatePreviews[t.name]} alt={t.name} className="w-full h-full object-contain" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
                               <LayoutGrid className={`h-8 w-8 ${selectedTemplate === t.name ? 'text-primary' : 'text-foreground/30'}`} />
