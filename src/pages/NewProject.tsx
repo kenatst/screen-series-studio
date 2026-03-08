@@ -804,11 +804,11 @@ const NewProject = () => {
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-3">
                     <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">App category</label>
-                    <Input placeholder="e.g. Education, Finance, Health" className="bg-black/5 border-border text-foreground placeholder:text-foreground/30 shadow-inner h-12 focus-visible:ring-primary transition-all rounded-xl" />
+                    <Input value={appCategory} onChange={e => setAppCategory(e.target.value)} placeholder="e.g. Education, Finance, Health" className="bg-black/5 border-border text-foreground placeholder:text-foreground/30 shadow-inner h-12 focus-visible:ring-primary transition-all rounded-xl" />
                   </div>
                   <div className="space-y-3">
                     <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Target audience</label>
-                    <Input placeholder="e.g. Young professionals, students" className="bg-black/5 border-border text-foreground placeholder:text-foreground/30 shadow-inner h-12 focus-visible:ring-primary transition-all rounded-xl" />
+                    <Input value={targetAudience} onChange={e => setTargetAudience(e.target.value)} placeholder="e.g. Young professionals, students" className="bg-black/5 border-border text-foreground placeholder:text-foreground/30 shadow-inner h-12 focus-visible:ring-primary transition-all rounded-xl" />
                   </div>
                 </div>
                 <div className="space-y-3">
