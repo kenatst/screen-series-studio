@@ -29,6 +29,7 @@ const App = () => (
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/dashboard/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/dashboard/*" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/project/new" element={<ProtectedRoute><NewProject /></ProtectedRoute>} />
             <Route path="/project/:projectId/generating" element={<ProtectedRoute><Generating /></ProtectedRoute>} />

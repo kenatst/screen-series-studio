@@ -18,8 +18,7 @@ const mainItems = [
 ];
 
 const bottomItems = [
-  { title: "Settings", url: "/dashboard/settings", icon: Settings },
-  { title: "Billing", url: "/dashboard/billing", icon: CreditCard },
+  { title: "Settings & Billing", url: "/dashboard/settings", icon: Settings },
   { title: "Help", url: "/dashboard/help", icon: HelpCircle },
 ];
 
