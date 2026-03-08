@@ -11,10 +11,11 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CHECK-SUBSCRIPTION] ${step}${details ? ` - ${JSON.stringify(details)}` : ''}`);
 };
 
-const PRICE_TO_PLAN: Record<string, string> = {
-  "price_1T8kgjCGD5S3rFVNQIKU0KKc": "starter",
-  "price_1T8kgkCGD5S3rFVNbzJcYs22": "pro",
-  "price_1T8kglCGD5S3rFVN3Q3K0ql6": "unlimited",
+/** Map product name → plan id */
+const PRODUCT_NAME_TO_PLAN: Record<string, string> = {
+  "ScreenForge Starter": "starter",
+  "ScreenForge Pro": "pro",
+  "ScreenForge Unlimited": "unlimited",
 };
 
 serve(async (req) => {
@@ -74,10 +75,13 @@ serve(async (req) => {
     }
 
     const subscription = subscriptions.data[0];
-    const priceId = subscription.items.data[0].price.id;
-    const plan = PRICE_TO_PLAN[priceId] || "starter";
+    const productId = subscription.items.data[0].price.product as string;
+
+    // Resolve plan from product name
+    const product = await stripe.products.retrieve(productId);
+    const plan = PRODUCT_NAME_TO_PLAN[product.name] || "starter";
     const subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
-    logStep("Active subscription found", { plan, priceId, subscriptionEnd });
+    logStep("Active subscription found", { plan, productName: product.name, subscriptionEnd });
 
     await supabaseClient.from("profiles").update({ plan }).eq("id", user.id);
 

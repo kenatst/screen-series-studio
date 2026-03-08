@@ -7,11 +7,65 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const PLAN_PRICES: Record<string, string> = {
-  starter: "price_1T8kgjCGD5S3rFVNQIKU0KKc",
-  pro: "price_1T8kgkCGD5S3rFVNbzJcYs22",
-  unlimited: "price_1T8kglCGD5S3rFVN3Q3K0ql6",
+const logStep = (step: string, details?: any) => {
+  console.log(`[CREATE-CHECKOUT] ${step}${details ? ` - ${JSON.stringify(details)}` : ''}`);
 };
+
+/** Plan definitions — prices in cents (EUR) */
+const PLAN_DEFS: Record<string, { name: string; amount: number; description: string }> = {
+  starter: { name: "ScreenForge Starter", amount: 4900, description: "50 credits/month, 1 workspace, HD export" },
+  pro: { name: "ScreenForge Pro", amount: 9900, description: "200 credits/month, 3 workspaces, priority generation" },
+  unlimited: { name: "ScreenForge Unlimited", amount: 39900, description: "1000 credits/month, unlimited projects" },
+};
+
+/**
+ * Find or create a recurring EUR price for the given plan
+ * inside the Stripe account linked to the current API key.
+ */
+async function resolvePrice(stripe: Stripe, planId: string): Promise<string> {
+  const def = PLAN_DEFS[planId];
+  if (!def) throw new Error(`Unknown plan: ${planId}`);
+
+  // 1. Search for an existing active product by name
+  const products = await stripe.products.list({ limit: 100, active: true });
+  let product = products.data.find((p) => p.name === def.name);
+
+  if (!product) {
+    logStep("Creating product", { name: def.name });
+    product = await stripe.products.create({
+      name: def.name,
+      description: def.description,
+    });
+    logStep("Product created", { productId: product.id });
+  } else {
+    logStep("Found existing product", { productId: product.id });
+  }
+
+  // 2. Look for an existing recurring EUR price on this product
+  const prices = await stripe.prices.list({
+    product: product.id,
+    active: true,
+    limit: 20,
+  });
+  let price = prices.data.find(
+    (p) => p.currency === "eur" && p.unit_amount === def.amount && p.recurring?.interval === "month"
+  );
+
+  if (!price) {
+    logStep("Creating price", { amount: def.amount });
+    price = await stripe.prices.create({
+      product: product.id,
+      unit_amount: def.amount,
+      currency: "eur",
+      recurring: { interval: "month" },
+    });
+    logStep("Price created", { priceId: price.id });
+  } else {
+    logStep("Found existing price", { priceId: price.id });
+  }
+
+  return price.id;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -31,12 +85,21 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated");
 
     const { plan } = await req.json();
-    const priceId = PLAN_PRICES[plan];
-    if (!priceId) throw new Error(`Invalid plan: ${plan}`);
+    if (!PLAN_DEFS[plan]) throw new Error(`Invalid plan: ${plan}`);
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_TEST_SECRET") || "", { apiVersion: "2025-08-27.basil" });
+    const stripeKey = Deno.env.get("STRIPE_TEST_SECRET") || "";
+    if (!stripeKey) throw new Error("STRIPE_TEST_SECRET is not set");
+    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+
+    // Log which Stripe account we're using
+    const account = await stripe.accounts.retrieve();
+    logStep("Using Stripe account", { accountId: account.id });
+
+    // Resolve or create the price in THIS account
+    const priceId = await resolvePrice(stripe, plan);
+
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    let customerId;
+    let customerId: string | undefined;
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
     }
@@ -55,6 +118,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: any) {
+    logStep("ERROR", { message: error.message });
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
