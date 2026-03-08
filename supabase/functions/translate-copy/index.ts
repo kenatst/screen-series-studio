@@ -7,6 +7,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const CREDIT_COST_PER_SLIDE = 1;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -47,6 +49,21 @@ serve(async (req) => {
 
     if (error || !slides?.length) {
       return new Response(JSON.stringify({ error: "No completed slides found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const totalCost = slides.length * CREDIT_COST_PER_SLIDE;
+    const { data: profileData } = await adminClient.from("profiles").select("credits").eq("id", userId).single();
+    const currentCredits = profileData?.credits ?? 0;
+
+    if (currentCredits < totalCost) {
+      return new Response(JSON.stringify({ error: `Crédits insuffisants. Il faut ${totalCost} crédit(s), vous en avez ${currentCredits}.` }), {
+        status: 402,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (totalCost > 0) {
+      await adminClient.from("profiles").update({ credits: currentCredits - totalCost }).eq("id", userId);
     }
 
     const ai = new GoogleGenAI({ apiKey: geminiApiKey });
