@@ -10,6 +10,7 @@ interface TranslationsModalProps {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
     projectId: string;
+    onSuccess?: () => void;
 }
 
 const LANGUAGES = [
@@ -25,7 +26,7 @@ const LANGUAGES = [
     { value: 'ru', label: 'Russian (Русский)' },
 ];
 
-export const TranslationsModal = ({ isOpen, onOpenChange, projectId }: TranslationsModalProps) => {
+export const TranslationsModal = ({ isOpen, onOpenChange, projectId, onSuccess }: TranslationsModalProps) => {
     const [language, setLanguage] = useState('');
     const [isTranslating, setIsTranslating] = useState(false);
 
@@ -38,6 +39,7 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId }: Translati
             });
             if (error) throw error;
             toast.success(`Translation to ${LANGUAGES.find(l => l.value === language)?.label} completed!`);
+            onSuccess?.();
             onOpenChange(false);
         } catch (error) {
             toast.error('Failed to translate project');

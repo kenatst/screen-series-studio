@@ -174,9 +174,10 @@ serve(async (req) => {
     const zipFiles: { name: string; data: Uint8Array }[] = [];
 
     for (const slide of slides) {
+      if (!slide.image_url) continue;
+
       for (const format of deviceFormats) {
-        const storagePath = `${userId}/${projectId}/slide-${slide.slide_number}.png`;
-        const { data: fileData } = await adminClient.storage.from("generated-outputs").download(storagePath);
+        const { data: fileData } = await adminClient.storage.from("generated-outputs").download(slide.image_url);
 
         if (fileData) {
           const arrayBuffer = await fileData.arrayBuffer();
@@ -184,6 +185,8 @@ serve(async (req) => {
           const paddedNum = String(slide.slide_number).padStart(2, "0");
           const fileName = `${safeName}/${locale}/${format}/${paddedNum}_slide.png`;
           zipFiles.push({ name: fileName, data: imageData });
+        } else {
+          console.warn(`Failed to download image for slide ${slide.slide_number}`);
         }
       }
     }

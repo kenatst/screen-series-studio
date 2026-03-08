@@ -2,7 +2,6 @@ import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useNavigate, useParams } from "react-router-dom";
 import {
@@ -141,7 +140,7 @@ const Results = () => {
       await supabase.from('projects').update({ status: 'generating' }).eq('id', projectId);
       // Reset all slides to pending mode
       await supabase.from('project_slides')
-        .update({ status: 'pending', image_url: null, prompt_used: null })
+        .update({ status: 'pending', image_url: null })
         .eq('project_id', projectId);
 
       // Route to interactive generation workflow step-by-step
@@ -251,7 +250,7 @@ const Results = () => {
               <Badge variant="outline">{project.platform}</Badge>
               <Badge variant="outline">{project.consistency_level} consistency</Badge>
               <Badge variant="outline" className="text-primary border-primary/30">
-                {userCredits} crédits
+                {userCredits} credits
               </Badge>
             </div>
           </div>
@@ -466,6 +465,7 @@ const Results = () => {
         isOpen={isTranslationModalOpen}
         onOpenChange={setIsTranslationModalOpen}
         projectId={projectId || ''}
+        onSuccess={() => refetchSlides()}
       />
 
       <Dialog open={showWatermarkWarning} onOpenChange={setShowWatermarkWarning}>
@@ -483,9 +483,10 @@ const Results = () => {
             <Button
               variant="outline"
               onClick={executeDownload}
+              disabled={isExporting}
               className="w-full sm:w-auto border-border text-muted-foreground hover:text-foreground hover:bg-white/5"
             >
-              <Download className="mr-2 h-4 w-4" />
+              {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
               Download anyway
             </Button>
             <Button

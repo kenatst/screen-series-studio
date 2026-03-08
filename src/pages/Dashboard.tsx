@@ -11,6 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useBilling } from "@/hooks/useBilling";
+import { ProjectThumbnail } from "@/components/dashboard/ProjectThumbnail";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -24,74 +26,6 @@ const statusColors: Record<string, string> = {
   archived: 'bg-muted text-muted-foreground/60',
 };
 
-/** Shows the app logo (from uploaded brand assets) or falls back to first slide thumbnail */
-const ProjectThumbnail = ({ projectId }: { projectId: string }) => {
-  const { data: slides } = useProjectSlides(projectId);
-
-  const { data: logoUrl } = useQuery({
-    queryKey: ['project-logo', projectId],
-    queryFn: async () => {
-      // Try to find a logo asset for this project
-      const { data: assets } = await supabase
-        .from('assets')
-        .select('storage_path')
-        .eq('project_id', projectId)
-        .eq('asset_type', 'logo')
-        .limit(1);
-
-      if (assets && assets.length > 0) {
-        const { data } = await supabase.storage
-          .from('raw-uploads')
-          .createSignedUrl(assets[0].storage_path, 3600);
-        if (data?.signedUrl) return data.signedUrl;
-      }
-
-      // Fallback: try icon
-      const { data: iconAssets } = await supabase
-        .from('assets')
-        .select('storage_path')
-        .eq('project_id', projectId)
-        .eq('asset_type', 'icon')
-        .limit(1);
-
-      if (iconAssets && iconAssets.length > 0) {
-        const { data } = await supabase.storage
-          .from('raw-uploads')
-          .createSignedUrl(iconAssets[0].storage_path, 3600);
-        if (data?.signedUrl) return data.signedUrl;
-      }
-      return null;
-    },
-    staleTime: 1000 * 60 * 30, // 30 minutes cache to prevent flickering
-  });
-
-  if (logoUrl) {
-    return (
-      <img
-        src={logoUrl}
-        alt="App logo"
-        className="w-full h-full object-contain p-1"
-      />
-    );
-  }
-
-  const firstSlide = slides?.[0];
-  if (firstSlide?.image_url) {
-    return (
-      <img
-        src={firstSlide.image_url}
-        alt="Project thumbnail"
-        className="w-full h-full object-cover"
-      />
-    );
-  }
-
-  return (
-    <div className="w-full h-full bg-muted flex items-center justify-center">
-      <span className="text-4xl filter drop-shadow-md">📱</span>
-    </div>
-  );
-};
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -100,8 +34,8 @@ const Dashboard = () => {
   const { data: projects, isLoading } = useProjects();
   const plan = getPlanById(profile?.plan || 'free');
   const [isCheckingSub, setIsCheckingSub] = useState(false);
-  const [isOpeningPortal, setIsOpeningPortal] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
+  const { handleUpgrade, handleManageSubscription, isOpeningPortal } = useBilling();
   const unarchiveProject = useUnarchiveProject();
   const archiveProject = useArchiveProject();
 
@@ -114,31 +48,6 @@ const Dashboard = () => {
       return;
     }
     navigate('/project/new');
-  };
-
-  const handleUpgrade = async (targetPlan: string) => {
-    try {
-      const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { plan: targetPlan },
-      });
-      if (error) throw error;
-      if (data?.url) window.open(data.url, "_blank");
-    } catch (e: any) {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
-    }
-  };
-
-  const handleManageSubscription = async () => {
-    setIsOpeningPortal(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("customer-portal");
-      if (error) throw error;
-      if (data?.url) window.open(data.url, "_blank");
-    } catch (e: any) {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
-    } finally {
-      setIsOpeningPortal(false);
-    }
   };
 
   const handleRefreshSub = async () => {
@@ -161,6 +70,7 @@ const Dashboard = () => {
   const handleArchive = async (e: React.MouseEvent, projectId: string) => {
     e.stopPropagation();
     e.preventDefault();
+    if (!window.confirm("Are you sure you want to archive this project?")) return;
     try {
       await archiveProject.mutateAsync(projectId);
       toast({ title: "Project archived" });
@@ -185,8 +95,8 @@ const Dashboard = () => {
             <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
             <p className="text-muted-foreground mt-1 font-medium text-lg">Create, edit, and export your screenshot sets</p>
           </div>
-          <div className="flex items-center gap-3">
-            <Badge variant="outline" className="text-xs font-bold uppercase tracking-wider">
+          <div className="flex flex-wrap md:flex-nowrap items-center gap-3 overflow-x-auto pb-2 w-full md:w-auto scrollbar-hide">
+            <Badge variant="outline" className="text-xs font-bold uppercase tracking-wider whitespace-nowrap">
               <Crown className="h-3 w-3 mr-1" /> {plan.name}
             </Badge>
             {profile?.subscriptionEnd && (
@@ -208,7 +118,6 @@ const Dashboard = () => {
                 Upgrade
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={signOut} className="rounded-xl">Sign out</Button>
             <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm rounded-xl px-6" onClick={handleNewProject}>
               <Plus className="mr-2 h-5 w-5" /> New project
             </Button>
@@ -222,15 +131,20 @@ const Dashboard = () => {
         )}
 
         {!isLoading && (!projects || projects.length === 0) && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-20">
-            <div className="inline-flex items-center justify-center h-20 w-20 rounded-2xl bg-primary/10 border border-primary/20 mb-6">
-              <LayoutTemplate className="h-10 w-10 text-primary" />
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-24 px-6 border border-dashed border-border rounded-3xl bg-card/20 backdrop-blur-sm max-w-2xl mx-auto shadow-sm">
+            <div className="inline-flex items-center justify-center p-6 rounded-3xl bg-primary/10 border border-primary/20 mb-8 shadow-inner">
+              <LayoutTemplate className="h-12 w-12 text-primary drop-shadow-md" />
             </div>
-            <h3 className="text-2xl font-bold text-foreground mb-2">No projects yet</h3>
-            <p className="text-muted-foreground mb-6">Create your first screenshot set to get started</p>
-            <Button onClick={() => navigate('/project/new')} className="rounded-xl">
-              <Plus className="mr-2 h-4 w-4" /> Create first project
-            </Button>
+            <h3 className="text-3xl font-black text-foreground mb-3 tracking-tight">No projects yet</h3>
+            <p className="text-lg text-muted-foreground mb-8 max-w-md mx-auto">Create your first screenshot set to start generating high-converting App Store visuals.</p>
+            <div className="flex items-center justify-center gap-4">
+              <Button size="lg" onClick={() => navigate('/project/new')} className="rounded-xl px-8 shadow-glow hover:scale-105 transition-all duration-300">
+                <Plus className="mr-2 h-5 w-5" /> Create first project
+              </Button>
+              <Button size="lg" variant="outline" onClick={() => navigate('/templates')} className="rounded-xl px-8 hover:bg-secondary/50">
+                Browse Templates
+              </Button>
+            </div>
           </motion.div>
         )}
 

@@ -47,8 +47,8 @@ export const HeroSection = () => {
                     className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-6"
                     initial="hidden" animate="visible" variants={fadeUp} custom={3}
                 >
-                    <Link to="/project/new">
-                        <Button size="lg" className="w-full sm:w-auto text-base px-10 h-14 bg-white text-black hover:bg-white/90 hover:scale-105 transition-all shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] rounded-full font-bold">
+                    <Link to="/project/new" className="w-full sm:w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-full">
+                        <Button size="lg" className="w-full text-base px-10 h-14 bg-white text-black hover:bg-white/90 hover:scale-105 transition-all shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] rounded-full font-bold">
                             Start free trial
                         </Button>
                     </Link>

@@ -13,7 +13,7 @@ import { LandingFooter } from "@/components/landing/LandingFooter";
 
 const Landing = () => {
   return (
-    <div className="dark min-h-screen bg-background text-foreground font-sans selection:bg-primary/30">
+    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/30">
       <LandingNav />
       <main>
         <HeroSection />

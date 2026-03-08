@@ -28,14 +28,11 @@ export const LandingFooter = () => {
                 <div className="w-full flex flex-col md:flex-row justify-between items-center gap-6">
                     <div className="flex items-center gap-3">
                         <img src={screenforgeLogo} alt="ScreenForge" className="h-7 w-7 rounded-lg object-cover" />
-                        <span className="text-lg font-bold tracking-tight text-foreground">ScreenForge</span>
-                        <span className="text-foreground/40 text-sm">© {new Date().getFullYear()} All rights reserved.</span>
+                        <span className="text-sm font-medium text-muted-foreground">© {new Date().getFullYear()} ShotApp AI. Tous droits réservés.</span>
                     </div>
                     <div className="flex gap-6 text-sm text-foreground/40">
-                        <a href="#" className="hover:text-foreground transition-colors">Twitter</a>
-                        <a href="#" className="hover:text-foreground transition-colors">LinkedIn</a>
-                        <a href="#" className="hover:text-foreground transition-colors">Privacy Policy</a>
-                        <a href="#" className="hover:text-foreground transition-colors">Terms of Service</a>
+                        <span className="hover:text-foreground transition-colors cursor-default">Privacy Policy</span>
+                        <span className="hover:text-foreground transition-colors cursor-default">Terms of Service</span>
                     </div>
                 </div>
             </div>

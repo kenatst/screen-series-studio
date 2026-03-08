@@ -17,7 +17,6 @@ export const LandingNav = () => {
     }, []);
 
     const navLinks = [
-        { label: 'Product', href: '#product' },
         { label: 'Workflow', href: '#workflow' },
         { label: 'Examples', href: '#examples' },
         { label: 'Pricing', href: '#pricing' },
@@ -44,7 +43,7 @@ export const LandingNav = () => {
                             <a
                                 key={link.label}
                                 href={link.href}
-                                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-md px-2 py-1"
                             >
                                 {link.label}
                             </a>
@@ -52,8 +51,8 @@ export const LandingNav = () => {
                     </div>
 
                     <div className="hidden md:flex items-center gap-4">
-                        <Link to="/login">
-                            <span className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer mr-2">
+                        <Link to="/login" className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-md">
+                            <span className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer mr-2 px-2 py-1">
                                 Log in
                             </span>
                         </Link>
@@ -64,7 +63,7 @@ export const LandingNav = () => {
                         </Link>
                     </div>
 
-                    <button className="md:hidden text-foreground" onClick={() => setMobileMenuOpen(true)}>
+                    <button className="md:hidden text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md p-1" onClick={() => setMobileMenuOpen(true)}>
                         <Menu className="h-6 w-6" />
                     </button>
                 </div>

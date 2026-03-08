@@ -34,12 +34,12 @@ export const BatchGenerationGrid = () => {
             <div className="absolute inset-0 bg-gradient-to-b from-background via-transparent to-background pointer-events-none z-10" />
 
             <div className="container relative mx-auto px-6 text-center z-20 mb-16" ref={ref}>
-                <h2 className="text-4xl md:text-5xl font-black tracking-tight text-foreground mb-6">
-                    Generate <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-400">10 store-ready</span> visuals at once.
+                <h2 className="text-4xl md:text-5xl font-black tracking-tight text-foreground mb-6 leading-tight max-w-4xl mx-auto">
+                    Générez <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-400">10 visuels parfaits</span> en un clic.
                 </h2>
                 <p className="text-lg text-muted-foreground max-w-2xl mx-auto font-medium">
-                    Why build one by one when the engine understands your entire narrative?
-                    ScreenForge creates the full batch simultaneously.
+                    Pourquoi construire écran par écran quand le moteur comprend toute votre narration ?
+                    ScreenForge génère le lot complet simultanément.
                 </p>
             </div>
 

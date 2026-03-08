@@ -8,18 +8,16 @@ import { getPlanById, PLANS, CREDIT_COSTS } from "@/lib/plans";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useSearchParams } from "react-router-dom";
+import { useBilling } from "@/hooks/useBilling";
 import { motion } from "framer-motion";
-import {
-  Crown, CheckCircle2, Loader2, Settings as SettingsIcon, CreditCard, ExternalLink, RefreshCw,
-  Zap, User, Shield, Coins
-} from "lucide-react";
+import { Crown, CheckCircle2, Loader2, CreditCard, ExternalLink, RefreshCw, User, Coins } from "lucide-react";
 
 const Settings_Page = () => {
   const { profile, checkSubscription, user, refreshProfile } = useAuth();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
-  const [isOpeningPortal, setIsOpeningPortal] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const { handleUpgrade, handleManageSubscription, isOpeningPortal, isUpgrading } = useBilling();
 
   const plan = getPlanById(profile?.plan || "free");
   const credits = profile?.credits ?? 0;
@@ -30,31 +28,6 @@ const Settings_Page = () => {
       setTimeout(() => { checkSubscription(); refreshProfile(); }, 2000);
     }
   }, [searchParams]);
-
-  const handleUpgrade = async (targetPlan: string) => {
-    try {
-      const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { plan: targetPlan },
-      });
-      if (error) throw error;
-      if (data?.url) window.open(data.url, "_blank");
-    } catch (e: any) {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
-    }
-  };
-
-  const handleManageSubscription = async () => {
-    setIsOpeningPortal(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("customer-portal");
-      if (error) throw error;
-      if (data?.url) window.open(data.url, "_blank");
-    } catch (e: any) {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
-    } finally {
-      setIsOpeningPortal(false);
-    }
-  };
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -127,14 +100,14 @@ const Settings_Page = () => {
                 <Crown className="h-6 w-6 text-primary" />
                 <h2 className="text-2xl font-black tracking-tight text-foreground">{plan.name}</h2>
                 <Badge className="bg-primary/20 text-primary border-primary/30 text-xs font-bold uppercase">
-                  {plan.priceValue > 0 ? "Active" : "Free tier"}
+                  {plan.priceValue > 0 ? "Active" : "Active"}
                 </Badge>
               </div>
               <p className="text-muted-foreground">{plan.description}</p>
             </div>
-            <div className="text-right">
-              <span className="text-3xl font-black text-foreground">{plan.price}</span>
-              {plan.priceValue > 0 && <span className="text-muted-foreground text-sm">/mo</span>}
+            <div className="text-right flex flex-col items-end">
+              <span className="text-3xl font-black text-foreground">{plan.priceValue === 0 ? "€0" : plan.price}</span>
+              <span className="text-muted-foreground text-sm">/mo</span>
             </div>
           </div>
 
@@ -182,8 +155,8 @@ const Settings_Page = () => {
                   )}
                   <h3 className="font-bold text-foreground text-lg">{p.name}</h3>
                   <div className="mt-1 mb-2">
-                    <span className="text-2xl font-black text-foreground">{p.price}</span>
-                    {p.priceValue > 0 && <span className="text-muted-foreground text-xs">/mo</span>}
+                    <span className="text-2xl font-black text-foreground">{p.priceValue === 0 ? "€0" : p.price}</span>
+                    <span className="text-muted-foreground text-xs">/mo</span>
                   </div>
                   <p className="text-xs text-primary font-bold mb-4">{p.monthlyCredits} credits/mo</p>
                   <div className="space-y-2 flex-1 mb-4">

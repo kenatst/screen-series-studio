@@ -235,6 +235,27 @@ function hasPlaceholderLeak(slide: any, rawText: string): boolean {
   return forbidden.some((token) => low.includes(token));
 }
 
+// Simple in-memory rate limiting map for the lifetime of this Edge Function isolate
+const IPs = new Map<string, number[]>();
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const windowMs = 60000; // 1 minute
+  const maxRequests = 15; // Max slides generated per minute per IP
+
+  let requests = IPs.get(ip) || [];
+  requests = requests.filter(time => now - time < windowMs);
+
+  if (requests.length >= maxRequests) {
+    IPs.set(ip, requests);
+    return true; // Limited
+  }
+
+  requests.push(now);
+  IPs.set(ip, requests);
+  return false;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -245,6 +266,15 @@ serve(async (req) => {
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // IP Rate Limiting
+    const clientIp = req.headers.get("cf-connecting-ip") || req.headers.get("x-forwarded-for") || "unknown";
+    if (clientIp !== "unknown" && isRateLimited(clientIp)) {
+      return new Response(JSON.stringify({ error: "Too many generation requests. Please wait a minute." }), {
+        status: 429,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

@@ -21,8 +21,8 @@ const PlannerVisual = () => (
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
         <div className="relative z-10 flex flex-col gap-3 p-4 sm:p-5 w-full">
             <div>
-                <h4 className="text-foreground font-bold text-sm sm:text-lg">Screenshot set planner</h4>
-                <p className="text-muted-foreground text-[10px] sm:text-xs">Define each slide's content and objective.</p>
+                <h4 className="text-foreground font-bold text-sm sm:text-lg">Screenshot Planner</h4>
+                <p className="text-muted-foreground text-[10px] sm:text-xs">Define the content and goal of each slide.</p>
             </div>
             <div className="flex items-center gap-1.5 sm:gap-2">
                 <span className="text-[10px] sm:text-xs text-muted-foreground">SLIDES:</span>
@@ -33,8 +33,8 @@ const PlannerVisual = () => (
                 ))}
             </div>
             {[
-                { num: 1, obj: 'Hero / first impression', headline: 'Your big promise here', sub: 'Supporting value prop', tags: ['home', 'text focused'], importance: 'high' },
-                { num: 2, obj: 'Core benefit', headline: 'The #1 reason to download', sub: 'What makes you unique', tags: ['dashboard', 'UI focused'], importance: 'high' },
+                { num: 1, obj: 'Hero / first impression', headline: 'Your big promise here', sub: 'Value proposition', tags: ['home', 'text focus'], importance: 'high' },
+                { num: 2, obj: 'Main benefit', headline: 'The #1 reason to download', sub: 'What makes you unique', tags: ['dashboard', 'UI focus'], importance: 'high' },
             ].map((slide) => (
                 <div key={slide.num} className="bg-card/30 border border-border rounded-xl p-2.5 sm:p-3 space-y-2">
                     <div className="flex items-center gap-2">

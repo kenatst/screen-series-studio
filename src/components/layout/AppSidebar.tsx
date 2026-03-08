@@ -13,7 +13,6 @@ import {
 
 const mainItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Projects", url: "/dashboard/projects", icon: FolderOpen },
   { title: "Templates", url: "/templates", icon: LayoutGrid },
 ];
 

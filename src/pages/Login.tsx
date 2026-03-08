@@ -127,7 +127,14 @@ const Login = () => {
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Password</label>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Password</label>
+                {!isSignUp && (
+                  <button onClick={handleResetPassword} disabled={submitting} type="button" className="text-xs text-primary font-bold hover:underline">
+                    Forgot password?
+                  </button>
+                )}
+              </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input

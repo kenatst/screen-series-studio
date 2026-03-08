@@ -41,51 +41,6 @@ export interface SlideItem {
   locked: string[];
 }
 
-export const demoProjects: DemoProject[] = [
-  {
-    id: 'proj-1',
-    name: 'LinguaPal Launch',
-    appName: 'LinguaPal',
-    platform: 'both',
-    category: 'Education',
-    icon: '🦜',
-    slideCount: 5,
-    locale: 'EN-US',
-    status: 'completed',
-    template: 'Educational Playful',
-    lastUpdated: '2 hours ago',
-    description: 'Fun language learning with AI-powered conversations and cute mascots',
-  },
-  {
-    id: 'proj-2',
-    name: 'FitForge Redesign',
-    appName: 'FitForge',
-    platform: 'ios',
-    category: 'Health & Fitness',
-    icon: '💪',
-    slideCount: 7,
-    locale: 'EN-US',
-    status: 'editing',
-    template: 'Bold Gaming',
-    lastUpdated: '5 hours ago',
-    description: 'AI-powered fitness coaching with personalized workout plans',
-  },
-  {
-    id: 'proj-3',
-    name: 'CashFlow Pro',
-    appName: 'CashFlow',
-    platform: 'android',
-    category: 'Finance',
-    icon: '💰',
-    slideCount: 10,
-    locale: 'FR-FR',
-    status: 'draft',
-    template: 'Premium Gradient',
-    lastUpdated: '1 day ago',
-    description: 'Smart budgeting and expense tracking made simple',
-  },
-];
-
 export const demoTemplates: TemplateItem[] = [
   { id: 't1', name: 'Habit Tracker', preview: '', tags: ['minimal', 'professional', 'clean'], bestFor: 'Productivity, habit apps', complexity: 'simple', conversionAngle: 'Trust & clarity', category: 'Lifestyle', slidesSupported: 10, tone: 'corporate', mood: 'light' },
   { id: 't2', name: 'AI Coach', preview: '', tags: ['vibrant', 'energetic', 'dynamic'], bestFor: 'Coaching, fitness apps', complexity: 'medium', conversionAngle: 'Motivation', category: 'Entertainment', slidesSupported: 10, tone: 'bold', mood: 'dark' },

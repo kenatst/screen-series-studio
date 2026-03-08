@@ -130,25 +130,16 @@ export function useSaveSlides() {
 
   return useMutation({
     mutationFn: async ({ projectId, slides }: { projectId: string; slides: Omit<ProjectSlideInsert, "project_id">[] }) => {
-      // Upsert slides using slide_number as the conflict key
+      // Upsert slides using id as the primary key conflict resolution
       const { data, error } = await supabase
         .from("project_slides")
         .upsert(
           slides.map(s => ({ ...s, project_id: projectId })),
-          { onConflict: "project_id,slide_number", ignoreDuplicates: false }
+          { onConflict: "id", ignoreDuplicates: false }
         )
         .select();
 
-      if (error) {
-        // Fallback: delete + insert if upsert fails (no unique constraint yet)
-        await supabase.from("project_slides").delete().eq("project_id", projectId);
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from("project_slides")
-          .insert(slides.map(s => ({ ...s, project_id: projectId })))
-          .select();
-        if (fallbackError) throw fallbackError;
-        return fallbackData as ProjectSlide[];
-      }
+      if (error) throw error;
 
       // Delete slides with higher numbers that are no longer in the set
       const maxNumber = slides.length;
@@ -200,20 +191,6 @@ export function useUnarchiveProject() {
     onSuccess: (id) => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       queryClient.invalidateQueries({ queryKey: ["project", id] });
-    },
-  });
-}
-
-export function useDeleteProject() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("projects").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
   });
 }

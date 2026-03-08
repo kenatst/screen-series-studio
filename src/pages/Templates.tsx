@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { demoTemplates, templateMoods } from "@/lib/demo-data";
 import { Search } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 import { templatePreviews } from "@/constants/templates";
 
@@ -11,6 +12,7 @@ const categories = ['All', 'Business', 'Entertainment', 'Education', 'Lifestyle'
 const tones = ['All', 'corporate', 'bold', 'premium', 'playful', 'minimalist'];
 
 const Templates = () => {
+  const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedTone, setSelectedTone] = useState('All');
   const [selectedMood, setSelectedMood] = useState<string>('All');
@@ -26,58 +28,94 @@ const Templates = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Templates</h1>
-          <p className="text-muted-foreground mt-1">Premium templates for every app category and style.</p>
+      <div className="min-h-screen bg-background">
+        {/* Hero Section */}
+        <div className="relative overflow-hidden border-b border-border bg-card/30">
+          {/* Ambient Glow */}
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[100px] pointer-events-none -z-10" />
+          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-orange-500/10 rounded-full blur-[100px] pointer-events-none -z-10" />
+
+          <div className="p-8 md:p-12 lg:p-16 max-w-7xl mx-auto flex flex-col items-center text-center">
+            <Badge variant="outline" className="mb-6 border-primary/30 text-primary uppercase tracking-widest font-bold bg-primary/5">
+              Template Gallery
+            </Badge>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-foreground mb-6">
+              Start with a <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-400">proven foundation</span>
+            </h1>
+            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl font-medium mb-10">
+              High-converting, production-ready layouts for every app category. Just select a template and customize 10 screens instantly.
+            </p>
+
+            <div className="flex gap-4 items-center mb-8">
+              <div className="flex -space-x-3">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className={`h-10 w-10 rounded-full border-2 border-background flex shadow-lg items-center justify-center text-xs font-bold ${i === 1 ? 'bg-primary text-primary-foreground' :
+                    i === 2 ? 'bg-orange-500 text-white' :
+                      'bg-accent text-accent-foreground'
+                    }`}>
+                    T{i}
+                  </div>
+                ))}
+              </div>
+              <span className="text-sm font-bold text-muted-foreground">+50 premium templates</span>
+            </div>
+
+            {/* Search Bar in Hero */}
+            <div className="relative w-full max-w-md mx-auto group">
+              <div className="absolute -inset-1 bg-gradient-to-r from-primary to-orange-500 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-500"></div>
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  placeholder="Search templates (e.g., Finance, Bold, Dark)..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="pl-12 pr-4 h-14 bg-background/80 border-border/50 text-foreground text-base rounded-xl backdrop-blur-xl shadow-inner focus-visible:ring-primary/30"
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search templates..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="pl-10 bg-secondary border-border"
-            />
+        <div className="p-6 md:p-8 max-w-7xl mx-auto">
+          {/* Filters */}
+          <div className="flex flex-col xl:flex-row gap-6 mb-8 items-start xl:items-center justify-between">
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest mr-2 hidden sm:inline-block">Category:</span>
+              {categories.map(c => (
+                <button
+                  key={c}
+                  onClick={() => setSelectedCategory(c)}
+                  className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all duration-300 ${selectedCategory === c ? 'bg-primary/20 text-primary border-primary shadow-glow' : 'bg-secondary text-muted-foreground border-border hover:border-primary/40 hover:text-foreground'
+                    }`}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="flex gap-2 flex-wrap">
-            {categories.map(c => (
+
+          {/* Mood filter */}
+          <div className="flex gap-2 flex-wrap mb-4">
+            <span className="text-sm text-muted-foreground mr-2">Mood:</span>
+            {templateMoods.map(m => (
               <button
-                key={c}
-                onClick={() => setSelectedCategory(c)}
-                className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${selectedCategory === c ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border hover:border-primary/30'
-                  }`}
+                key={m}
+                onClick={() => setSelectedMood(m)}
+                className={`px-3 py-1 rounded-lg text-xs capitalize border transition-colors ${selectedMood === m ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border hover:border-primary/30'}`}
               >
-                {c}
+                {m === 'dark' ? '🌙 Dark' : m === 'light' ? '☀️ Light' : m === 'colorful' ? '🌈 Colorful' : m === 'neutral' ? '⚪ Neutral' : '🎨 All'}
               </button>
             ))}
           </div>
-        </div>
 
-        {/* Mood filter */}
-        <div className="flex gap-2 flex-wrap mb-4">
-          <span className="text-sm text-muted-foreground mr-2">Mood:</span>
-          {templateMoods.map(m => (
-            <button
-              key={m}
-              onClick={() => setSelectedMood(m)}
-              className={`px-3 py-1 rounded-lg text-xs capitalize border transition-colors ${selectedMood === m ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border hover:border-primary/30'}`}
-            >
-              {m === 'dark' ? '🌙 Dark' : m === 'light' ? '☀️ Light' : m === 'colorful' ? '🌈 Colorful' : m === 'neutral' ? '⚪ Neutral' : '🎨 All'}
-            </button>
-          ))}
         </div>
-
-        <div className="flex gap-2 flex-wrap mb-6">
-          <span className="text-sm text-muted-foreground mr-2">Tone:</span>
+        <div className="flex gap-2 flex-wrap mb-10 items-center">
+          <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest mr-2 hidden sm:inline-block">Style:</span>
           {tones.map(t => (
             <button
               key={t}
               onClick={() => setSelectedTone(t)}
-              className={`px-3 py-1 rounded-lg text-xs capitalize border transition-colors ${selectedTone === t ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border hover:border-primary/30'
+              className={`px-4 py-2 rounded-xl text-xs font-bold capitalize border transition-all duration-300 ${selectedTone === t ? 'bg-primary/20 text-primary border-primary shadow-glow' : 'bg-secondary/50 text-muted-foreground border-border hover:border-primary/40 hover:text-foreground'
                 }`}
             >
               {t}
@@ -90,6 +128,7 @@ const Templates = () => {
           {filtered.map(template => (
             <div
               key={template.id}
+              onClick={() => navigate(`/project/new?template=${template.id}`)}
               className="group rounded-2xl border border-border bg-zinc-900/40 overflow-hidden hover:border-primary/40 hover:shadow-glow transition-all duration-300 cursor-pointer backdrop-blur-sm"
             >
               <div className="aspect-[3/4] relative overflow-hidden bg-gradient-to-br from-white/5 to-transparent border-b border-border">
@@ -122,9 +161,10 @@ const Templates = () => {
         </div>
 
         {filtered.length === 0 && (
-          <div className="text-center py-16 text-muted-foreground">
-            <p className="text-lg font-medium">No templates match your filters.</p>
-            <p className="text-sm mt-1">Try adjusting mood, tone, or category.</p>
+          <div className="text-center py-24 text-muted-foreground border border-dashed border-border rounded-2xl bg-card/20">
+            <Search className="h-10 w-10 mx-auto text-primary/40 mb-4" />
+            <p className="text-xl font-bold text-foreground">No templates match your filters.</p>
+            <p className="text-sm mt-2">Try adjusting mood, tone, or category.</p>
           </div>
         )}
       </div>

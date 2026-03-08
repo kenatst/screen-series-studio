@@ -43,13 +43,12 @@ export const ConsistencyEngine = () => {
                         <div className="h-10 w-10 bg-primary/20 rounded-full flex items-center justify-center mb-3">
                             <SlidersHorizontal className="h-5 w-5 text-primary" />
                         </div>
-                        <span className="text-foreground font-bold tracking-tight mb-2">Global Rules</span>
+                        <span className="text-foreground font-bold tracking-tight mb-2">Règles Globales</span>
                         <div className="flex gap-2 mb-3">
                             <div className="h-4 w-4 rounded-full bg-primary" />
                             <div className="h-4 w-4 rounded-full bg-orange-500" />
                             <div className="h-4 w-4 rounded-full bg-accent" />
                         </div>
-                        <span className="text-xs text-muted-foreground font-mono bg-black/5 px-2 py-1 rounded">font: Inter Bold</span>
                     </motion.div>
 
                     {/* Surrounding Cards and Connecting Lines */}

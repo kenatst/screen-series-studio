@@ -39,7 +39,7 @@ export const PLANS: PlanConfig[] = [
     name: 'Free',
     price: 'Free',
     priceValue: 0,
-    description: 'Test the power of ScreenForge.',
+    description: 'Testez la puissance de ScreenForge.',
     features: [
       '3 credits included',
       'Standard templates',
@@ -70,7 +70,7 @@ export const PLANS: PlanConfig[] = [
     name: 'Starter',
     price: '€49',
     priceValue: 4900,
-    description: 'Perfect for launching one app.',
+    description: 'Parfait pour lancer une application.',
     features: [
       '1 app workspace',
       '50 credits/month',
@@ -102,7 +102,7 @@ export const PLANS: PlanConfig[] = [
     name: 'Pro',
     price: '€99',
     priceValue: 9900,
-    description: 'For builders shipping multiple apps.',
+    description: 'Pour les créateurs expédiant plusieurs applications.',
     features: [
       '3 app workspaces',
       '200 credits/month',
@@ -134,7 +134,7 @@ export const PLANS: PlanConfig[] = [
     name: 'Unlimited',
     price: '€399',
     priceValue: 39900,
-    description: 'No limits for premium ASO teams.',
+    description: 'Aucune limite pour les équipes ASO exigeantes.',
     features: [
       'Unlimited workspaces',
       '1000 credits/month',
@@ -176,16 +176,6 @@ export function getMaxSlides(plan: PlanId): number {
 
 export function canTranslate(plan: PlanId): boolean {
   return getPlanById(plan).limits.translations;
-}
-
-export function canRedesign(plan: PlanId, usedRedesigns: number): boolean {
-  const config = getPlanById(plan);
-  if (config.limits.redesigns === -1) return true;
-  return usedRedesigns < config.limits.redesigns;
-}
-
-export function hasWatermark(plan: PlanId): boolean {
-  return getPlanById(plan).limits.watermark;
 }
 
 export function canRegenerate(_plan: PlanId): boolean {
