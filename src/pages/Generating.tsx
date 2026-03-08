@@ -275,34 +275,21 @@ const Generating = () => {
     };
 
     const processQueue = async (accessToken: string, initialResume: boolean) => {
-      let resume = initialResume;
-      for (let round = 0; round < 12; round++) {
-        const result = await startGenerationStream(accessToken, resume);
+      const result = await startGenerationStream(accessToken, initialResume);
 
-        if (result === "hasMore") {
-          resume = false;
-          continue;
-        }
+      if (result === "done") {
+        routeToResults();
+        stopPolling();
+        return;
+      }
 
-        if (result === "done") {
-          routeToResults();
-          stopPolling();
-          return;
-        }
-
-        if (result === "busy") {
-          startPolling();
-          return;
-        }
-
-        if (!resume) {
-          resume = true;
-          continue;
-        }
-
+      if (result === "busy") {
+        // Another invocation is running — just poll DB for updates
         startPolling();
         return;
       }
+
+      // error or hasMore — fall back to polling
       startPolling();
     };
 

@@ -300,6 +300,8 @@ const NewProject = () => {
   const [savedProjectId, setSavedProjectId] = useState<string | null>(editProjectId);
   const [outputLanguage, setOutputLanguage] = useState('en');
   const [hydrated, setHydrated] = useState(false);
+  const [appCategory, setAppCategory] = useState('');
+  const [targetAudience, setTargetAudience] = useState('');
 
   // Fetch existing project data for draft hydration
   const { data: existingProject } = useProject(editProjectId || undefined);
@@ -328,6 +330,8 @@ const NewProject = () => {
       setValueProposition(config.valueProposition || '');
       setKeyFeatures(Array.isArray(config.keyFeatures) ? config.keyFeatures.join('\n') : '');
       setTopBenefits(Array.isArray(config.topBenefits) ? config.topBenefits.join('\n') : '');
+      setAppCategory(config.appCategory || '');
+      setTargetAudience(config.targetAudience || '');
     }
 
     const brandKit = existingProject.brand_kit as any;
@@ -634,7 +638,7 @@ const NewProject = () => {
         generation_mode: generationMode,
         status: 'draft' as const,
         brand_kit: { colors: brandColors, fontFamily: brandFont } as any,
-        config: { primaryGoal, tone: selectedTone, shortDescription, valueProposition, keyFeatures: keyFeatures.split('\n').filter(Boolean), topBenefits: topBenefits.split('\n').filter(Boolean), outputLanguage } as any,
+        config: { primaryGoal, tone: selectedTone, shortDescription, valueProposition, keyFeatures: keyFeatures.split('\n').filter(Boolean), topBenefits: topBenefits.split('\n').filter(Boolean), outputLanguage, appCategory, targetAudience } as any,
         output_language: outputLanguage,
       };
 
@@ -664,8 +668,8 @@ const NewProject = () => {
           status: 'pending',
         })),
       });
-      if (user && !savedProjectId) {
-        // Only upload assets on first save
+      if (user) {
+        // Always upload assets (upsert handles duplicates)
         await uploadAssetsToStorage(projectId, user.id);
       }
       setLastSavedAt(new Date());
@@ -802,11 +806,11 @@ const NewProject = () => {
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-3">
                     <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">App category</label>
-                    <Input placeholder="e.g. Education, Finance, Health" className="bg-black/5 border-border text-foreground placeholder:text-foreground/30 shadow-inner h-12 focus-visible:ring-primary transition-all rounded-xl" />
+                    <Input value={appCategory} onChange={e => setAppCategory(e.target.value)} placeholder="e.g. Education, Finance, Health" className="bg-black/5 border-border text-foreground placeholder:text-foreground/30 shadow-inner h-12 focus-visible:ring-primary transition-all rounded-xl" />
                   </div>
                   <div className="space-y-3">
                     <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Target audience</label>
-                    <Input placeholder="e.g. Young professionals, students" className="bg-black/5 border-border text-foreground placeholder:text-foreground/30 shadow-inner h-12 focus-visible:ring-primary transition-all rounded-xl" />
+                    <Input value={targetAudience} onChange={e => setTargetAudience(e.target.value)} placeholder="e.g. Young professionals, students" className="bg-black/5 border-border text-foreground placeholder:text-foreground/30 shadow-inner h-12 focus-visible:ring-primary transition-all rounded-xl" />
                   </div>
                 </div>
                 <div className="space-y-3">
@@ -1346,7 +1350,7 @@ const NewProject = () => {
                           generation_mode: generationMode,
                           status: 'draft' as const,
                           brand_kit: { colors: brandColors, fontFamily: brandFont } as any,
-                          config: { primaryGoal, tone: selectedTone, shortDescription, valueProposition, keyFeatures: keyFeatures.split('\n').filter(Boolean), topBenefits: topBenefits.split('\n').filter(Boolean), outputLanguage } as any,
+                          config: { primaryGoal, tone: selectedTone, shortDescription, valueProposition, keyFeatures: keyFeatures.split('\n').filter(Boolean), topBenefits: topBenefits.split('\n').filter(Boolean), outputLanguage, appCategory, targetAudience } as any,
                           output_language: outputLanguage,
                         };
 
@@ -1372,7 +1376,7 @@ const NewProject = () => {
                             status: 'pending',
                           })),
                         });
-                        if (user && !savedProjectId) {
+                        if (user) {
                           await uploadAssetsToStorage(projectId, user.id);
                         }
                         navigate(`/project/${projectId}/generating`);

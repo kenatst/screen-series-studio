@@ -8,7 +8,6 @@ const corsHeaders = {
 };
 
 const CREDIT_COST_PER_SLIDE = 1;
-const AUTO_BATCH_SIZE = 1;
 const QUALITY_SCORE_MIN = 78;
 
 function buildConsistencyBlock(
@@ -258,14 +257,14 @@ serve(async (req) => {
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(authHeader.replace("Bearer ", ""));
-    if (claimsError || !claimsData?.claims) {
+    const { data: userData, error: userError } = await userClient.auth.getUser();
+    if (userError || !userData.user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const userId = claimsData.claims.sub as string;
+    const userId = userData.user.id;
 
     let projectId: string;
     let singleSlideId: string | undefined;
@@ -356,9 +355,8 @@ serve(async (req) => {
       slidesToGenerate = candidateSlides.filter((slide: any) => !(slide.status === "completed" && slide.image_url));
     }
 
-    const invocationSlides = (!singleSlideId && !forceRegenerate)
-      ? slidesToGenerate.slice(0, AUTO_BATCH_SIZE)
-      : slidesToGenerate;
+    // Generate ALL pending slides in a single SSE stream — no more round-tripping
+    const invocationSlides = slidesToGenerate;
 
     // Check credits only for this invocation batch
     const { data: profileData } = await adminClient.from("profiles").select("credits, plan").eq("id", userId).single();
@@ -526,7 +524,7 @@ serve(async (req) => {
 
             const runAttempt = async (promptText: string) => {
               const response = await ai.models.generateContent({
-                model: "gemini-3-pro-image-preview",
+                model: "gemini-3.1-flash-image-preview",
                 contents: buildContents(promptText),
                 config: {
                   responseModalities: ["TEXT", "IMAGE"],
@@ -559,27 +557,31 @@ serve(async (req) => {
 
             previousSlideImages.push({ mimeType: "image/png", data: attempt.imageBase64 });
 
-            const filename = `${userId}/${projectId}/slide-${displayNum}.png`;
+            const storagePath = `${userId}/${projectId}/slide-${displayNum}.png`;
             const imageBytes = Uint8Array.from(atob(attempt.imageBase64), (c) => c.charCodeAt(0));
-            await adminClient.storage.from("generated-outputs").upload(filename, imageBytes, {
+            await adminClient.storage.from("generated-outputs").upload(storagePath, imageBytes, {
               contentType: "image/png",
               upsert: true,
             });
 
-            const { data: signedData } = await adminClient.storage.from("generated-outputs").createSignedUrl(filename, 60 * 60 * 24 * 7);
-            const imageUrl = signedData?.signedUrl || "";
-
+            // Store the storage path (not a signed URL) so it never expires
             const generationMs = Date.now() - slideStartMs;
             await adminClient.from("project_slides").update({
               status: "completed",
-              image_url: imageUrl,
+              image_url: storagePath,
               quality_score: attempt.qualityScore,
               generation_ms: generationMs,
               last_error: null,
             }).eq("id", slide.id);
+
+            // Send a fresh signed URL to the client for immediate display
+            const { data: signedData } = await adminClient.storage.from("generated-outputs").createSignedUrl(storagePath, 60 * 60 * 2);
+            const displayUrl = signedData?.signedUrl || "";
+
             sendEvent("slide-done", {
               slideNumber: displayNum,
-              imageUrl,
+              imageUrl: displayUrl,
+              storagePath,
               text: attempt.text,
               qualityScore: attempt.qualityScore,
             });
@@ -591,22 +593,12 @@ serve(async (req) => {
         }
 
         if (!singleSlideId) {
-          const { data: remainingSlides } = await adminClient
-            .from("project_slides")
-            .select("status,image_url")
-            .eq("project_id", projectId);
-
-          const pendingOrGenerating = (remainingSlides || []).filter(
-            (s: any) => !s.image_url && (s.status === "pending" || s.status === "generating")
-          );
-
-          const hasMore = !forceRegenerate && pendingOrGenerating.length > 0;
           await adminClient
             .from("projects")
-            .update({ status: hasMore ? "generating" : "completed" })
+            .update({ status: "completed" })
             .eq("id", projectId);
 
-          sendEvent("all-done", { projectId, hasMore, remaining: pendingOrGenerating.length });
+          sendEvent("all-done", { projectId, hasMore: false, remaining: 0 });
         } else {
           sendEvent("all-done", { projectId, hasMore: false, remaining: 0 });
         }
