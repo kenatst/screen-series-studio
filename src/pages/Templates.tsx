@@ -44,9 +44,8 @@ const Templates = () => {
               <button
                 key={c}
                 onClick={() => setSelectedCategory(c)}
-                className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
-                  selectedCategory === c ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border hover:border-primary/30'
-                }`}
+                className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${selectedCategory === c ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border hover:border-primary/30'
+                  }`}
               >
                 {c}
               </button>
@@ -60,9 +59,8 @@ const Templates = () => {
             <button
               key={t}
               onClick={() => setSelectedTone(t)}
-              className={`px-3 py-1 rounded-lg text-xs capitalize border transition-colors ${
-                selectedTone === t ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border hover:border-primary/30'
-              }`}
+              className={`px-3 py-1 rounded-lg text-xs capitalize border transition-colors ${selectedTone === t ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border hover:border-primary/30'
+                }`}
             >
               {t}
             </button>
@@ -74,22 +72,23 @@ const Templates = () => {
           {filtered.map(template => (
             <div
               key={template.id}
-              className="group rounded-xl border border-border/50 bg-card overflow-hidden hover:border-primary/30 hover:shadow-glow transition-all cursor-pointer"
+              className="group rounded-2xl border border-border bg-zinc-900/40 overflow-hidden hover:border-primary/40 hover:shadow-glow transition-all duration-300 cursor-pointer backdrop-blur-sm"
             >
-              <div className="aspect-[3/4] flex flex-col items-center justify-center p-4 bg-secondary/50">
-                <LayoutGrid className="h-8 w-8 text-muted-foreground/30 mb-2" />
-                <span className="text-sm font-medium text-foreground text-center">{template.name}</span>
+              <div className="aspect-[3/4] flex flex-col items-center justify-center p-4 bg-gradient-to-br from-white/5 to-transparent border-b border-border relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
+                <LayoutGrid className="h-10 w-10 text-primary/30 mb-3 group-hover:scale-110 group-hover:text-primary transition-all duration-500 relative z-10" />
+                <span className="text-sm font-bold text-foreground text-center drop-shadow-md relative z-10">{template.name}</span>
               </div>
-              <div className="p-3 space-y-2">
-                <div className="flex flex-wrap gap-1">
+              <div className="p-4 space-y-3 bg-card/90">
+                <div className="flex flex-wrap gap-1.5">
                   {template.tags.map(tag => (
-                    <Badge key={tag} className="bg-secondary text-muted-foreground text-[10px] border-border">{tag}</Badge>
+                    <Badge key={tag} className="bg-black/5 text-muted-foreground text-[10px] border-border uppercase tracking-wider">{tag}</Badge>
                   ))}
                 </div>
-                <p className="text-xs text-muted-foreground">{template.bestFor}</p>
-                <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                  <span className="capitalize">{template.complexity}</span>
-                  <span>Up to {template.slidesSupported} slides</span>
+                <p className="text-xs text-muted-foreground font-medium leading-relaxed line-clamp-2">{template.bestFor}</p>
+                <div className="flex items-center justify-between text-[10px] text-foreground/40 pt-2 border-t border-border uppercase tracking-widest font-bold">
+                  <span className="text-primary/80">{template.complexity}</span>
+                  <span>{template.slidesSupported} slides</span>
                 </div>
               </div>
             </div>

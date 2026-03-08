@@ -1,0 +1,10 @@
+{
+  "id": "lifestyle",
+  "name": "Lifestyle",
+  "tags": [],
+  "category": "General",
+  "tone": "premium",
+  "bestFor": "All app categories",
+  "complexity": "medium",
+  "slidesSupported": 10
+}

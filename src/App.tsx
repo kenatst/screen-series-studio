@@ -9,6 +9,7 @@ import NewProject from "./pages/NewProject";
 import Generating from "./pages/Generating";
 import Results from "./pages/Results";
 import Templates from "./pages/Templates";
+import Inspiration from "./pages/Inspiration";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,11 +24,12 @@ const App = () => (
           <Route path="/" element={<Landing />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/*" element={<Dashboard />} />
-          <Route path="/new-project" element={<NewProject />} />
+          <Route path="/project/new" element={<NewProject />} />
           <Route path="/project/:projectId/generating" element={<Generating />} />
           <Route path="/project/:projectId/results" element={<Results />} />
           <Route path="/project/:projectId/planner" element={<NewProject />} />
           <Route path="/templates" element={<Templates />} />
+          <Route path="/inspiration" element={<Inspiration />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

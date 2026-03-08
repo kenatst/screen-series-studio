@@ -14,10 +14,7 @@ const mainItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Projects", url: "/dashboard/projects", icon: FolderOpen },
   { title: "Templates", url: "/templates", icon: LayoutGrid },
-  { title: "Generated Sets", url: "/dashboard/sets", icon: Image },
-  { title: "Brand Kits", url: "/dashboard/brands", icon: Palette },
-  { title: "Localizations", url: "/dashboard/locales", icon: Globe },
-  { title: "A/B Variants", url: "/dashboard/variants", icon: GitBranch },
+  { title: "Exports", url: "/dashboard/sets", icon: Image },
 ];
 
 const bottomItems = [
@@ -36,11 +33,11 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarContent>
         <SidebarGroup>
-          <div className="flex items-center gap-2 px-3 py-4">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary flex-shrink-0">
-              <Layers className="h-4 w-4 text-primary-foreground" />
+          <div className="flex items-center gap-3 px-3 py-4">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-orange-600 shadow-glow flex-shrink-0">
+              <Layers className="h-4 w-4 text-black" />
             </div>
-            {!collapsed && <span className="text-sm font-bold tracking-tight text-foreground">ScreenForge</span>}
+            {!collapsed && <span className="text-base font-bold tracking-tight text-foreground drop-shadow-md">ScreenForge</span>}
           </div>
         </SidebarGroup>
 
@@ -51,8 +48,8 @@ export function AppSidebar() {
               {mainItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                    <NavLink to={item.url} end className="hover:bg-muted/50" activeClassName="bg-muted text-primary font-medium">
-                      <item.icon className="mr-2 h-4 w-4" />
+                    <NavLink to={item.url} end className="hover:bg-black/5 text-muted-foreground hover:text-foreground transition-colors" activeClassName="bg-white/10 text-foreground font-medium border-l-2 border-primary rounded-l-none !opacity-100">
+                      <item.icon className="mr-3 h-4 w-4" />
                       {!collapsed && <span>{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
@@ -68,8 +65,8 @@ export function AppSidebar() {
           {bottomItems.map((item) => (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                <NavLink to={item.url} end className="hover:bg-muted/50" activeClassName="bg-muted text-primary font-medium">
-                  <item.icon className="mr-2 h-4 w-4" />
+                <NavLink to={item.url} end className="hover:bg-black/5 text-muted-foreground hover:text-foreground transition-colors" activeClassName="bg-white/10 text-foreground font-medium border-l-2 border-primary rounded-l-none !opacity-100">
+                  <item.icon className="mr-3 h-4 w-4" />
                   {!collapsed && <span>{item.title}</span>}
                 </NavLink>
               </SidebarMenuButton>

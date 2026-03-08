@@ -3,94 +3,163 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { demoProjects } from "@/lib/demo-data";
 import { useNavigate } from "react-router-dom";
-import { Plus, ArrowRight, Layers, BarChart3, Image, Globe } from "lucide-react";
+import { Plus, LayoutTemplate, Copy, Play } from "lucide-react";
+import { motion } from "framer-motion";
 
-const statusColors: Record<string, string> = {
-  draft: 'bg-muted text-muted-foreground',
-  generating: 'bg-warning/10 text-warning border-warning/20',
-  completed: 'bg-success/10 text-success border-success/20',
-  editing: 'bg-info/10 text-info border-info/20',
+const fadeUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.05, duration: 0.4 } })
 };
 
 const Dashboard = () => {
   const navigate = useNavigate();
 
+  const currentProject = demoProjects[0];
+  const recentProjects = demoProjects.slice(1);
+
   return (
     <DashboardLayout>
-      <div className="p-8">
+      <div className="p-8 max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center justify-between mb-10"
+        >
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
-            <p className="text-muted-foreground mt-1">Manage your screenshot projects</p>
+            <p className="text-muted-foreground mt-1 font-medium text-lg">Create, edit, and export your screenshot sets</p>
           </div>
-          <Button variant="hero" onClick={() => navigate('/new-project')}>
-            <Plus className="mr-2 h-4 w-4" /> New project
+          <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm rounded-xl px-6" onClick={() => navigate('/project/new')}>
+            <Plus className="mr-2 h-5 w-5" /> New project
           </Button>
-        </div>
+        </motion.div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          {[
-            { label: 'Projects', value: '3', icon: Layers },
-            { label: 'Generated Sets', value: '12', icon: Image },
-            { label: 'Total Slides', value: '67', icon: BarChart3 },
-            { label: 'Locales', value: '4', icon: Globe },
-          ].map(s => (
-            <div key={s.label} className="rounded-xl border border-border/50 bg-card p-5">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary">
-                  <s.icon className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <span className="text-sm text-muted-foreground">{s.label}</span>
-              </div>
-              <p className="text-2xl font-bold text-foreground">{s.value}</p>
-            </div>
-          ))}
-        </div>
+        {/* Continue Working - Main Card */}
+        {currentProject && (
+          <div className="mb-12">
+            <motion.h2
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}
+              className="text-xl font-semibold text-foreground mb-4 tracking-tight flex items-center gap-2"
+            >
+              Continue working
+            </motion.h2>
+            <motion.div
+              initial="hidden" animate="visible" variants={fadeUp} custom={1}
+              className="group relative rounded-2xl border border-border bg-card/40 p-8 hover:border-primary/40 hover:shadow-glow transition-all duration-500 overflow-hidden backdrop-blur-sm"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
-        {/* Projects */}
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold text-foreground mb-4">Recent projects</h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {demoProjects.map(p => (
-              <div
-                key={p.id}
-                className="group rounded-xl border border-border/50 bg-card p-5 hover:border-primary/20 hover:shadow-glow transition-all cursor-pointer"
-                onClick={() => navigate(`/project/${p.id}/planner`)}
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl">{p.icon}</span>
-                    <div>
-                      <h3 className="font-semibold text-foreground">{p.name}</h3>
-                      <p className="text-xs text-muted-foreground">{p.appName} • {p.category}</p>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+                <div className="flex items-start gap-5">
+                  <span className="text-4xl bg-black/40 rounded-xl p-4 border border-border shadow-inner group-hover:border-primary/30 transition-colors shadow-xl">
+                    {currentProject.icon}
+                  </span>
+                  <div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="text-2xl font-bold text-foreground tracking-tight">{currentProject.name}</h3>
+                      <Badge variant="secondary" className="capitalize bg-black/40 border-border text-xs px-2 py-0.5">{currentProject.status}</Badge>
+                    </div>
+                    <div className="flex items-center gap-6 text-sm text-muted-foreground font-medium">
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-primary/80 animate-pulse" />
+                        {Math.floor(Number(currentProject.slideCount) / 2)} / {currentProject.slideCount} slides ready
+                      </span>
+                      <span>Updated {currentProject.lastUpdated}</span>
                     </div>
                   </div>
-                  <Badge className={statusColors[p.status]}>{p.status}</Badge>
                 </div>
-                <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{p.description}</p>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{p.slideCount} slides • {p.locale}</span>
-                  <span>{p.lastUpdated}</span>
-                </div>
-                <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">{p.template}</span>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                </div>
-              </div>
-            ))}
 
-            {/* New project card */}
-            <div
-              className="rounded-xl border border-dashed border-border/50 bg-card/50 p-5 flex flex-col items-center justify-center min-h-[200px] cursor-pointer hover:border-primary/30 transition-colors"
-              onClick={() => navigate('/new-project')}
-            >
-              <div className="h-12 w-12 rounded-full bg-secondary flex items-center justify-center mb-3">
-                <Plus className="h-5 w-5 text-muted-foreground" />
+                <div className="flex items-center gap-3">
+                  <Button variant="outline" className="border-border bg-black/20 hover:bg-black/40 hover:text-foreground">Preview</Button>
+                  <Button variant="outline" className="border-border bg-black/20 hover:bg-black/40 hover:text-foreground">Export</Button>
+                  <Button className="bg-primary/10 text-primary hover:bg-primary/20 border-primary/20" onClick={() => navigate(`/project/${currentProject.id}/planner`)}>
+                    <Play className="mr-2 h-4 w-4 fill-current" /> Resume
+                  </Button>
+                </div>
               </div>
-              <span className="text-sm font-medium text-muted-foreground">Create new project</span>
+            </motion.div>
+          </div>
+        )}
+
+        <div className="grid lg:grid-cols-3 gap-12">
+          {/* Recent Projects Sidebar/Grid */}
+          <div className="lg:col-span-2 space-y-4">
+            <motion.h2
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
+              className="text-xl font-semibold text-foreground tracking-tight flex items-center gap-2 mb-2"
+            >
+              Recent projects
+            </motion.h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {recentProjects.map((p, i) => (
+                <motion.div
+                  key={p.id}
+                  initial="hidden" animate="visible" variants={fadeUp} custom={i + 2}
+                  className="group relative rounded-xl border border-border bg-card/20 p-5 hover:border-primary/30 hover:bg-card/40 transition-all duration-300 cursor-pointer overflow-hidden backdrop-blur-sm flex flex-col justify-between"
+                  onClick={() => navigate(`/project/${p.id}/planner`)}
+                >
+                  <div className="flex items-start gap-4 mb-4">
+                    <span className="text-2xl bg-black/30 rounded-lg p-2 border border-border">{p.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-base font-bold text-foreground truncate">{p.name}</h3>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider">{p.category}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground font-medium">
+                    <div className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40" />
+                      {p.slideCount} slides
+                    </div>
+                    <span>{p.lastUpdated}</span>
+                  </div>
+                </motion.div>
+              ))}
             </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="space-y-4">
+            <motion.h2
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
+              className="text-xl font-semibold text-foreground tracking-tight mb-2"
+            >
+              Quick actions
+            </motion.h2>
+
+            <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={4} className="space-y-3">
+              <Button
+                variant="outline"
+                className="w-full justify-start h-14 px-4 bg-card/20 border-border hover:bg-card/40 hover:border-primary/30 text-base font-medium rounded-xl group"
+                onClick={() => navigate('/project/new')}
+              >
+                <div className="w-8 h-8 rounded-md bg-primary/10 text-primary flex items-center justify-center mr-3 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                  <Plus className="h-4 w-4" />
+                </div>
+                New project
+              </Button>
+
+              <Button
+                variant="outline"
+                className="w-full justify-start h-14 px-4 bg-card/20 border-border hover:bg-card/40 hover:border-primary/30 text-base font-medium rounded-xl group"
+                onClick={() => navigate('/templates')}
+              >
+                <div className="w-8 h-8 rounded-md bg-secondary text-secondary-foreground flex items-center justify-center mr-3 transition-colors">
+                  <LayoutTemplate className="h-4 w-4" />
+                </div>
+                Start from template
+              </Button>
+
+              <Button
+                variant="outline"
+                className="w-full justify-start h-14 px-4 bg-card/20 border-border hover:bg-card/40 hover:border-primary/30 text-base font-medium rounded-xl group"
+              >
+                <div className="w-8 h-8 rounded-md bg-secondary text-secondary-foreground flex items-center justify-center mr-3 transition-colors">
+                  <Copy className="h-4 w-4" />
+                </div>
+                Duplicate project
+              </Button>
+            </motion.div>
           </div>
         </div>
       </div>
@@ -99,3 +168,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
