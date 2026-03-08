@@ -13,6 +13,13 @@ const PRICE_TO_PLAN: Record<string, string> = {
   "price_1T8dfuCGD5S3rFVNICPdomP6": "unlimited",
 };
 
+const PLAN_CREDITS: Record<string, number> = {
+  free: 3,
+  starter: 50,
+  pro: 200,
+  unlimited: 1000,
+};
+
 const logStep = (step: string, details?: any) => {
   console.log(`[STRIPE-WEBHOOK] ${step}${details ? ` - ${JSON.stringify(details)}` : ''}`);
 };
@@ -61,11 +68,13 @@ serve(async (req) => {
         const customerId = session.customer as string;
 
         if (userId && plan) {
+          const credits = PLAN_CREDITS[plan] || 3;
           await supabase.from("profiles").update({
             plan,
             stripe_customer_id: customerId,
+            credits,
           }).eq("id", userId);
-          logStep("Plan updated via checkout", { userId, plan, customerId });
+          logStep("Plan updated + credits granted via checkout", { userId, plan, credits, customerId });
         }
         break;
       }
@@ -74,18 +83,16 @@ serve(async (req) => {
         const invoice = event.data.object as Stripe.Invoice;
         const customerId = invoice.customer as string;
 
-        // Send receipt email via Stripe by ensuring receipt_email is set
         if (invoice.customer_email) {
           try {
             await stripe.invoices.sendInvoice(invoice.id);
             logStep("Invoice receipt sent", { invoiceId: invoice.id, email: invoice.customer_email });
           } catch (sendErr: any) {
-            // Invoice may already be sent or in a state that doesn't allow sending
             logStep("Could not send invoice (may already be sent)", { error: sendErr.message });
           }
         }
 
-        // Also sync plan status
+        // Sync plan and refill credits on recurring payment
         const { data: prof } = await supabase
           .from("profiles")
           .select("id")
@@ -97,8 +104,9 @@ serve(async (req) => {
           if (sub.data.length > 0) {
             const priceId = sub.data[0].items.data[0]?.price?.id;
             const activePlan = PRICE_TO_PLAN[priceId] || "starter";
-            await supabase.from("profiles").update({ plan: activePlan }).eq("id", prof.id);
-            logStep("Plan synced on invoice.paid", { userId: prof.id, plan: activePlan });
+            const credits = PLAN_CREDITS[activePlan] || 50;
+            await supabase.from("profiles").update({ plan: activePlan, credits }).eq("id", prof.id);
+            logStep("Plan synced + credits refilled on invoice.paid", { userId: prof.id, plan: activePlan, credits });
           }
         }
         break;
@@ -110,7 +118,6 @@ serve(async (req) => {
         const customerId = subscription.customer as string;
         const isActive = subscription.status === "active";
 
-        // Find user by stripe_customer_id
         const { data: profile } = await supabase
           .from("profiles")
           .select("id")
@@ -118,7 +125,6 @@ serve(async (req) => {
           .single();
 
         if (!profile) {
-          // Try to find by email via Stripe customer
           const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
           if (customer.email) {
             const { data: profileByEmail } = await supabase
@@ -130,8 +136,9 @@ serve(async (req) => {
             if (profileByEmail) {
               const priceId = subscription.items.data[0]?.price?.id;
               const plan = isActive ? (PRICE_TO_PLAN[priceId] || "starter") : "free";
-              await supabase.from("profiles").update({ plan, stripe_customer_id: customerId }).eq("id", profileByEmail.id);
-              logStep("Plan updated via email lookup", { userId: profileByEmail.id, plan });
+              const credits = PLAN_CREDITS[plan] || 3;
+              await supabase.from("profiles").update({ plan, stripe_customer_id: customerId, credits }).eq("id", profileByEmail.id);
+              logStep("Plan updated via email lookup", { userId: profileByEmail.id, plan, credits });
             }
           }
           break;
@@ -139,8 +146,9 @@ serve(async (req) => {
 
         const priceId = subscription.items.data[0]?.price?.id;
         const plan = isActive ? (PRICE_TO_PLAN[priceId] || "starter") : "free";
-        await supabase.from("profiles").update({ plan }).eq("id", profile.id);
-        logStep("Plan updated", { userId: profile.id, plan, status: subscription.status });
+        const credits = PLAN_CREDITS[plan] || 3;
+        await supabase.from("profiles").update({ plan, credits }).eq("id", profile.id);
+        logStep("Plan updated", { userId: profile.id, plan, credits, status: subscription.status });
         break;
       }
 
@@ -148,7 +156,6 @@ serve(async (req) => {
         const invoice = event.data.object as Stripe.Invoice;
         const customerId = invoice.customer as string;
         logStep("Payment failed", { customerId });
-        // Optionally downgrade after repeated failures
         break;
       }
 
