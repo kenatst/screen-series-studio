@@ -27,6 +27,9 @@ const steps = [
 
 const NewProject = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const createProject = useCreateProject();
+  const saveSlides = useSaveSlides();
   const [currentStep, setCurrentStep] = useState(1);
   const [slideCount, setSlideCount] = useState(5);
   const [slides, setSlides] = useState<SlideItem[]>(defaultStorylines['5-slide']);
@@ -36,8 +39,10 @@ const NewProject = () => {
   const [uploadedScreens, setUploadedScreens] = useState<string[]>([]);
   const [platform, setPlatform] = useState('both');
   const [primaryGoal, setPrimaryGoal] = useState('');
+  const [projectName, setProjectName] = useState('');
+  const [appName, setAppName] = useState('');
+  const [appDescription, setAppDescription] = useState('');
   const [deviceFormats, setDeviceFormats] = useState<string[]>(['iphone-6-5', 'iphone-6-9']);
-  const [projectId] = useState(`proj-${Date.now()}`);
   const [isSaving, setIsSaving] = useState(false);
   const [generationMode, setGenerationMode] = useState<'full' | 'creative-direction' | 'first-3'>('full');
 
