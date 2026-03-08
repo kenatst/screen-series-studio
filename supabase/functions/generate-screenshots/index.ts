@@ -247,6 +247,16 @@ serve(async (req) => {
       });
     }
 
+    if (!singleSlideId && project.status === "generating" && !forceRegenerate && !resumeGeneration) {
+      const activeGenerating = allSlides.some((s: any) => s.status === "generating" && !s.image_url);
+      if (activeGenerating) {
+        return new Response(JSON.stringify({ error: "Generation already in progress" }), {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     // Determine which slides to generate
     const genMode = singleSlideId ? "single" : (project.generation_mode || "full");
     let candidateSlides = allSlides;
