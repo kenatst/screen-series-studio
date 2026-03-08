@@ -3,44 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
-const plans = [
-    {
-        name: 'Free Trial',
-        price: 'Free',
-        desc: 'Test the power of ScreenForge.',
-        features: ['1 slide limit', 'Standard templates', 'Watermarked export'],
-        notIncluded: ['Full screenshot sets', 'Brand Kit integration', 'Translation & Redesign'],
-        popular: false,
-    },
-    {
-        name: 'Starter',
-        price: '€49',
-        period: '',
-        desc: 'Perfect for launching one app.',
-        features: ['1 Unique Project', 'Up to 10 slides per set', 'Consistency Engine enabled', 'High-res export (No watermark)'],
-        notIncluded: ['Unlimited Redesigns', '1-Click Translations'],
-        popular: false,
-    },
-    {
-        name: 'Pro',
-        price: '€99',
-        period: '',
-        desc: 'For builders shipping multiple apps.',
-        features: ['3 Projects included', '1-Click Translations', 'Unlimited Redesigns', 'Full Brand Kit control'],
-        notIncluded: ['Unlimited projects'],
-        popular: true,
-    },
-    {
-        name: 'Unlimited',
-        price: '€399',
-        period: '',
-        desc: 'No limits for premium ASO teams.',
-        features: ['Unlimited Projects', '1-Click Translations to Any Language', 'Unlimited Redesigns', 'Priority API & Generation queue'],
-        notIncluded: [],
-        popular: false,
-    }
-];
+import { PLANS } from '@/lib/plans';
 
 export const PricingSection = () => {
     return (
@@ -57,58 +20,58 @@ export const PricingSection = () => {
                     </p>
                 </div>
 
-                <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-                    {plans.map((plan, i) => (
+                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+                    {PLANS.map((plan, i) => (
                         <motion.div
-                            key={plan.name}
+                            key={plan.id}
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: i * 0.1, duration: 0.5 }}
-                            className={`relative rounded-3xl p-8 flex flex-col ${plan.popular
-                                ? 'bg-zinc-900 border-2 border-primary shadow-[0_0_50px_-12px_rgba(245,166,35,0.4)]'
-                                : 'bg-zinc-900/50 border border-border'
+                            className={`relative rounded-3xl p-7 flex flex-col ${plan.popular
+                                ? 'bg-card border-2 border-primary shadow-glow'
+                                : 'bg-card/50 border border-border'
                                 }`}
                         >
                             {plan.popular && (
-                                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-primary text-black font-bold text-xs uppercase tracking-wider py-1 px-4 rounded-full">
+                                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-primary text-primary-foreground font-bold text-xs uppercase tracking-wider py-1 px-4 rounded-full">
                                     Most Popular
                                 </div>
                             )}
 
+                            <div className="mb-5">
+                                <h3 className="text-lg font-bold text-foreground mb-1">{plan.name}</h3>
+                                <p className="text-sm text-muted-foreground">{plan.description}</p>
+                            </div>
+
                             <div className="mb-6">
-                                <h3 className="text-xl font-bold text-foreground mb-2">{plan.name}</h3>
-                                <p className="text-sm text-muted-foreground">{plan.desc}</p>
+                                <span className="text-4xl font-black text-foreground">{plan.price}</span>
+                                {plan.priceValue > 0 && <span className="text-muted-foreground text-sm ml-1">/mo</span>}
                             </div>
 
-                            <div className="mb-8">
-                                <span className="text-5xl font-black text-foreground">{plan.price}</span>
-                                {plan.period && <span className="text-foreground/40">{plan.period}</span>}
-                            </div>
-
-                            <div className="space-y-4 mb-8 flex-1">
+                            <div className="space-y-3 mb-8 flex-1">
                                 {plan.features.map(f => (
-                                    <div key={f} className="flex gap-3">
-                                        <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
+                                    <div key={f} className="flex gap-2.5">
+                                        <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                                         <span className="text-muted-foreground text-sm">{f}</span>
                                     </div>
                                 ))}
                                 {plan.notIncluded.map(f => (
-                                    <div key={f} className="flex gap-3 opacity-40">
-                                        <X className="h-5 w-5 text-muted-foreground shrink-0" />
+                                    <div key={f} className="flex gap-2.5 opacity-40">
+                                        <X className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
                                         <span className="text-muted-foreground text-sm">{f}</span>
                                     </div>
                                 ))}
                             </div>
 
-                            <Link to="/project/new" className="mt-auto">
+                            <Link to={plan.id === 'free' ? '/login' : '/login'} className="mt-auto">
                                 <Button
-                                    className={`w-full h-12 rounded-xl font-bold text-base transition-all ${plan.popular
-                                        ? 'bg-primary text-black hover:bg-primary/90 hover:scale-105'
-                                        : 'bg-white/10 text-foreground hover:bg-white/20'
+                                    className={`w-full h-11 rounded-xl font-bold text-sm transition-all ${plan.popular
+                                        ? 'bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.02]'
+                                        : 'bg-secondary text-foreground hover:bg-secondary/80'
                                         }`}
                                 >
-                                    Get started
+                                    {plan.cta}
                                 </Button>
                             </Link>
                         </motion.div>
