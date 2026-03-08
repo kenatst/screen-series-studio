@@ -87,6 +87,11 @@ function buildSlidePrompt(
     ? `\n\n=== USER DIRECTION ===\nThe user has specifically requested: "${userPrompt}"\nApply this direction while maintaining brand consistency and quality standards.\n=== END USER DIRECTION ===`
     : "";
 
+  const outputLang = project.output_language || (project.config as any)?.outputLanguage || "en";
+  const langDirective = outputLang !== "en"
+    ? `\n=== LANGUAGE ===\nAll text on the screenshot (headline, subheadline) MUST be written in ${outputLang}. The provided headline and subheadline are already in the target language — reproduce them EXACTLY as given.\n=== END LANGUAGE ===`
+    : "";
+
   return `You are an expert ${platformLabel} screenshot designer creating premium, conversion-optimized marketing screenshots.
 
 === APP INFO ===
@@ -129,7 +134,7 @@ Key requirements:
 Return a JSON object in TEXT modality only, with this exact schema:
 {"overall_score": number, "checks": {"headline_exact": boolean, "subheadline_exact": boolean, "no_placeholder": boolean, "ui_preserved": boolean, "contrast_ok": boolean}, "issues": string[]}
 
-${consistency}${userDirective}`.trim();
+${consistency}${langDirective}${userDirective}`.trim();
 }
 
 function parseQualityScore(rawText: string): number | null {
@@ -403,7 +408,8 @@ serve(async (req) => {
           const displayNum = genMode === "creative-direction" ? i + 1 : slide.slide_number;
 
           sendEvent("slide-start", { slideNumber: displayNum, total: invocationSlides.length });
-          await adminClient.from("project_slides").update({ status: "generating" }).eq("id", slide.id);
+          const slideStartMs = Date.now();
+          await adminClient.from("project_slides").update({ status: "generating", attempt_count: (slide.attempt_count || 0) + 1 }).eq("id", slide.id);
 
           try {
             const prompt = buildSlidePrompt(
@@ -500,11 +506,14 @@ serve(async (req) => {
             const { data: signedData } = await adminClient.storage.from("generated-outputs").createSignedUrl(filename, 60 * 60 * 24 * 7);
             const imageUrl = signedData?.signedUrl || "";
 
+            const generationMs = Date.now() - slideStartMs;
             await adminClient.from("project_slides").update({
               status: "completed",
               image_url: imageUrl,
+              quality_score: attempt.qualityScore,
+              generation_ms: generationMs,
+              last_error: null,
             }).eq("id", slide.id);
-
             sendEvent("slide-done", {
               slideNumber: displayNum,
               imageUrl,
@@ -513,7 +522,7 @@ serve(async (req) => {
             });
           } catch (error: any) {
             console.error(`Error generating slide ${displayNum}:`, error);
-            await adminClient.from("project_slides").update({ status: "error" }).eq("id", slide.id);
+            await adminClient.from("project_slides").update({ status: "error", last_error: error.message || "Generation failed" }).eq("id", slide.id);
             sendEvent("slide-error", { slideNumber: displayNum, message: error.message || "Generation failed" });
           }
         }

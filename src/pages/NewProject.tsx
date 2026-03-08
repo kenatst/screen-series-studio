@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { toneOptions, screenTags, slideObjectives, defaultStorylines, emphasisOptions, demoTemplates, templateMoods } from "@/lib/demo-data";
 import type { SlideItem } from "@/lib/demo-data";
-import { useCreateProject, useSaveSlides } from "@/hooks/useProjects";
+import { useCreateProject, useSaveSlides, useUpdateProject } from "@/hooks/useProjects";
 import { useAuth } from "@/hooks/useAuth";
 import { getMaxSlides } from "@/lib/plans";
 import { supabase } from "@/integrations/supabase/client";
@@ -140,6 +140,7 @@ const NewProject = () => {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const createProject = useCreateProject();
+  const updateProject = useUpdateProject();
   const saveSlides = useSaveSlides();
   const { toast } = useToast();
   const maxSlides = getMaxSlides(profile?.plan || 'free');
@@ -165,6 +166,8 @@ const NewProject = () => {
   const [generationMode, setGenerationMode] = useState<'full' | 'creative-direction' | 'first-3'>('full');
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
+  const [savedProjectId, setSavedProjectId] = useState<string | null>(null);
+  const [outputLanguage, setOutputLanguage] = useState('en');
 
   // Template filtering
   const [templateMoodFilter, setTemplateMoodFilter] = useState<string>('All');
@@ -312,16 +315,17 @@ const NewProject = () => {
 
       const response = await supabase.functions.invoke('suggest-copy', {
         body: {
-          mode: 'storylines',
-          app_name: appName,
-          app_description: appDescription || shortDescription,
-          slide_count: slideCount,
-          tone: selectedTone,
+          type: 'storylines',
+          appName: appName,
+          appDescription: appDescription || shortDescription,
+          slideCount: slideCount,
+          platform: platform,
         },
       });
 
-      if (response.data?.slides) {
-        const aiSlides = response.data.slides as Array<{ headline: string; subheadline: string; objective?: string }>;
+      const resultData = response.data?.result || response.data;
+      if (resultData?.slides) {
+        const aiSlides = resultData.slides as Array<{ headline: string; subheadline: string; objective?: string }>;
         setSlides(prev => prev.map((s, i) => {
           const ai = aiSlides[i];
           if (!ai) return s;
@@ -342,12 +346,12 @@ const NewProject = () => {
     }
   };
 
-  // Save as draft
+  // Save as draft — update if already saved, create otherwise
   const handleSaveDraft = async () => {
     if (!user) { toast({ title: "Not authenticated", variant: "destructive" }); return; }
     setIsSaving(true);
     try {
-      const project = await createProject.mutateAsync({
+      const projectPayload = {
         name: getFinalProjectName(),
         app_name: appName,
         app_description: appDescription,
@@ -356,12 +360,27 @@ const NewProject = () => {
         consistency_level: consistencyLevel,
         device_formats: deviceFormats as any,
         generation_mode: generationMode,
-        status: 'draft',
+        status: 'draft' as const,
         brand_kit: { colors: brandColors, fontFamily: brandFont } as any,
-        config: { primaryGoal, tone: selectedTone, shortDescription, valueProposition, keyFeatures: keyFeatures.split('\n').filter(Boolean), topBenefits: topBenefits.split('\n').filter(Boolean) } as any,
-      });
+        config: { primaryGoal, tone: selectedTone, shortDescription, valueProposition, keyFeatures: keyFeatures.split('\n').filter(Boolean), topBenefits: topBenefits.split('\n').filter(Boolean), outputLanguage } as any,
+        output_language: outputLanguage,
+      };
+
+      let projectId: string;
+
+      if (savedProjectId) {
+        // Update existing project
+        await updateProject.mutateAsync({ id: savedProjectId, ...projectPayload });
+        projectId = savedProjectId;
+      } else {
+        // Create new project
+        const project = await createProject.mutateAsync(projectPayload);
+        projectId = project.id;
+        setSavedProjectId(projectId);
+      }
+
       await saveSlides.mutateAsync({
-        projectId: project.id,
+        projectId,
         slides: slides.map((s, i) => ({
           slide_number: i + 1,
           objective: s.objective,
@@ -373,11 +392,12 @@ const NewProject = () => {
           status: 'pending',
         })),
       });
-      if (user) {
-        await uploadAssetsToStorage(project.id, user.id);
+      if (user && !savedProjectId) {
+        // Only upload assets on first save
+        await uploadAssetsToStorage(projectId, user.id);
       }
       setLastSavedAt(new Date());
-      toast({ title: "Draft saved ✓", description: `Project "${getFinalProjectName()}" saved as draft.` });
+      toast({ title: "Draft saved ✓", description: `Project "${getFinalProjectName()}" saved.` });
     } catch (e) {
       console.error("Draft save failed:", e);
       toast({ title: "Save failed", description: "Could not save draft.", variant: "destructive" });
@@ -528,6 +548,29 @@ const NewProject = () => {
                   </div>
                 </div>
 
+                {/* Output Language */}
+                <div className="space-y-3">
+                  <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Output language</label>
+                  <p className="text-xs text-foreground/40 font-medium -mt-1">The language used for headlines and subheadlines on your screenshots.</p>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { code: 'en', label: '🇺🇸 English' },
+                      { code: 'fr', label: '🇫🇷 Français' },
+                      { code: 'de', label: '🇩🇪 Deutsch' },
+                      { code: 'es', label: '🇪🇸 Español' },
+                      { code: 'it', label: '🇮🇹 Italiano' },
+                      { code: 'pt', label: '🇧🇷 Português' },
+                      { code: 'ja', label: '🇯🇵 日本語' },
+                      { code: 'ko', label: '🇰🇷 한국어' },
+                      { code: 'zh', label: '🇨🇳 中文' },
+                      { code: 'ar', label: '🇸🇦 العربية' },
+                    ].map(lang => (
+                      <button key={lang.code} onClick={() => setOutputLanguage(lang.code)} className={`px-4 py-2.5 rounded-lg text-sm font-bold border transition-all duration-300 ${outputLanguage === lang.code ? 'bg-primary/20 text-primary border-primary shadow-glow' : 'bg-black/5 text-muted-foreground border-border hover:border-primary/40 hover:text-foreground'}`}>
+                        {lang.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <AnimatePresence>
                   {(platform === 'ios' || platform === 'both') && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-3 overflow-hidden">
@@ -1038,7 +1081,8 @@ const NewProject = () => {
                       <div className="flex justify-between border-b border-border pb-3"><span>Slides:</span> <span className="font-bold text-foreground">{slideCount}</span></div>
                       <div className="flex justify-between border-b border-border pb-3"><span>Screens:</span> <span className="font-bold text-foreground">{uploadedScreens.length} uploaded</span></div>
                       <div className="flex justify-between border-b border-border pb-3"><span>Brand assets:</span> <span className="font-bold text-foreground">{brandAssets.length} uploaded</span></div>
-                      <div className="flex justify-between pb-1"><span>Consistency:</span> <span className="font-bold text-foreground capitalize">{consistencyLevel}</span></div>
+                      <div className="flex justify-between border-b border-border pb-3"><span>Consistency:</span> <span className="font-bold text-foreground capitalize">{consistencyLevel}</span></div>
+                      <div className="flex justify-between pb-1"><span>Output language:</span> <span className="font-bold text-foreground">{outputLanguage.toUpperCase()}</span></div>
                     </div>
                   </div>
                   <div className="rounded-3xl border border-border bg-card/90 p-8 shadow-elevated space-y-6 hover:border-primary/30 transition-all duration-500">
@@ -1093,7 +1137,7 @@ const NewProject = () => {
                     onClick={async () => {
                       setIsSaving(true);
                       try {
-                        const project = await createProject.mutateAsync({
+                        const projectPayload = {
                           name: getFinalProjectName(),
                           app_name: appName,
                           app_description: appDescription,
@@ -1102,12 +1146,23 @@ const NewProject = () => {
                           consistency_level: consistencyLevel,
                           device_formats: deviceFormats as any,
                           generation_mode: generationMode,
-                          status: 'draft',
+                          status: 'draft' as const,
                           brand_kit: { colors: brandColors, fontFamily: brandFont } as any,
-                          config: { primaryGoal, tone: selectedTone, shortDescription, valueProposition, keyFeatures: keyFeatures.split('\n').filter(Boolean), topBenefits: topBenefits.split('\n').filter(Boolean) } as any,
-                        });
+                          config: { primaryGoal, tone: selectedTone, shortDescription, valueProposition, keyFeatures: keyFeatures.split('\n').filter(Boolean), topBenefits: topBenefits.split('\n').filter(Boolean), outputLanguage } as any,
+                          output_language: outputLanguage,
+                        };
+
+                        let projectId: string;
+                        if (savedProjectId) {
+                          await updateProject.mutateAsync({ id: savedProjectId, ...projectPayload });
+                          projectId = savedProjectId;
+                        } else {
+                          const project = await createProject.mutateAsync(projectPayload);
+                          projectId = project.id;
+                        }
+
                         await saveSlides.mutateAsync({
-                          projectId: project.id,
+                          projectId,
                           slides: slides.map((s, i) => ({
                             slide_number: i + 1,
                             objective: s.objective,
@@ -1119,10 +1174,10 @@ const NewProject = () => {
                             status: 'pending',
                           })),
                         });
-                        if (user) {
-                          await uploadAssetsToStorage(project.id, user.id);
+                        if (user && !savedProjectId) {
+                          await uploadAssetsToStorage(projectId, user.id);
                         }
-                        navigate(`/project/${project.id}/generating`);
+                        navigate(`/project/${projectId}/generating`);
                       } catch (e) {
                         console.error("Failed to save project", e);
                         toast({ title: "Erreur", description: "Failed to create project", variant: "destructive" });
