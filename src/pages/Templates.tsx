@@ -61,7 +61,7 @@ const templatePreviews: Record<string, string> = {
   'LinguaFlow': agency24,
   'Nestle Wellness': agency25,
   'LifePlan Goals': agency26,
-  'FoxLearn Kids': agency27,
+  
 };
 
 const categories = ['All', 'Business', 'Entertainment', 'Education', 'Lifestyle', 'Luxury', 'Media'];

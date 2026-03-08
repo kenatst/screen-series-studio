@@ -74,7 +74,7 @@ const templatePreviews: Record<string, string> = {
   'LinguaFlow': agency24,
   'Nestle Wellness': agency25,
   'LifePlan Goals': agency26,
-  'FoxLearn Kids': agency27,
+  
 };
 
 const steps = [
