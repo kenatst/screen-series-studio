@@ -1,12 +1,33 @@
 import { useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
 
+import slide01 from '@/assets/gallery/slide-01-learners.png';
+import slide02 from '@/assets/gallery/slide-02-allinone.png';
+import slide03 from '@/assets/gallery/slide-03-bitesized.png';
+import slide04 from '@/assets/gallery/slide-04-speaking.png';
+import slide05 from '@/assets/gallery/slide-05-streak.png';
+import slide06 from '@/assets/gallery/slide-06-widgets.png';
+import slide07 from '@/assets/gallery/slide-07-culture.png';
+import slide08 from '@/assets/gallery/slide-08-progress.png';
+import slide09 from '@/assets/gallery/slide-09-motivation.png';
+import slide10 from '@/assets/gallery/slide-10-closing.png';
+
+const slides = [
+    { src: slide01, label: '3M Learners' },
+    { src: slide02, label: 'All-in-One' },
+    { src: slide03, label: 'Bite-sized' },
+    { src: slide04, label: 'Speaking' },
+    { src: slide05, label: 'Streak' },
+    { src: slide06, label: 'Widgets' },
+    { src: slide07, label: 'Culture' },
+    { src: slide08, label: 'Progress' },
+    { src: slide09, label: 'Rewards' },
+    { src: slide10, label: 'Closing' },
+];
+
 export const BatchGenerationGrid = () => {
     const ref = useRef(null);
     const isInView = useInView(ref, { once: true, margin: "-100px" });
-
-    // 10 slides
-    const slides = Array.from({ length: 10 }, (_, i) => i);
 
     return (
         <section className="py-32 bg-surface-elevated relative overflow-hidden flex flex-col items-center">
@@ -29,8 +50,7 @@ export const BatchGenerationGrid = () => {
                     animate={isInView ? { rotateX: 10, rotateY: -5, scale: 0.95 } : {}}
                     transition={{ delay: 2.5, duration: 1.5, type: "spring", bounce: 0.2 }}
                 >
-                    {slides.map((i) => {
-                        // We want them to "generate" sequentially from left to right
+                    {slides.map((slide, i) => {
                         const delay = i * 0.15;
 
                         return (
@@ -41,9 +61,9 @@ export const BatchGenerationGrid = () => {
                                 animate={isInView ? { opacity: 1, y: 0 } : {}}
                                 transition={{ delay, duration: 0.5, ease: "easeOut" }}
                             >
-                                {/* "Generating" State (Pulse) */}
+                                {/* Generating spinner */}
                                 <motion.div
-                                    className="absolute inset-0 bg-primary/20 flex flex-col items-center justify-center p-2 md:p-4 gap-2 border border-primary/30"
+                                    className="absolute inset-0 bg-primary/20 flex flex-col items-center justify-center p-2 md:p-4 gap-2 border border-primary/30 z-20"
                                     initial={{ opacity: 1 }}
                                     animate={isInView ? { opacity: 0 } : {}}
                                     transition={{ delay: delay + 1.2, duration: 0.3 }}
@@ -59,29 +79,24 @@ export const BatchGenerationGrid = () => {
                                     </div>
                                 </motion.div>
 
-                                {/* Generated Result State */}
+                                {/* Real screenshot reveal */}
                                 <motion.div
-                                    className="absolute inset-0 bg-zinc-800 flex flex-col p-2 lg:p-4"
+                                    className="absolute inset-0 z-10"
                                     initial={{ opacity: 0, scale: 0.9 }}
                                     animate={isInView ? { opacity: 1, scale: 1 } : {}}
                                     transition={{ delay: delay + 1.2, duration: 0.4, type: "spring" }}
                                 >
-                                    {/* The "Generated Image" mockup */}
-                                    <div className="h-4 lg:h-6 w-8 lg:w-12 rounded-full bg-white/10 mb-2" />
-                                    <div className="h-2 lg:h-3 w-3/4 bg-white/50 rounded mb-1" />
-                                    <div className="h-2 lg:h-3 w-1/2 bg-white/30 rounded mb-4 lg:mb-6" />
-                                    <div className="flex-1 rounded-md lg:rounded-lg bg-zinc-950 border border-border flex items-center justify-center relative shadow-inner">
-                                        {/* Fake UI inside the phone mockup */}
-                                        <div className="absolute top-4 left-2 right-2 flex flex-col gap-2 opacity-50">
-                                            <div className="h-4 lg:h-8 w-full bg-white/10 rounded" />
-                                            <div className="h-4 lg:h-8 w-full bg-white/10 rounded" />
-                                        </div>
-                                    </div>
+                                    <img
+                                        src={slide.src}
+                                        alt={slide.label}
+                                        className="w-full h-full object-cover"
+                                        loading="lazy"
+                                    />
                                 </motion.div>
 
-                                {/* Final flash */}
+                                {/* Flash effect */}
                                 <motion.div
-                                    className="absolute inset-0 bg-white z-10 pointer-events-none"
+                                    className="absolute inset-0 bg-white z-30 pointer-events-none"
                                     initial={{ opacity: 0 }}
                                     animate={isInView ? { opacity: [0, 0.8, 0] } : {}}
                                     transition={{ delay: delay + 1.2, duration: 0.5 }}
