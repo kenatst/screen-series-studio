@@ -36,63 +36,7 @@ import { getMaxSlides } from "@/lib/plans";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-// Agency gallery images for template previews
-import agency01 from "@/assets/gallery/agency-01-habit.png";
-import agency02 from "@/assets/gallery/agency-02-coach.png";
-import agency03 from "@/assets/gallery/agency-03-map.png";
-import agency04 from "@/assets/gallery/agency-04-subs.png";
-import agency05 from "@/assets/gallery/agency-05-water.png";
-import agency06 from "@/assets/gallery/agency-06-sugar.png";
-import agency07 from "@/assets/gallery/agency-07-aura.png";
-import agency08 from "@/assets/gallery/agency-08-scribe.png";
-import agency09 from "@/assets/gallery/agency-09-trainer.png";
-import agency10 from "@/assets/gallery/agency-10-stackr.png";
-import agency11 from "@/assets/gallery/agency-11-trainer-ai.png";
-import agency12 from "@/assets/gallery/agency-12-stackr-yellow.png";
-import agency13 from "@/assets/gallery/agency-13-vow.png";
-import agency14 from "@/assets/gallery/agency-14-rpg.png";
-import agency15 from "@/assets/gallery/agency-15-cram.png";
-import agency16 from "@/assets/gallery/agency-16-adblock.png";
-import agency17 from "@/assets/gallery/agency-17-drift.png";
-import agency18 from "@/assets/gallery/agency-18-coaching.png";
-import agency19 from "@/assets/gallery/agency-19-tape.png";
-import agency20 from "@/assets/gallery/agency-20-solo.png";
-import agency21 from "@/assets/gallery/agency-21-minddrop.png";
-import agency22 from "@/assets/gallery/agency-22-mealplan.png";
-import agency23 from "@/assets/gallery/agency-23-vault.jpeg";
-import agency24 from "@/assets/gallery/agency-24-linguaflow.png";
-import agency25 from "@/assets/gallery/agency-25-nestle.png";
-import agency26 from "@/assets/gallery/agency-26-lifeplan.png";
-
-
-const templatePreviews: Record<string, string> = {
-  'Habit Tracker': agency01,
-  'AI Coach': agency02,
-  'Map Explorer': agency03,
-  'Subscription Manager': agency04,
-  'Hydration': agency05,
-  'Sugar Free': agency06,
-  'Aura Mood': agency07,
-  'Scribe Notes': agency08,
-  'Personal Trainer': agency09,
-  'Stackr Finance': agency10,
-  'Trainer AI': agency11,
-  'Stackr Yellow': agency12,
-  'Vow Couples': agency13,
-  'RPG Gaming': agency14,
-  'Cram Study': agency15,
-  'AdBlock Shield': agency16,
-  'Drift Meditation': agency17,
-  'Life Coaching': agency18,
-  'Tape Recorder': agency19,
-  'Solo Travel': agency20,
-  'MindDrop Journal': agency21,
-  'Meal Planner': agency22,
-  'Vault Security': agency23,
-  'LinguaFlow': agency24,
-  'Nestle Wellness': agency25,
-  'LifePlan Goals': agency26,
-};
+import { templatePreviews } from "@/constants/templates";
 
 const steps = [
   { id: 1, label: 'Project' },
@@ -104,12 +48,7 @@ const steps = [
   { id: 7, label: 'Review' },
 ];
 
-interface UploadedScreen {
-  id: string;
-  file: File;
-  preview: string;
-  tag: string;
-}
+import { SortableSlide, type UploadedScreen } from "@/components/project/SortableSlide";
 
 interface BrandAsset {
   type: 'logo' | 'icon' | 'mascot';
@@ -151,119 +90,7 @@ function extractColorsFromImage(imgSrc: string): Promise<string[]> {
   });
 }
 
-const SortableSlide = ({
-  slide,
-  updateSlide,
-  removeSlide,
-  getScreenOptions,
-  uploadedScreens
-}: {
-  slide: SlideItem;
-  updateSlide: (id: string, field: keyof SlideItem, value: string) => void;
-  removeSlide: (id: string) => void;
-  getScreenOptions: () => string[];
-  uploadedScreens: UploadedScreen[];
-}) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: slide.id });
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    zIndex: isDragging ? 50 : 'auto',
-    opacity: isDragging ? 0.8 : 1,
-  };
-
-  return (
-    <div ref={setNodeRef} style={style} className="rounded-2xl border border-border bg-card/90 p-5 shadow-elevated hover:border-primary/40 hover:shadow-glow transition-all duration-300 group">
-      <div className="flex items-start gap-4">
-        <div {...attributes} {...listeners} className="h-5 w-5 mt-3 flex-shrink-0 cursor-grab active:cursor-grabbing">
-          <GripVertical className="h-5 w-5 text-foreground/30 opacity-40 group-hover:opacity-100 transition-opacity hover:text-foreground" />
-        </div>
-        <div className="flex-1 space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 border border-primary/20 shadow-inner">
-              <span className="text-sm font-black text-primary">{slide.number}</span>
-            </div>
-            <select className="flex-1 bg-card/90 border border-border rounded-xl px-4 py-2 text-sm font-bold text-foreground focus:ring-1 focus:ring-primary shadow-inner outline-none transition-all" value={slide.objective} onChange={e => updateSlide(slide.id, 'objective', e.target.value)}>
-              {slideObjectives.map(o => <option key={o} value={o}>{o}</option>)}
-            </select>
-            <Badge className={`shadow-sm px-3 py-1.5 font-bold tracking-tight border ${slide.importance === 'high' ? 'bg-red-500/10 text-red-400 border-red-500/20' : slide.importance === 'medium' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-black/5 text-muted-foreground border-border'}`}>
-              {slide.importance}
-            </Badge>
-          </div>
-          {/* Full-width headline & subheadline with tooltips */}
-          <div className="space-y-3">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Input
-                  value={slide.headline}
-                  onChange={e => updateSlide(slide.id, 'headline', e.target.value)}
-                  placeholder="Headline — your big hook for this slide"
-                  className="bg-black/5 border-border text-foreground placeholder:text-foreground/30 text-sm font-bold shadow-inner h-11 focus-visible:ring-primary transition-all rounded-xl w-full"
-                />
-              </TooltipTrigger>
-              {slide.headline.length > 30 && (
-                <TooltipContent side="top" className="max-w-sm">
-                  <p className="text-sm">{slide.headline}</p>
-                </TooltipContent>
-              )}
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Input
-                  value={slide.subheadline}
-                  onChange={e => updateSlide(slide.id, 'subheadline', e.target.value)}
-                  placeholder="Subheadline — supporting text"
-                  className="bg-black/5 border-border text-foreground placeholder:text-foreground/30 text-sm font-medium shadow-inner h-11 focus-visible:ring-primary transition-all rounded-xl w-full"
-                />
-              </TooltipTrigger>
-              {slide.subheadline.length > 30 && (
-                <TooltipContent side="top" className="max-w-sm">
-                  <p className="text-sm">{slide.subheadline}</p>
-                </TooltipContent>
-              )}
-            </Tooltip>
-          </div>
-          <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
-            {/* Screen dropdown with thumbnails */}
-            <div className="relative mt-2">
-              <select
-                className="bg-black/5 border border-border rounded-lg pl-3 pr-8 py-2 text-xs font-bold text-muted-foreground outline-none focus:ring-1 focus:ring-primary transition-all appearance-none"
-                value={slide.rawScreenTag}
-                onChange={e => updateSlide(slide.id, 'rawScreenTag', e.target.value)}
-              >
-                {getScreenOptions().map(t => {
-                  const matchingScreen = uploadedScreens.find(s => s.tag === t);
-                  return (
-                    <option key={t} value={t}>
-                      {matchingScreen ? `📱 ${t} (uploaded)` : t}
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
-            {/* Show thumbnail of selected screen if exists */}
-            {uploadedScreens.find(s => s.tag === slide.rawScreenTag) && (
-              <div className="mt-2 h-10 w-6 rounded border border-primary/30 overflow-hidden flex-shrink-0">
-                <img
-                  src={uploadedScreens.find(s => s.tag === slide.rawScreenTag)!.preview}
-                  alt={slide.rawScreenTag}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
-            <select className="bg-black/5 border border-border rounded-lg px-3 py-2 text-xs font-bold text-muted-foreground outline-none mt-2 focus:ring-1 focus:ring-primary transition-all" value={slide.emphasis} onChange={e => updateSlide(slide.id, 'emphasis', e.target.value)}>
-              {emphasisOptions.map(e => <option key={e} value={e}>{e}</option>)}
-            </select>
-            <div className="flex-1" />
-            <Button variant="ghost" size="sm" className="h-9 text-xs font-bold mt-2 text-muted-foreground hover:text-foreground hover:bg-white/10 rounded-lg"><Lock className="mr-1.5 h-3.5 w-3.5" />Lock</Button>
-            <Button variant="ghost" size="sm" onClick={() => removeSlide(slide.id)} className="h-9 text-xs font-bold mt-2 text-red-400/70 hover:text-red-400 hover:bg-red-500/10 rounded-lg"><Trash2 className="mr-1.5 h-3.5 w-3.5" />Remove</Button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const NewProject = () => {
   const navigate = useNavigate();
@@ -486,7 +313,7 @@ const NewProject = () => {
 
   const addSlide = () => {
     if (slides.length >= maxSlides) {
-      toast({ title: "Limite atteinte", description: `Maximum ${maxSlides} slides pour votre plan.`, variant: "destructive" });
+      toast({ title: "Limit reached", description: `Max ${maxSlides} slides for your plan.`, variant: "destructive" });
       return;
     }
     const newSlide: SlideItem = {
@@ -1382,7 +1209,7 @@ const NewProject = () => {
                         navigate(`/project/${projectId}/generating`);
                       } catch (e) {
                         console.error("Failed to save project", e);
-                        toast({ title: "Erreur", description: "Failed to create project", variant: "destructive" });
+                        toast({ title: "Error", description: "Failed to create project", variant: "destructive" });
                         setIsSaving(false);
                       }
                     }}

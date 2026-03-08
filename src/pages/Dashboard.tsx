@@ -110,7 +110,7 @@ const Dashboard = () => {
 
   const handleNewProject = () => {
     if (!canCreateProject(profile?.plan || 'free', activeProjects.length)) {
-      toast({ title: "Limite atteinte", description: `Votre plan ${plan.name} permet ${plan.limits.maxProjects} projet(s). Passez à un plan supérieur.`, variant: "destructive" });
+      toast({ title: "Limit reached", description: `Your ${plan.name} plan allows ${plan.limits.maxProjects} project(s). Upgrade to a higher plan.`, variant: "destructive" });
       return;
     }
     navigate('/project/new');
@@ -124,7 +124,7 @@ const Dashboard = () => {
       if (error) throw error;
       if (data?.url) window.open(data.url, "_blank");
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      toast({ title: "Error", description: e.message, variant: "destructive" });
     }
   };
 
@@ -135,7 +135,7 @@ const Dashboard = () => {
       if (error) throw error;
       if (data?.url) window.open(data.url, "_blank");
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      toast({ title: "Error", description: e.message, variant: "destructive" });
     } finally {
       setIsOpeningPortal(false);
     }
@@ -145,16 +145,16 @@ const Dashboard = () => {
     setIsCheckingSub(true);
     await checkSubscription();
     setIsCheckingSub(false);
-    toast({ title: "Statut mis à jour", description: `Plan actuel : ${plan.name}` });
+    toast({ title: "Status updated", description: `Current plan: ${plan.name}` });
   };
 
   const handleUnarchive = async (e: React.MouseEvent, projectId: string) => {
     e.stopPropagation();
     try {
       await unarchiveProject.mutateAsync(projectId);
-      toast({ title: "Projet restauré", description: "Le projet est de nouveau actif." });
+      toast({ title: "Project restored", description: "Project is active again." });
     } catch {
-      toast({ title: "Erreur", description: "Impossible de restaurer le projet.", variant: "destructive" });
+      toast({ title: "Error", description: "Could not restore the project.", variant: "destructive" });
     }
   };
 
@@ -163,10 +163,10 @@ const Dashboard = () => {
     e.preventDefault();
     try {
       await archiveProject.mutateAsync(projectId);
-      toast({ title: "Projet archivé" });
+      toast({ title: "Project archived" });
     } catch (err: any) {
       console.error("Archive error:", err);
-      toast({ title: "Erreur", description: err?.message || "Impossible d'archiver le projet.", variant: "destructive" });
+      toast({ title: "Error", description: err?.message || "Could not archive the project.", variant: "destructive" });
     }
   };
 

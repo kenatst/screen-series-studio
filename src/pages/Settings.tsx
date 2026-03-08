@@ -26,7 +26,7 @@ const Settings_Page = () => {
 
   useEffect(() => {
     if (searchParams.get("checkout") === "success") {
-      toast({ title: "Paiement réussi !", description: "Votre abonnement est actif. Rafraîchissement en cours..." });
+      toast({ title: "Payment successful!", description: "Your subscription is active. Refreshing..." });
       setTimeout(() => { checkSubscription(); refreshProfile(); }, 2000);
     }
   }, [searchParams]);
@@ -39,7 +39,7 @@ const Settings_Page = () => {
       if (error) throw error;
       if (data?.url) window.open(data.url, "_blank");
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      toast({ title: "Error", description: e.message, variant: "destructive" });
     }
   };
 
@@ -50,7 +50,7 @@ const Settings_Page = () => {
       if (error) throw error;
       if (data?.url) window.open(data.url, "_blank");
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      toast({ title: "Error", description: e.message, variant: "destructive" });
     } finally {
       setIsOpeningPortal(false);
     }
@@ -61,7 +61,7 @@ const Settings_Page = () => {
     await checkSubscription();
     await refreshProfile();
     setIsRefreshing(false);
-    toast({ title: "Statut mis à jour" });
+    toast({ title: "Status updated" });
   };
 
   return (
@@ -69,7 +69,7 @@ const Settings_Page = () => {
       <div className="p-8 max-w-5xl mx-auto">
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
           <h1 className="text-3xl font-black tracking-tight text-foreground mb-1">Settings</h1>
-          <p className="text-muted-foreground font-medium mb-10">Gérez votre compte, vos crédits et votre abonnement.</p>
+          <p className="text-muted-foreground font-medium mb-10">Manage your account, credits, and subscription.</p>
         </motion.div>
 
         {/* Credits Card */}
@@ -84,34 +84,34 @@ const Settings_Page = () => {
                 <Coins className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <h2 className="text-2xl font-black tracking-tight text-foreground">Crédits</h2>
-                <p className="text-sm text-muted-foreground">Votre solde de génération</p>
+                <h2 className="text-2xl font-black tracking-tight text-foreground">Credits</h2>
+                <p className="text-sm text-muted-foreground">Your generation balance</p>
               </div>
             </div>
 
             <div className="flex items-baseline gap-2 mb-6">
               <span className="text-6xl font-black text-primary">{credits}</span>
-              <span className="text-xl text-muted-foreground font-bold">crédits restants</span>
+              <span className="text-xl text-muted-foreground font-bold">credits remaining</span>
             </div>
 
             <div className="grid sm:grid-cols-3 gap-4 mb-6">
               <div className="rounded-xl bg-card/90 border border-border p-4">
-                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Génération</p>
+                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Generation</p>
                 <p className="text-lg font-black text-foreground">{CREDIT_COSTS.generateSlide} cr. <span className="text-sm font-medium text-muted-foreground">/ slide</span></p>
               </div>
               <div className="rounded-xl bg-card/90 border border-border p-4">
-                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Régénération</p>
+                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Regeneration</p>
                 <p className="text-lg font-black text-foreground">{CREDIT_COSTS.regenerateSlide} cr. <span className="text-sm font-medium text-muted-foreground">/ slide</span></p>
               </div>
               <div className="rounded-xl bg-card/90 border border-border p-4">
-                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Traduction</p>
+                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Translation</p>
                 <p className="text-lg font-black text-foreground">{CREDIT_COSTS.translateSlide} cr. <span className="text-sm font-medium text-muted-foreground">/ slide</span></p>
               </div>
             </div>
 
             <p className="text-xs text-muted-foreground">
-              Votre plan <span className="font-bold text-primary">{plan.name}</span> inclut <span className="font-bold text-foreground">{plan.monthlyCredits} crédits/mois</span>.
-              {plan.id === 'free' && ' Passez à un plan payant pour plus de crédits.'}
+              Your <span className="font-bold text-primary">{plan.name}</span> plan includes <span className="font-bold text-foreground">{plan.monthlyCredits} credits/mo</span>.
+              {plan.id === 'free' && ' Upgrade to a paid plan for more credits.'}
             </p>
           </div>
         </motion.div>
@@ -127,7 +127,7 @@ const Settings_Page = () => {
                 <Crown className="h-6 w-6 text-primary" />
                 <h2 className="text-2xl font-black tracking-tight text-foreground">{plan.name}</h2>
                 <Badge className="bg-primary/20 text-primary border-primary/30 text-xs font-bold uppercase">
-                  {plan.priceValue > 0 ? "Actif" : "Free tier"}
+                  {plan.priceValue > 0 ? "Active" : "Free tier"}
                 </Badge>
               </div>
               <p className="text-muted-foreground">{plan.description}</p>
@@ -151,42 +151,41 @@ const Settings_Page = () => {
             {profile?.plan !== "free" && (
               <Button onClick={handleManageSubscription} disabled={isOpeningPortal} variant="outline" className="rounded-xl">
                 {isOpeningPortal ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CreditCard className="h-4 w-4 mr-2" />}
-                Gérer l'abonnement
+                Manage subscription
                 <ExternalLink className="h-3 w-3 ml-2" />
               </Button>
             )}
             <Button onClick={handleRefresh} disabled={isRefreshing} variant="ghost" className="rounded-xl">
               {isRefreshing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-              Actualiser
+              Refresh
             </Button>
           </div>
         </motion.div>
 
         {/* Available Plans */}
         <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          <h2 className="text-xl font-bold text-foreground mb-4 tracking-tight">Plans disponibles</h2>
+          <h2 className="text-xl font-bold text-foreground mb-4 tracking-tight">Available plans</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {PLANS.map((p) => {
               const isCurrent = profile?.plan === p.id;
               return (
                 <div
                   key={p.id}
-                  className={`rounded-2xl p-5 flex flex-col border transition-all duration-300 hover:-translate-y-1 ${
-                    isCurrent ? "border-primary/50 bg-primary/5 shadow-glow" : p.popular ? "border-primary/30 bg-card" : "border-border bg-card/50 hover:border-primary/20"
-                  }`}
+                  className={`rounded-2xl p-5 flex flex-col border transition-all duration-300 hover:-translate-y-1 ${isCurrent ? "border-primary/50 bg-primary/5 shadow-glow" : p.popular ? "border-primary/30 bg-card" : "border-border bg-card/50 hover:border-primary/20"
+                    }`}
                 >
                   {p.popular && !isCurrent && (
-                    <Badge className="mb-3 w-fit bg-primary/20 text-primary border-primary/30 text-[10px]">Populaire</Badge>
+                    <Badge className="mb-3 w-fit bg-primary/20 text-primary border-primary/30 text-[10px]">Popular</Badge>
                   )}
                   {isCurrent && (
-                    <Badge className="mb-3 w-fit bg-green-500/20 text-green-400 border-green-500/30 text-[10px]">Actuel</Badge>
+                    <Badge className="mb-3 w-fit bg-green-500/20 text-green-400 border-green-500/30 text-[10px]">Current</Badge>
                   )}
                   <h3 className="font-bold text-foreground text-lg">{p.name}</h3>
                   <div className="mt-1 mb-2">
                     <span className="text-2xl font-black text-foreground">{p.price}</span>
                     {p.priceValue > 0 && <span className="text-muted-foreground text-xs">/mo</span>}
                   </div>
-                  <p className="text-xs text-primary font-bold mb-4">{p.monthlyCredits} crédits/mois</p>
+                  <p className="text-xs text-primary font-bold mb-4">{p.monthlyCredits} credits/mo</p>
                   <div className="space-y-2 flex-1 mb-4">
                     {p.features.slice(0, 4).map(f => (
                       <div key={f} className="flex gap-2 text-xs">
@@ -199,11 +198,10 @@ const Settings_Page = () => {
                     size="sm"
                     disabled={isCurrent || p.id === "free"}
                     onClick={() => handleUpgrade(p.id)}
-                    className={`rounded-xl text-xs font-bold ${
-                      isCurrent ? "bg-muted text-muted-foreground" : "bg-primary text-primary-foreground hover:bg-primary/90"
-                    }`}
+                    className={`rounded-xl text-xs font-bold ${isCurrent ? "bg-muted text-muted-foreground" : "bg-primary text-primary-foreground hover:bg-primary/90"
+                      }`}
                   >
-                    {isCurrent ? "Actuel" : p.id === "free" ? "Free" : p.cta}
+                    {isCurrent ? "Current" : p.id === "free" ? "Free" : p.cta}
                   </Button>
                 </div>
               );
@@ -218,7 +216,7 @@ const Settings_Page = () => {
         >
           <div className="flex items-center gap-3 mb-4">
             <User className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-bold text-foreground">Compte</h2>
+            <h2 className="text-lg font-bold text-foreground">Account</h2>
           </div>
           <div className="space-y-3">
             <div className="flex justify-between">
@@ -230,7 +228,7 @@ const Settings_Page = () => {
               <Badge className="bg-primary/20 text-primary border-primary/30 text-xs">{plan.name}</Badge>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Crédits</span>
+              <span className="text-sm text-muted-foreground">Credits</span>
               <span className="text-sm font-bold text-primary">{credits}</span>
             </div>
           </div>

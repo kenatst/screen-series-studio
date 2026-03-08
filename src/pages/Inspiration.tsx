@@ -1,26 +1,65 @@
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { api, ApiInspirationResponse } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Check, ExternalLink } from "lucide-react";
+import { Loader2, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
+
+interface InspirationImage {
+    id: string;
+    url: string;
+    category: string;
+    name: string;
+}
 
 const Inspiration = () => {
-    const [data, setData] = useState<ApiInspirationResponse | null>(null);
+    const [images, setImages] = useState<InspirationImage[]>([]);
+    const [categories, setCategories] = useState<string[]>(['All']);
     const [selectedCategory, setSelectedCategory] = useState<string>('All');
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        api.getInspiration()
-            .then(res => {
-                setData(res);
+        const fetchInspiration = async () => {
+            try {
+                // Attempt to fetch from 'inspiration' storage bucket
+                // This assumes standard structure or fallback gracefully
+                const { data, error } = await supabase.storage.from('inspiration').list('', {
+                    limit: 100,
+                    offset: 0,
+                    sortBy: { column: 'name', order: 'asc' }
+                });
+
+                if (error) throw error;
+
+                if (data && data.length > 0) {
+                    const parsedImages: InspirationImage[] = data
+                        .filter(file => file.name.match(/\.(jpg|jpeg|png|webp)$/i))
+                        .map(file => {
+                            const { data: publicUrlData } = supabase.storage.from('inspiration').getPublicUrl(file.name);
+                            // Best effort category extraction from filename or fallback
+                            const categoryStr = file.name.split('-')[0] || 'General';
+
+                            return {
+                                id: file.id || file.name,
+                                url: publicUrlData.publicUrl,
+                                category: categoryStr,
+                                name: file.name
+                            };
+                        });
+
+                    const uniqueCategories = ['All', ...Array.from(new Set(parsedImages.map(img => img.category)))];
+                    setCategories(uniqueCategories);
+                    setImages(parsedImages);
+                }
+            } catch (err) {
+                console.error("Failed to load inspiration from Supabase", err);
+            } finally {
                 setLoading(false);
-            })
-            .catch(err => {
-                console.error("Failed to load inspiration", err);
-                setLoading(false);
-            });
+            }
+        };
+
+        fetchInspiration();
     }, []);
 
     if (loading) {
@@ -33,7 +72,7 @@ const Inspiration = () => {
         );
     }
 
-    if (!data || data.categories.length === 0) {
+    if (images.length === 0) {
         return (
             <DashboardLayout>
                 <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
@@ -42,8 +81,8 @@ const Inspiration = () => {
                     </div>
                     <h2 className="text-2xl font-bold mb-2">Inspiration Gallery Empty</h2>
                     <p className="text-muted-foreground max-w-md">
-                        No curated App Store screenshots found in <code>server/inspiration/</code>.
-                        Add some folders and images there to populate this gallery.
+                        No curated App Store screenshots found in the Supabase <code>inspiration</code> bucket.
+                        Upload some images there to populate this gallery.
                     </p>
                 </div>
             </DashboardLayout>
@@ -51,8 +90,8 @@ const Inspiration = () => {
     }
 
     const filteredImages = selectedCategory === 'All'
-        ? data.images
-        : data.images.filter(img => img.category === selectedCategory);
+        ? images
+        : images.filter(img => img.category === selectedCategory);
 
     return (
         <DashboardLayout>
@@ -67,25 +106,16 @@ const Inspiration = () => {
 
                 {/* Categories / Filters */}
                 <div className="flex gap-2 flex-wrap mb-8">
-                    <button
-                        onClick={() => setSelectedCategory('All')}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${selectedCategory === 'All'
-                            ? 'bg-primary text-primary-foreground shadow-sm'
-                            : 'bg-secondary text-foreground hover:bg-secondary/80'
-                            }`}
-                    >
-                        All Categories
-                    </button>
-                    {data.categories.map(cat => (
+                    {categories.map(cat => (
                         <button
-                            key={cat.id}
-                            onClick={() => setSelectedCategory(cat.id)}
-                            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${selectedCategory === cat.id
+                            key={cat}
+                            onClick={() => setSelectedCategory(cat)}
+                            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${selectedCategory === cat
                                 ? 'bg-primary text-primary-foreground shadow-sm'
                                 : 'bg-secondary text-foreground hover:bg-secondary/80'
                                 }`}
                         >
-                            {cat.name}
+                            {cat}
                         </button>
                     ))}
                 </div>
@@ -104,7 +134,7 @@ const Inspiration = () => {
                             >
                                 <img
                                     src={img.url}
-                                    alt={img.filename}
+                                    alt={img.name}
                                     className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-700"
                                     loading="lazy"
                                 />
@@ -113,7 +143,7 @@ const Inspiration = () => {
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-5">
                                     <div className="flex justify-between items-start">
                                         <Badge className="bg-white/10 backdrop-blur-md text-foreground border-border uppercase tracking-widest text-[10px] font-bold">
-                                            {img.categoryName}
+                                            {img.category}
                                         </Badge>
                                     </div>
 

@@ -533,7 +533,7 @@ const Generating = () => {
                   initial={{ opacity: 0, scale: 0.95, y: 30 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                  className="absolute bottom-4 xl:bottom-auto xl:top-1/2 xl:-translate-y-1/2 xl:-right-10 xl:translate-x-full w-[90%] md:w-[400px] z-50 bg-background/95 backdrop-blur-xl border-border border-2 shadow-2xl rounded-3xl p-6"
+                  className="fixed inset-x-4 bottom-4 z-[100] md:max-w-[400px] md:mx-auto xl:absolute xl:inset-auto xl:top-1/2 xl:-translate-y-1/2 xl:-right-10 xl:translate-x-full xl:w-[400px] bg-background/95 backdrop-blur-xl border-border border-2 shadow-2xl rounded-3xl p-6"
                 >
                   <h3 className="text-xl font-black mb-1">Slide Ready</h3>
                   <p className="text-sm text-muted-foreground mb-6">Review this slide. Modify it or proceed.</p>

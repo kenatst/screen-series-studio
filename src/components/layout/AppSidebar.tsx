@@ -19,7 +19,7 @@ const mainItems = [
 
 const bottomItems = [
   { title: "Settings & Billing", url: "/dashboard/settings", icon: Settings },
-  { title: "Help", url: "/dashboard/help", icon: HelpCircle },
+  { title: "Help", url: "mailto:support@screenforge.app", icon: HelpCircle },
 ];
 
 export function AppSidebar() {
@@ -61,11 +61,18 @@ export function AppSidebar() {
         <SidebarMenu>
           {bottomItems.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                <NavLink to={item.url} end className="hover:bg-black/5 text-muted-foreground hover:text-foreground transition-colors" activeClassName="bg-white/10 text-foreground font-medium border-l-2 border-primary rounded-l-none !opacity-100">
-                  <item.icon className="mr-3 h-4 w-4" />
-                  {!collapsed && <span>{item.title}</span>}
-                </NavLink>
+              <SidebarMenuButton asChild isActive={item.url.startsWith('/') && isActive(item.url)}>
+                {item.url.startsWith('mailto:') ? (
+                  <a href={item.url} className="hover:bg-black/5 text-muted-foreground hover:text-foreground transition-colors">
+                    <item.icon className="mr-3 h-4 w-4" />
+                    {!collapsed && <span>{item.title}</span>}
+                  </a>
+                ) : (
+                  <NavLink to={item.url} end className="hover:bg-black/5 text-muted-foreground hover:text-foreground transition-colors" activeClassName="bg-white/10 text-foreground font-medium border-l-2 border-primary rounded-l-none !opacity-100">
+                    <item.icon className="mr-3 h-4 w-4" />
+                    {!collapsed && <span>{item.title}</span>}
+                  </NavLink>
+                )}
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}

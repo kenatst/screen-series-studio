@@ -34,7 +34,7 @@ const App = () => (
             <Route path="/project/:projectId/generating" element={<ProtectedRoute><Generating /></ProtectedRoute>} />
             <Route path="/project/:projectId/results" element={<ProtectedRoute><Results /></ProtectedRoute>} />
             <Route path="/project/:projectId/planner" element={<ProtectedRoute><NewProject /></ProtectedRoute>} />
-            <Route path="/templates" element={<Templates />} />
+            <Route path="/templates" element={<ProtectedRoute><Templates /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

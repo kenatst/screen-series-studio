@@ -56,7 +56,7 @@ const Results = () => {
       if (error) throw error;
       if (data?.url) window.location.href = data.url;
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      toast({ title: "Error", description: e.message, variant: "destructive" });
     } finally {
       setIsOpeningPortal(false);
     }
@@ -64,7 +64,7 @@ const Results = () => {
 
   const checkCredits = (cost: number): boolean => {
     if (userCredits < cost) {
-      toast({ title: "Crédits insuffisants", description: `Il vous faut ${cost} crédit(s). Solde actuel : ${userCredits}.`, variant: "destructive" });
+      toast({ title: "Insufficient credits", description: `You need ${cost} credit(s). Current balance: ${userCredits}.`, variant: "destructive" });
       return false;
     }
     return true;
@@ -135,33 +135,18 @@ const Results = () => {
 
     setIsRegenerating(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session || !projectId) return;
+      if (!projectId) return;
 
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const response = await fetch(`${supabaseUrl}/functions/v1/generate-screenshots`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({ project_id: projectId, force_regenerate: true }),
-      });
+      // Reset project status to generating
+      await supabase.from('projects').update({ status: 'generating' }).eq('id', projectId);
+      // Reset all slides to pending mode
+      await supabase.from('project_slides')
+        .update({ status: 'pending', image_url: null, prompt_used: null })
+        .eq('project_id', projectId);
 
-      if (response.ok) {
-        const reader = response.body?.getReader();
-        if (reader) {
-          const decoder = new TextDecoder();
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            decoder.decode(value, { stream: true });
-          }
-        }
-        await refetchSlides();
-        await refreshProfile();
-        toast({ title: "Régénération terminée ✨" });
-      }
+      // Route to interactive generation workflow step-by-step
+      navigate(`/project/${projectId}/generating`);
+
     } catch (e) {
       console.error("Regeneration failed", e);
       toast({ title: "Regeneration failed", variant: "destructive" });
@@ -223,13 +208,13 @@ const Results = () => {
         setRegenPrompt('');
         setShowRegenPrompt(null);
         if (lastError) {
-          toast({ title: "Régénération échouée", description: lastError, variant: "destructive" });
+          toast({ title: "Regeneration failed", description: lastError, variant: "destructive" });
         } else {
-          toast({ title: "Slide régénérée ✨" });
+          toast({ title: "Slide regenerated ✨" });
         }
       } else {
         const errBody = await response.json().catch(() => ({ error: "Unknown error" }));
-        toast({ title: "Régénération échouée", description: errBody.error || "Erreur serveur", variant: "destructive" });
+        toast({ title: "Regeneration failed", description: errBody.error || "Server error", variant: "destructive" });
       }
     } catch (e: any) {
       console.error("Single regen failed", e);
@@ -357,7 +342,7 @@ const Results = () => {
                         <Textarea
                           value={regenPrompt}
                           onChange={e => setRegenPrompt(e.target.value)}
-                          placeholder="Décrivez les changements souhaités... (ex: 'rend le fond plus sombre', 'change la headline en bleu')"
+                          placeholder="Describe the desired changes... (e.g. 'make the background darker', 'change the headline to blue')"
                           className="bg-black/5 border-border text-foreground placeholder:text-foreground/30 min-h-[80px] resize-none focus-visible:ring-primary rounded-xl p-4 text-sm"
                         />
                         <div className="flex gap-2">
@@ -372,7 +357,7 @@ const Results = () => {
                             ) : (
                               <Send className="mr-2 h-3.5 w-3.5" />
                             )}
-                            Régénérer (1 cr.)
+                            Regenerate (1 cr.)
                           </Button>
                           <Button
                             size="sm"
@@ -380,7 +365,7 @@ const Results = () => {
                             onClick={() => { setShowRegenPrompt(null); setRegenPrompt(''); }}
                             className="rounded-lg text-muted-foreground"
                           >
-                            Annuler
+                            Cancel
                           </Button>
                         </div>
                       </div>
@@ -392,7 +377,7 @@ const Results = () => {
                         className="rounded-lg w-full"
                       >
                         <Wand2 className="mr-2 h-4 w-4 text-primary" />
-                        Régénérer cette slide avec un prompt
+                        Regenerate this slide with a prompt
                       </Button>
                     )}
                   </div>
@@ -409,9 +394,9 @@ const Results = () => {
                     <Lock className="h-8 w-8 text-primary" />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-black text-foreground tracking-tight mb-2">Débloquez la suite</h3>
+                    <h3 className="text-2xl font-black text-foreground tracking-tight mb-2">Unlock the rest</h3>
                     <p className="text-muted-foreground font-medium text-sm">
-                      Le plan gratuit vous permet de prévisualiser la première slide. Passez à la version Pro pour générer, traduire et exporter vos sets complets jusqu'à 10 slides.
+                      The free plan allows you to preview the first slide. Upgrade to Pro to generate, translate, and export your complete 10-slide sets.
                     </p>
                   </div>
                   <Button
@@ -421,7 +406,7 @@ const Results = () => {
                     className="w-full sm:w-auto h-14 bg-white text-black hover:bg-white/90 shadow-glow rounded-xl font-black text-base px-8 relative overflow-hidden group"
                   >
                     {isOpeningPortal ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Sparkles className="h-5 w-5 mr-2" />}
-                    Passer Pro pour unlock
+                    Upgrade to Pro to unlock
                   </Button>
                 </div>
               </div>
@@ -487,11 +472,11 @@ const Results = () => {
         <DialogContent className="sm:max-w-md bg-card/95 border border-primary/20 shadow-glow backdrop-blur-xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl font-black text-foreground">
-              <Lock className="h-5 w-5 text-primary" /> Export avec filigrane
+              <Lock className="h-5 w-5 text-primary" /> Export with watermark
             </DialogTitle>
             <DialogDescription className="text-muted-foreground pt-3">
-              Le plan gratuit permet d'exporter vos slides avec un filigrane ScreenForge.
-              Passez à un plan premium pour obtenir des exports parfaits et de haute qualité.
+              The free plan exports your slides with a ScreenForge watermark.
+              Upgrade to a premium plan for perfect, high-resolution exports.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex-col sm:flex-row gap-3 pt-6">
@@ -501,7 +486,7 @@ const Results = () => {
               className="w-full sm:w-auto border-border text-muted-foreground hover:text-foreground hover:bg-white/5"
             >
               <Download className="mr-2 h-4 w-4" />
-              Télécharger quand même
+              Download anyway
             </Button>
             <Button
               onClick={handleUpgrade}
@@ -509,7 +494,7 @@ const Results = () => {
               className="w-full sm:w-auto bg-primary text-black hover:bg-primary/90 font-bold"
             >
               {isOpeningPortal ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
-              Passez Pro
+              Upgrade to Pro
             </Button>
           </DialogFooter>
         </DialogContent>
