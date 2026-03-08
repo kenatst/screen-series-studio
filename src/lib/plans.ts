@@ -29,7 +29,7 @@ export interface PlanConfig {
 export const CREDIT_COSTS = {
   generateSlide: 1,
   regenerateSlide: 1,
-  translateSlide: 2,
+  translateSlide: 1,
   exportSet: 0,
 } as const;
 

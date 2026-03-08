@@ -259,6 +259,7 @@ const Dashboard = () => {
                   className="group rounded-2xl border border-border bg-card/40 p-6 hover:border-primary/30 hover:shadow-glow transition-all duration-300 cursor-pointer backdrop-blur-sm"
                   onClick={() => {
                     if (project.status === 'completed') navigate(`/project/${project.id}/results`);
+                    else if (project.status === 'generating') navigate(`/project/${project.id}/generating`);
                     else navigate(`/project/${project.id}/planner`);
                   }}
                 >

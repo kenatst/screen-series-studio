@@ -242,7 +242,7 @@ const Results = () => {
               className="rounded-xl"
               onClick={() => setIsTranslationModalOpen(true)}
             >
-              <Globe className="mr-2 h-4 w-4" /> Translate (2 cr./slide)
+              <Globe className="mr-2 h-4 w-4" /> Translate ({CREDIT_COSTS.translateSlide} cr./slide)
             </Button>
             <Button
               className="rounded-xl"
