@@ -14,6 +14,7 @@ import Results from "./pages/Results";
 import Templates from "./pages/Templates";
 import Inspiration from "./pages/Inspiration";
 import NotFound from "./pages/NotFound";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
