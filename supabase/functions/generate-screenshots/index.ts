@@ -238,13 +238,6 @@ serve(async (req) => {
       });
     }
 
-    if (!singleSlideId && project.status === "generating" && !forceRegenerate && !resumeGeneration) {
-      return new Response(JSON.stringify({ error: "Generation already in progress" }), {
-        status: 409,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     // Fetch slides
     const { data: allSlides, error: slidesError } = await userClient.from("project_slides").select("*").eq("project_id", projectId).order("slide_number", { ascending: true });
     if (slidesError || !allSlides || allSlides.length === 0) {
