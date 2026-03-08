@@ -366,11 +366,36 @@ serve(async (req) => {
           }
         }
 
-        for (let i = 0; i < slidesToGenerate.length; i++) {
-          const slide = slidesToGenerate[i];
+        if (invocationSlides.length === 0) {
+          if (!singleSlideId) {
+            const { data: remainingSlides } = await adminClient
+              .from("project_slides")
+              .select("status,image_url")
+              .eq("project_id", projectId);
+
+            const pendingOrGenerating = (remainingSlides || []).filter(
+              (s: any) => !s.image_url && (s.status === "pending" || s.status === "generating")
+            );
+
+            const hasMore = pendingOrGenerating.length > 0;
+            await adminClient
+              .from("projects")
+              .update({ status: hasMore ? "generating" : "completed" })
+              .eq("id", projectId);
+
+            sendEvent("all-done", { projectId, hasMore, remaining: pendingOrGenerating.length });
+          } else {
+            sendEvent("all-done", { projectId, hasMore: false, remaining: 0 });
+          }
+          controller.close();
+          return;
+        }
+
+        for (let i = 0; i < invocationSlides.length; i++) {
+          const slide = invocationSlides[i];
           const displayNum = genMode === "creative-direction" ? i + 1 : slide.slide_number;
 
-          sendEvent("slide-start", { slideNumber: displayNum, total: slidesToGenerate.length });
+          sendEvent("slide-start", { slideNumber: displayNum, total: invocationSlides.length });
           await adminClient.from("project_slides").update({ status: "generating" }).eq("id", slide.id);
 
           try {
@@ -386,70 +411,80 @@ serve(async (req) => {
               ? `${prompt}\n\nMETA: Provide a creative variant for this specific art direction generation with a unique aesthetic spin, while continuing to strictly respect the brand core and core UI elements.`
               : prompt;
 
-            const contents: any[] = [{ text: variantPrompt }];
+            const buildContents = (promptText: string) => {
+              const parts: any[] = [{ text: promptText }];
 
-            // Add matching screen reference
-            const matchingRef = referenceImages.find(r => r.tag === slide.raw_screen_tag);
-            if (matchingRef) {
-              contents.push({ inlineData: { mimeType: matchingRef.mimeType, data: matchingRef.data } });
-            }
-
-            // Add brand assets
-            for (const img of referenceImages.filter(r => ['logo', 'icon', 'mascot'].includes(r.tag || ''))) {
-              contents.push({ inlineData: { mimeType: img.mimeType, data: img.data } });
-            }
-
-            // Add other screen references
-            for (const img of referenceImages.filter(r => r.tag !== slide.raw_screen_tag && !['logo', 'icon', 'mascot'].includes(r.tag || '')).slice(0, 3)) {
-              contents.push({ inlineData: { mimeType: img.mimeType, data: img.data } });
-            }
-
-            // Context chaining: add previous slides
-            if (previousSlideImages.length > 0) {
-              const recentSlides = previousSlideImages.slice(-2);
-              for (const prevImg of recentSlides) {
-                contents.push({ inlineData: { mimeType: prevImg.mimeType, data: prevImg.data } });
+              const matchingRef = referenceImages.find((r) => r.tag === slide.raw_screen_tag);
+              if (matchingRef) {
+                parts.push({ inlineData: { mimeType: matchingRef.mimeType, data: matchingRef.data } });
               }
-              contents[0] = {
-                text: `${variantPrompt}\n\n=== PREVIOUS SLIDES CONTEXT ===\nThe following ${recentSlides.length} image(s) are previously generated slides in this set. You MUST maintain strict visual consistency with them: same background treatment, same device mockup style, same typography hierarchy, same color usage patterns.\n=== END CONTEXT ===`,
-              };
-            }
 
-            // Cap at 14 images
-            let imgCount = 0;
-            for (let j = contents.length - 1; j >= 0; j--) {
-              if ((contents[j] as any).inlineData) {
-                imgCount++;
-                if (imgCount > 14) contents.splice(j, 1);
+              for (const img of referenceImages.filter((r) => ["logo", "icon", "mascot"].includes(r.tag || ""))) {
+                parts.push({ inlineData: { mimeType: img.mimeType, data: img.data } });
               }
-            }
 
-            const response = await ai.models.generateContent({
-              model: "gemini-3.1-flash-image-preview",
-              contents,
-              config: {
-                responseModalities: ["TEXT", "IMAGE"],
-                imageConfig: { aspectRatio: "9:16", imageSize: "2K" },
-              } as any,
-            });
-
-            let imageBase64 = "";
-            let text = "";
-            if (response.candidates && response.candidates[0]) {
-              for (const part of response.candidates[0].content!.parts!) {
-                if ((part as any).text) text += (part as any).text;
-                else if ((part as any).inlineData) imageBase64 = (part as any).inlineData.data;
+              for (const img of referenceImages.filter((r) => r.tag !== slide.raw_screen_tag && !["logo", "icon", "mascot"].includes(r.tag || "")).slice(0, 3)) {
+                parts.push({ inlineData: { mimeType: img.mimeType, data: img.data } });
               }
+
+              if (previousSlideImages.length > 0) {
+                const recentSlides = previousSlideImages.slice(-2);
+                for (const prevImg of recentSlides) {
+                  parts.push({ inlineData: { mimeType: prevImg.mimeType, data: prevImg.data } });
+                }
+                parts[0] = {
+                  text: `${promptText}\n\n=== PREVIOUS SLIDES CONTEXT ===\nThe following ${recentSlides.length} image(s) are previously generated slides in this set. You MUST maintain strict visual consistency with them: same background treatment, same device mockup style, same typography hierarchy, same color usage patterns.\n=== END CONTEXT ===`,
+                };
+              }
+
+              let imgCount = 0;
+              for (let j = parts.length - 1; j >= 0; j--) {
+                if ((parts[j] as any).inlineData) {
+                  imgCount++;
+                  if (imgCount > 14) parts.splice(j, 1);
+                }
+              }
+
+              return parts;
+            };
+
+            const runAttempt = async (promptText: string) => {
+              const response = await ai.models.generateContent({
+                model: "gemini-3-pro-image-preview",
+                contents: buildContents(promptText),
+                config: {
+                  responseModalities: ["TEXT", "IMAGE"],
+                  imageConfig: { aspectRatio: "9:16", imageSize: "2K" },
+                } as any,
+              });
+
+              let imageBase64 = "";
+              let text = "";
+              if (response.candidates && response.candidates[0]) {
+                for (const part of response.candidates[0].content!.parts!) {
+                  if ((part as any).text) text += (part as any).text;
+                  else if ((part as any).inlineData) imageBase64 = (part as any).inlineData.data;
+                }
+              }
+
+              const qualityScore = parseQualityScore(text);
+              const placeholderLeak = hasPlaceholderLeak(slide, text);
+              return { imageBase64, text, qualityScore, placeholderLeak };
+            };
+
+            let attempt = await runAttempt(variantPrompt);
+
+            if (!attempt.imageBase64 || (attempt.qualityScore !== null && attempt.qualityScore < QUALITY_SCORE_MIN) || attempt.placeholderLeak) {
+              const repairPrompt = `${variantPrompt}\n\nREPAIR PASS (MANDATORY): improve readability, preserve exact headline/subheadline wording, remove placeholders, strengthen visual hierarchy, and return a higher QA score JSON.`;
+              attempt = await runAttempt(repairPrompt);
             }
 
-            if (!imageBase64) throw new Error("No image generated");
+            if (!attempt.imageBase64) throw new Error("No image generated");
 
-            // Store for context chaining
-            previousSlideImages.push({ mimeType: "image/png", data: imageBase64 });
+            previousSlideImages.push({ mimeType: "image/png", data: attempt.imageBase64 });
 
-            // Upload to storage
             const filename = `${userId}/${projectId}/slide-${displayNum}.png`;
-            const imageBytes = Uint8Array.from(atob(imageBase64), (c) => c.charCodeAt(0));
+            const imageBytes = Uint8Array.from(atob(attempt.imageBase64), (c) => c.charCodeAt(0));
             await adminClient.storage.from("generated-outputs").upload(filename, imageBytes, {
               contentType: "image/png",
               upsert: true,
@@ -463,7 +498,12 @@ serve(async (req) => {
               image_url: imageUrl,
             }).eq("id", slide.id);
 
-            sendEvent("slide-done", { slideNumber: displayNum, imageUrl, text });
+            sendEvent("slide-done", {
+              slideNumber: displayNum,
+              imageUrl,
+              text: attempt.text,
+              qualityScore: attempt.qualityScore,
+            });
           } catch (error: any) {
             console.error(`Error generating slide ${displayNum}:`, error);
             await adminClient.from("project_slides").update({ status: "error" }).eq("id", slide.id);
@@ -472,9 +512,25 @@ serve(async (req) => {
         }
 
         if (!singleSlideId) {
-          await adminClient.from("projects").update({ status: "completed" }).eq("id", projectId);
+          const { data: remainingSlides } = await adminClient
+            .from("project_slides")
+            .select("status,image_url")
+            .eq("project_id", projectId);
+
+          const pendingOrGenerating = (remainingSlides || []).filter(
+            (s: any) => !s.image_url && (s.status === "pending" || s.status === "generating")
+          );
+
+          const hasMore = !forceRegenerate && pendingOrGenerating.length > 0;
+          await adminClient
+            .from("projects")
+            .update({ status: hasMore ? "generating" : "completed" })
+            .eq("id", projectId);
+
+          sendEvent("all-done", { projectId, hasMore, remaining: pendingOrGenerating.length });
+        } else {
+          sendEvent("all-done", { projectId, hasMore: false, remaining: 0 });
         }
-        sendEvent("all-done", { projectId });
         controller.close();
       },
     });
