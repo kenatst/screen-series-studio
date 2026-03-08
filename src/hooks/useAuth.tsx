@@ -113,7 +113,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const interval = setInterval(() => {
       void checkSubscription(session.user.id);
-    }, 15_000);
+    }, 60_000);
 
     const onFocus = () => {
       void refreshProfile();
