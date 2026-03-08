@@ -306,10 +306,35 @@ const Results = () => {
                 <div className="mt-6 space-y-2">
                   <h3 className="text-xl font-bold text-foreground">{selectedSlide.headline || `Slide ${selectedSlide.slide_number}`}</h3>
                   <p className="text-muted-foreground">{selectedSlide.subheadline}</p>
-                  <div className="flex gap-2 mt-3 flex-wrap">
+                  <div className="flex gap-2 mt-3 flex-wrap items-center">
                     <Badge variant="outline">{selectedSlide.objective}</Badge>
                     <Badge variant="outline">{selectedSlide.emphasis}</Badge>
                     <Badge className={selectedSlide.status === 'completed' ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}>{selectedSlide.status}</Badge>
+                    {!isSlideLocked && selectedSlide.image_url && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="ml-auto rounded-lg text-xs"
+                        onClick={async () => {
+                          try {
+                            const res = await fetch(selectedSlide.image_url!);
+                            const blob = await res.blob();
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement("a");
+                            a.href = url;
+                            a.download = `${project.app_name || project.name}-slide-${selectedSlide.slide_number}.png`;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                          } catch {
+                            toast({ title: "Download failed", variant: "destructive" });
+                          }
+                        }}
+                      >
+                        <ImageDown className="mr-1.5 h-3.5 w-3.5" /> Save PNG
+                      </Button>
+                    )}
                   </div>
                 </div>
 
