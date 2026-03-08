@@ -247,11 +247,7 @@ const Results = () => {
               disabled={isRegenerating}
             >
               {isRegenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-              {!canRegenerate(userPlan) ? (
-                <><Lock className="mr-1 h-3 w-3" /> Upgrade to regenerate</>
-              ) : (
-                `Regenerate All (${(slides?.length || 0)} cr.)`
-              )}
+              Regenerate All ({(slides?.length || 0)} cr.)
             </Button>
           </div>
         </motion.div>
