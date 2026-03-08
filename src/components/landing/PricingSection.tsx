@@ -2,10 +2,36 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, X } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { PLANS } from '@/lib/plans';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 export const PricingSection = () => {
+    const { session, profile } = useAuth();
+    const { toast } = useToast();
+
+    const handleCta = async (planId: string) => {
+      if (planId === 'free') {
+        window.location.href = '/login';
+        return;
+      }
+      if (!session) {
+        window.location.href = '/login';
+        return;
+      }
+      try {
+        const { data, error } = await supabase.functions.invoke("create-checkout", {
+          body: { plan: planId },
+        });
+        if (error) throw error;
+        if (data?.url) window.open(data.url, "_blank");
+      } catch (e: any) {
+        toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      }
+    };
+
     return (
         <section id="pricing" className="py-24 bg-surface-elevated relative z-10 border-t border-border">
             <div className="container mx-auto px-6">
@@ -21,7 +47,9 @@ export const PricingSection = () => {
                 </div>
 
                 <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
-                    {PLANS.map((plan, i) => (
+                    {PLANS.map((plan, i) => {
+                        const isCurrentPlan = profile?.plan === plan.id;
+                        return (
                         <motion.div
                             key={plan.id}
                             initial={{ opacity: 0, y: 20 }}
@@ -30,12 +58,19 @@ export const PricingSection = () => {
                             transition={{ delay: i * 0.1, duration: 0.5 }}
                             className={`relative rounded-3xl p-7 flex flex-col ${plan.popular
                                 ? 'bg-card border-2 border-primary shadow-glow'
+                                : isCurrentPlan
+                                ? 'bg-card border-2 border-green-500/50'
                                 : 'bg-card/50 border border-border'
                                 }`}
                         >
                             {plan.popular && (
                                 <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-primary text-primary-foreground font-bold text-xs uppercase tracking-wider py-1 px-4 rounded-full">
                                     Most Popular
+                                </div>
+                            )}
+                            {isCurrentPlan && (
+                                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-green-500 text-white font-bold text-xs uppercase tracking-wider py-1 px-4 rounded-full">
+                                    Your Plan
                                 </div>
                             )}
 
@@ -64,18 +99,19 @@ export const PricingSection = () => {
                                 ))}
                             </div>
 
-                            <Link to={plan.id === 'free' ? '/login' : '/login'} className="mt-auto">
-                                <Button
-                                    className={`w-full h-11 rounded-xl font-bold text-sm transition-all ${plan.popular
-                                        ? 'bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.02]'
-                                        : 'bg-secondary text-foreground hover:bg-secondary/80'
-                                        }`}
-                                >
-                                    {plan.cta}
-                                </Button>
-                            </Link>
+                            <Button
+                                onClick={() => handleCta(plan.id)}
+                                disabled={isCurrentPlan}
+                                className={`w-full h-11 rounded-xl font-bold text-sm transition-all mt-auto ${plan.popular
+                                    ? 'bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.02]'
+                                    : 'bg-secondary text-foreground hover:bg-secondary/80'
+                                    }`}
+                            >
+                                {isCurrentPlan ? 'Current Plan' : plan.cta}
+                            </Button>
                         </motion.div>
-                    ))}
+                    );
+                    })}
                 </div>
             </div>
         </section>

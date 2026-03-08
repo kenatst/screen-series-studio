@@ -2,12 +2,14 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import { Plus, LayoutTemplate, Copy, Play, Loader2, Crown } from "lucide-react";
+import { Plus, LayoutTemplate, Loader2, Crown, CreditCard, Settings } from "lucide-react";
 import { motion } from "framer-motion";
 import { useProjects } from "@/hooks/useProjects";
 import { useAuth } from "@/hooks/useAuth";
 import { canCreateProject, getPlanById } from "@/lib/plans";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -22,10 +24,12 @@ const statusColors: Record<string, string> = {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user, signOut, profile } = useAuth();
+  const { user, signOut, profile, checkSubscription } = useAuth();
   const { toast } = useToast();
   const { data: projects, isLoading } = useProjects();
   const plan = getPlanById(profile?.plan || 'free');
+  const [isCheckingSub, setIsCheckingSub] = useState(false);
+  const [isOpeningPortal, setIsOpeningPortal] = useState(false);
 
   const handleNewProject = () => {
     if (!canCreateProject(profile?.plan || 'free', projects?.length || 0)) {
@@ -33,6 +37,38 @@ const Dashboard = () => {
       return;
     }
     navigate('/project/new');
+  };
+
+  const handleUpgrade = async (targetPlan: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
+        body: { plan: targetPlan },
+      });
+      if (error) throw error;
+      if (data?.url) window.open(data.url, "_blank");
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    setIsOpeningPortal(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("customer-portal");
+      if (error) throw error;
+      if (data?.url) window.open(data.url, "_blank");
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+    } finally {
+      setIsOpeningPortal(false);
+    }
+  };
+
+  const handleRefreshSub = async () => {
+    setIsCheckingSub(true);
+    await checkSubscription();
+    setIsCheckingSub(false);
+    toast({ title: "Statut mis à jour", description: `Plan actuel : ${plan.name}` });
   };
 
   const currentProject = projects?.[0];
@@ -54,6 +90,25 @@ const Dashboard = () => {
             <Badge variant="outline" className="text-xs font-bold uppercase tracking-wider">
               <Crown className="h-3 w-3 mr-1" /> {plan.name}
             </Badge>
+            {profile?.subscriptionEnd && (
+              <span className="text-xs text-muted-foreground">
+                expires {new Date(profile.subscriptionEnd).toLocaleDateString()}
+              </span>
+            )}
+            <Button variant="ghost" size="sm" onClick={handleRefreshSub} disabled={isCheckingSub} className="rounded-xl text-xs">
+              {isCheckingSub ? <Loader2 className="h-3 w-3 animate-spin" /> : <CreditCard className="h-3 w-3" />}
+            </Button>
+            {profile?.plan !== 'free' && (
+              <Button variant="outline" size="sm" onClick={handleManageSubscription} disabled={isOpeningPortal} className="rounded-xl text-xs">
+                {isOpeningPortal ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Settings className="h-3 w-3 mr-1" />}
+                Billing
+              </Button>
+            )}
+            {profile?.plan === 'free' && (
+              <Button variant="outline" size="sm" onClick={() => handleUpgrade('starter')} className="rounded-xl text-xs text-primary border-primary/30">
+                Upgrade
+              </Button>
+            )}
             <Button variant="outline" size="sm" onClick={signOut} className="rounded-xl">Sign out</Button>
             <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm rounded-xl px-6" onClick={handleNewProject}>
               <Plus className="mr-2 h-5 w-5" /> New project

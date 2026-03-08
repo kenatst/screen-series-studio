@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import type { PlanId } from "@/lib/plans";
@@ -6,6 +6,7 @@ import type { PlanId } from "@/lib/plans";
 interface Profile {
   plan: PlanId;
   credits: number;
+  subscriptionEnd?: string;
 }
 
 interface AuthContextType {
@@ -15,6 +16,7 @@ interface AuthContextType {
   loading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  checkSubscription: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -24,6 +26,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   signOut: async () => {},
   refreshProfile: async () => {},
+  checkSubscription: async () => {},
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -38,13 +41,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .eq("id", userId)
       .single();
     if (data) {
-      setProfile({ plan: data.plan as PlanId, credits: data.credits });
+      setProfile(prev => ({
+        plan: data.plan as PlanId,
+        credits: data.credits,
+        subscriptionEnd: prev?.subscriptionEnd,
+      }));
     }
   };
+
+  const checkSubscription = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("check-subscription");
+      if (error) {
+        console.warn("check-subscription error:", error);
+        return;
+      }
+      if (data) {
+        setProfile(prev => ({
+          plan: (data.plan || prev?.plan || "free") as PlanId,
+          credits: prev?.credits || 1,
+          subscriptionEnd: data.subscription_end,
+        }));
+      }
+    } catch (e) {
+      console.warn("check-subscription failed:", e);
+    }
+  }, []);
 
   const refreshProfile = async () => {
     if (session?.user?.id) {
       await fetchProfile(session.user.id);
+      await checkSubscription();
     }
   };
 
@@ -53,8 +80,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       async (_event, session) => {
         setSession(session);
         if (session?.user?.id) {
-          // Use setTimeout to avoid potential Supabase deadlock
           setTimeout(() => fetchProfile(session.user.id), 0);
+          // Check subscription after auth state change
+          setTimeout(() => checkSubscription(), 500);
         } else {
           setProfile(null);
         }
@@ -66,6 +94,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       if (session?.user?.id) {
         fetchProfile(session.user.id);
+        setTimeout(() => checkSubscription(), 500);
       }
       setLoading(false);
     });
@@ -73,13 +102,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Periodic subscription check every 60s
+  useEffect(() => {
+    if (!session) return;
+    const interval = setInterval(checkSubscription, 60_000);
+    return () => clearInterval(interval);
+  }, [session, checkSubscription]);
+
   const signOut = async () => {
     await supabase.auth.signOut();
     setProfile(null);
   };
 
   return (
-    <AuthContext.Provider value={{ session, user: session?.user ?? null, profile, loading, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ session, user: session?.user ?? null, profile, loading, signOut, refreshProfile, checkSubscription }}>
       {children}
     </AuthContext.Provider>
   );
