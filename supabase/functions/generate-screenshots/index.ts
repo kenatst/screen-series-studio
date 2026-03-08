@@ -110,18 +110,24 @@ Importance: ${slide.importance || "medium"}
 Generate a polished, premium ${platformLabel} screenshot in 9:16 portrait format.
 
 Key requirements:
-1. The headline "${slide.headline || ""}" must be prominently displayed as large, bold text.
-2. The subheadline "${slide.subheadline || ""}" should appear below the headline in a smaller, lighter weight.
+1. The headline "${slide.headline || ""}" must be prominently displayed as large, bold text and keep exact wording.
+2. The subheadline "${slide.subheadline || ""}" should appear below the headline in a smaller, lighter weight and keep exact wording.
 3. Include a realistic phone mockup showing the app's "${slide.raw_screen_tag || "home"}" screen.
 4. The visual emphasis should be: ${slide.emphasis || "UI focused"}.
 5. The background must match the template style provided.
 6. The overall design should feel premium, polished, and conversion-focused.
 
 === QUALITY METRICS & SEMANTIC PRESERVATION (CRITICAL) ===
-7. PREVENT SEMANTIC LEAKAGE: Do NOT invent, hallucinate, or insert UI elements, features, or text that are not present in the provided raw App Screen. The core app UI must be preserved faithfully.
-8. BRAND & MASCOT CONSISTENCY: If a mascot, logo, or distinct brand character is provided in the references, its exact visual identity (colors, proportions, style) MUST be strictly preserved across all slides. Do not mutate the character.
-9. EXACT COMPOSITING: If a raw app screenshot is provided as a reference, composite it INTO the phone mockup screen naturally without distorting its aspect ratio.
+7. PREVENT SEMANTIC LEAKAGE: Do NOT invent, hallucinate, or insert UI elements, features, or text that are not present in the provided raw App Screen.
+8. BRAND & MASCOT CONSISTENCY: If a mascot, logo, or distinct brand character is provided in the references, its exact visual identity (colors, proportions, style) MUST be strictly preserved across all slides.
+9. EXACT COMPOSITING: If a raw app screenshot is provided as a reference, composite it into the phone mockup naturally without aspect ratio distortion.
 10. CLEAN OUTPUT: Do NOT include any App Store UI chrome, status bars outside the mockup, or store branding on the canvas.
+11. NO PLACEHOLDER COPY: Never output lorem ipsum, generic placeholders, or altered marketing copy.
+12. LEGIBILITY: Ensure headline and subheadline are fully readable with strong contrast.
+
+=== OUTPUT QA REPORT (MANDATORY) ===
+Return a JSON object in TEXT modality only, with this exact schema:
+{"overall_score": number, "checks": {"headline_exact": boolean, "subheadline_exact": boolean, "no_placeholder": boolean, "ui_preserved": boolean, "contrast_ok": boolean}, "issues": string[]}
 
 ${consistency}${userDirective}`.trim();
 }
