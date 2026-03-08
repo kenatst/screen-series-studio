@@ -8,16 +8,13 @@ const corsHeaders = {
 };
 
 const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
+  console.log(`[CHECK-SUBSCRIPTION] ${step}${details ? ` - ${JSON.stringify(details)}` : ''}`);
 };
 
-// Map Stripe price IDs to plan names
-// TODO: Replace with actual Stripe price IDs once products are created
 const PRICE_TO_PLAN: Record<string, string> = {
-  "price_starter_placeholder": "starter",
-  "price_pro_placeholder": "pro",
-  "price_unlimited_placeholder": "unlimited",
+  "price_1T8dfrCGD5S3rFVN3ICqIL16": "starter",
+  "price_1T8dfsCGD5S3rFVN15HwuGyY": "pro",
+  "price_1T8dfuCGD5S3rFVNICPdomP6": "unlimited",
 };
 
 serve(async (req) => {
@@ -51,8 +48,7 @@ serve(async (req) => {
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
 
     if (customers.data.length === 0) {
-      logStep("No Stripe customer found, user is on free plan");
-      // Ensure profile reflects free plan
+      logStep("No Stripe customer found");
       await supabaseClient.from("profiles").update({ plan: "free" }).eq("id", user.id);
       return new Response(JSON.stringify({ subscribed: false, plan: "free" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -61,8 +57,6 @@ serve(async (req) => {
 
     const customerId = customers.data[0].id;
     logStep("Found Stripe customer", { customerId });
-
-    // Save stripe_customer_id if not already saved
     await supabaseClient.from("profiles").update({ stripe_customer_id: customerId }).eq("id", user.id);
 
     const subscriptions = await stripe.subscriptions.list({
@@ -85,7 +79,6 @@ serve(async (req) => {
     const subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
     logStep("Active subscription found", { plan, priceId, subscriptionEnd });
 
-    // Update profile with current plan
     await supabaseClient.from("profiles").update({ plan }).eq("id", user.id);
 
     return new Response(JSON.stringify({

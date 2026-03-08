@@ -7,12 +7,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Price IDs will be set after creating Stripe products
-// TODO: Replace with actual Stripe price IDs
 const PLAN_PRICES: Record<string, string> = {
-  starter: "price_starter_placeholder",
-  pro: "price_pro_placeholder",
-  unlimited: "price_unlimited_placeholder",
+  starter: "price_1T8dfrCGD5S3rFVN3ICqIL16",
+  pro: "price_1T8dfsCGD5S3rFVN15HwuGyY",
+  unlimited: "price_1T8dfuCGD5S3rFVNICPdomP6",
 };
 
 serve(async (req) => {
@@ -48,7 +46,7 @@ serve(async (req) => {
       customer_email: customerId ? undefined : user.email,
       line_items: [{ price: priceId, quantity: 1 }],
       mode: "subscription",
-      success_url: `${req.headers.get("origin")}/dashboard?checkout=success`,
+      success_url: `${req.headers.get("origin")}/dashboard/settings?checkout=success`,
       cancel_url: `${req.headers.get("origin")}/dashboard?checkout=cancel`,
       metadata: { user_id: user.id, plan },
     });
