@@ -1,9 +1,14 @@
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
-import { LayoutGrid, Image as ImageIcon, RefreshCw, Globe, CheckCircle2, ArrowRight } from 'lucide-react';
+import { LayoutGrid, Image as ImageIcon, RefreshCw, Globe, CheckCircle2, ArrowRight, Sparkles } from 'lucide-react';
 
 import locEn from '@/assets/features/localization-en.webp';
 import locJp from '@/assets/features/localization-jp.jpeg';
+import weatherSlide1 from '@/assets/features/weather-slide1.png';
+import weatherSlide2 from '@/assets/features/weather-slide2.png';
+import travelSlide1 from '@/assets/features/travel-slide1.png';
+import travelSlide2 from '@/assets/features/travel-slide2.png';
+import travelSlide3 from '@/assets/features/travel-slide3.png';
 
 const fadeUp = {
     hidden: { opacity: 0, y: 30 },
@@ -17,26 +22,55 @@ const features = [
         title: 'The Screenshot Planner',
         description: 'Stop guessing what goes on slide 4. Define the narrative flow, headlines, and emphasis for up to 10 slides before generating anything.',
         visual: (
-            <div className="w-full h-full p-6 flex flex-col gap-4 bg-zinc-900 border border-border rounded-2xl shadow-elevated">
-                <div className="flex items-center justify-between border-b border-border pb-4">
-                    <span className="text-foreground font-semibold">Slide 1 of 5</span>
-                    <Badge className="bg-primary/20 text-primary border-primary/30">Feature Splash</Badge>
-                </div>
-                <div className="space-y-4">
-                    <div className="space-y-2">
-                        <div className="h-3 w-20 bg-white/20 rounded" />
-                        <div className="h-10 w-full bg-card/90 border border-border rounded-lg flex items-center px-4">
-                            <span className="text-muted-foreground font-medium">Track your daily progress</span>
+            <div className="w-full h-full flex items-center justify-center bg-zinc-900 border border-border rounded-2xl shadow-elevated relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
+                <div className="relative z-10 flex flex-col gap-4 p-5 w-full">
+                    {/* Header */}
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h4 className="text-foreground font-bold text-lg">Screenshot set planner</h4>
+                            <p className="text-muted-foreground text-xs">Define each slide's content and objective.</p>
                         </div>
                     </div>
-                    <div className="flex gap-4 items-center p-3 bg-black/5 rounded-xl border border-border">
-                        <div className="h-12 w-8 bg-zinc-800 rounded flex-shrink-0" />
-                        <div className="flex-1 space-y-2">
-                            <div className="h-3 w-1/2 bg-white/30 rounded" />
-                            <div className="h-2 w-1/4 bg-white/10 rounded" />
-                        </div>
-                        <CheckCircle2 className="h-5 w-5 text-success" />
+                    {/* Slide count chips */}
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">SLIDES:</span>
+                        {[3, 5, 7, 10].map((n, i) => (
+                            <div key={n} className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold ${i === 0 ? 'bg-primary text-primary-foreground' : 'bg-card/50 text-muted-foreground border border-border'}`}>
+                                {n}
+                            </div>
+                        ))}
                     </div>
+                    {/* Slide cards */}
+                    {[
+                        { num: 1, obj: 'Hero / first impression', headline: 'Your big promise here', sub: 'Supporting value proposition', tags: ['home', 'text focused'], importance: 'high' },
+                        { num: 2, obj: 'Core benefit', headline: 'The #1 reason to download', sub: 'What makes you unique', tags: ['dashboard', 'UI focused'], importance: 'high' },
+                    ].map((slide) => (
+                        <div key={slide.num} className="bg-card/30 border border-border rounded-xl p-4 space-y-3">
+                            <div className="flex items-center gap-3">
+                                <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm">{slide.num}</div>
+                                <div className="flex-1 h-9 bg-card/60 border border-border rounded-lg flex items-center px-3">
+                                    <span className="text-sm text-muted-foreground">{slide.obj}</span>
+                                </div>
+                                <Badge className="bg-primary/20 text-primary border-primary/30 text-xs">{slide.importance}</Badge>
+                            </div>
+                            <div className="flex gap-2">
+                                <div className="flex-1 h-9 bg-card/40 border border-border rounded-lg flex items-center px-3">
+                                    <span className="text-xs text-muted-foreground">{slide.headline}</span>
+                                </div>
+                                <div className="flex-1 h-9 bg-card/40 border border-border rounded-lg flex items-center px-3">
+                                    <span className="text-xs text-muted-foreground">{slide.sub}</span>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                {slide.tags.map(t => (
+                                    <div key={t} className="h-7 px-3 bg-card/40 border border-border rounded-lg flex items-center">
+                                        <span className="text-xs text-muted-foreground">{t}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </div>
         )
@@ -47,22 +81,57 @@ const features = [
         title: 'Reference-Based Generation',
         description: 'Upload moodboards or competitor screenshots. ScreenForge extracts the layout, mood, and hierarchy without copying their literal branding.',
         visual: (
-            <div className="w-full h-full p-6 flex items-center justify-center bg-zinc-900 border border-border rounded-2xl shadow-elevated relative overflow-hidden">
+            <div className="w-full h-full p-4 flex flex-col items-center justify-center bg-zinc-900 border border-border rounded-2xl shadow-elevated relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent" />
-                <div className="relative z-10 flex gap-4">
-                    {/* Reference Image */}
-                    <div className="w-32 aspect-[9/19.5] rounded-xl border-2 border-dashed border-border bg-black/5 flex flex-col items-center justify-center p-2 opacity-60">
-                        <ImageIcon className="h-8 w-8 text-foreground/30 mb-2" />
-                        <span className="text-[10px] text-muted-foreground text-center">Inspiration.jpg</span>
+                <div className="relative z-10 flex flex-col items-center gap-3 w-full">
+                    {/* INPUT label */}
+                    <div className="flex items-center gap-2 self-start">
+                        <Badge className="bg-card/80 text-muted-foreground border-border text-[10px] uppercase tracking-wider">Input</Badge>
+                    </div>
+                    {/* Input slides */}
+                    <div className="flex gap-2 w-full justify-center">
+                        <div className="flex flex-col items-center gap-1">
+                            <div className="w-20 sm:w-24 aspect-[9/19.5] rounded-lg border border-border overflow-hidden shadow-lg">
+                                <img src={weatherSlide1} alt="Weather slide 1" className="w-full h-full object-cover" />
+                            </div>
+                            <span className="text-[9px] text-muted-foreground">Meet Cloudy</span>
+                        </div>
+                        <div className="flex flex-col items-center gap-1">
+                            <div className="w-20 sm:w-24 aspect-[9/19.5] rounded-lg border border-border overflow-hidden shadow-lg">
+                                <img src={weatherSlide2} alt="Weather slide 2" className="w-full h-full object-cover" />
+                            </div>
+                            <span className="text-[9px] text-muted-foreground">Daily Briefing</span>
+                        </div>
                     </div>
 
-                    {/* Output Image matching layout but using brand colors */}
-                    <div className="w-32 aspect-[9/19.5] rounded-xl border border-primary bg-zinc-800 flex flex-col items-center justify-center shadow-[0_0_30px_-5px_hsl(var(--primary)/0.3)]">
-                        <div className="w-full h-full p-2 flex flex-col gap-2">
-                            <div className="w-full h-4 bg-primary/20 rounded" />
-                            <div className="w-3/4 h-3 bg-primary/20 rounded" />
-                            <div className="flex-1 rounded bg-gradient-to-b from-primary/30 to-black/50 mt-2 border border-border" />
+                    {/* AI Arrow */}
+                    <div className="flex items-center gap-2 py-1">
+                        <div className="h-px w-8 bg-primary/40" />
+                        <div className="flex items-center gap-1.5 bg-primary/20 border border-primary/30 rounded-full px-3 py-1">
+                            <Sparkles className="w-3 h-3 text-primary" />
+                            <span className="text-xs font-bold text-primary">AI</span>
                         </div>
+                        <div className="h-px w-8 bg-primary/40" />
+                    </div>
+
+                    {/* OUTPUT label */}
+                    <div className="flex items-center gap-2 self-start">
+                        <Badge className="bg-primary/20 text-primary border-primary/30 text-[10px] uppercase tracking-wider">Output</Badge>
+                    </div>
+                    {/* Output slides */}
+                    <div className="flex gap-2 w-full justify-center">
+                        {[
+                            { src: travelSlide1, label: 'Meet Tripora' },
+                            { src: travelSlide2, label: 'Your Trip' },
+                            { src: travelSlide3, label: 'Travel Beautifully' },
+                        ].map((s, i) => (
+                            <div key={i} className="flex flex-col items-center gap-1">
+                                <div className="w-20 sm:w-24 aspect-[9/19.5] rounded-lg border-2 border-primary overflow-hidden shadow-[0_0_20px_-5px_hsl(var(--primary)/0.3)]">
+                                    <img src={s.src} alt={s.label} className="w-full h-full object-cover" />
+                                </div>
+                                <span className="text-[9px] text-primary font-medium">{s.label}</span>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </div>
