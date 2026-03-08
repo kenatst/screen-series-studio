@@ -9,9 +9,7 @@ export const LandingFooter = () => {
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-lg h-[200px] bg-primary/10 blur-[100px] pointer-events-none rounded-full" />
 
             <div className="container mx-auto px-6 relative z-10 flex flex-col items-center text-center">
-                <div className="h-16 w-16 mb-8 rounded-2xl bg-gradient-to-br from-primary to-orange-600 flex items-center justify-center shadow-glow">
-                    <Sparkles className="h-8 w-8 text-foreground" />
-                </div>
+                <img src={screenforgeLogo} alt="ScreenForge" className="h-16 w-16 mb-8 rounded-2xl shadow-glow object-cover" />
                 <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground mb-6 max-w-2xl">
                     Ready to generate your premium screenshot sets?
                 </h2>
