@@ -8,15 +8,40 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, CheckCircle2, Upload, Sparkles,
-  GripVertical, Lock, Trash2, Plus, Wand2, LayoutGrid, Image as ImageIcon, FolderOpen, Loader2, X
+  GripVertical, Lock, Trash2, Plus, LayoutGrid, Image as ImageIcon, FolderOpen, Loader2, X
 } from "lucide-react";
-import { toneOptions, screenTags, slideObjectives, defaultStorylines, emphasisOptions } from "@/lib/demo-data";
+import { toneOptions, screenTags, slideObjectives, defaultStorylines, emphasisOptions, demoTemplates } from "@/lib/demo-data";
 import type { SlideItem } from "@/lib/demo-data";
 import { useCreateProject, useSaveSlides } from "@/hooks/useProjects";
 import { useAuth } from "@/hooks/useAuth";
 import { getMaxSlides } from "@/lib/plans";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+
+// Gallery images for template previews
+import slide01 from "@/assets/gallery/slide-01-learners.png";
+import slide02 from "@/assets/gallery/slide-02-allinone.png";
+import slide03 from "@/assets/gallery/slide-03-bitesized.png";
+import slide04 from "@/assets/gallery/slide-04-speaking.png";
+import slide05 from "@/assets/gallery/slide-05-streak.png";
+import slide06 from "@/assets/gallery/slide-06-widgets.png";
+import slide07 from "@/assets/gallery/slide-07-culture.png";
+import slide08 from "@/assets/gallery/slide-08-progress.png";
+import slide09 from "@/assets/gallery/slide-09-motivation.png";
+import slide10 from "@/assets/gallery/slide-10-closing.png";
+
+const templatePreviews: Record<string, string> = {
+  'Clean SaaS': slide01,
+  'Bold Gaming': slide02,
+  'Premium Gradient': slide03,
+  'Educational Playful': slide04,
+  'Lifestyle': slide05,
+  'Luxury Minimal': slide06,
+  'Feature-Led': slide07,
+  'Comparison-Driven': slide08,
+  'Mascot-Led': slide09,
+  'Cinematic': slide10,
+};
 
 const steps = [
   { id: 1, label: 'Project' },
@@ -74,12 +99,7 @@ const NewProject = () => {
   const [brandAssets, setBrandAssets] = useState<BrandAsset[]>([]);
   const [brandColors, setBrandColors] = useState<string[]>(['#0B192C', '#6C5CE7', '#00B894', '#E1B382', '#FDFBF7']);
   const [brandFont, setBrandFont] = useState('');
-  const [newColor, setNewColor] = useState('#000000');
-
-  // AI loading states
-  const [isAutoFilling, setIsAutoFilling] = useState(false);
-  const [isGeneratingHooks, setIsGeneratingHooks] = useState(false);
-  const [isSuggestingStorylines, setIsSuggestingStorylines] = useState(false);
+  const [newColor, setNewColor] = useState('#6C5CE7');
 
   // Refs
   const screenInputRef = useRef<HTMLInputElement>(null);
@@ -177,76 +197,6 @@ const NewProject = () => {
 
   const [visualPreferences, setVisualPreferences] = useState<string[]>([]);
 
-  // AI suggestion handlers
-  const callSuggestCopy = async (type: string, extra: Record<string, any> = {}) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { toast({ title: "Non connecté", variant: "destructive" }); return null; }
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const res = await fetch(`${supabaseUrl}/functions/v1/suggest-copy`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-      body: JSON.stringify({ type, appName, appDescription, platform, ...extra }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: 'Unknown error' }));
-      toast({ title: "Erreur", description: err.error, variant: "destructive" });
-      return null;
-    }
-    return (await res.json()).result;
-  };
-
-  const handleAutoFill = async () => {
-    setIsAutoFilling(true);
-    try {
-      const result = await callSuggestCopy('auto-fill');
-      if (result) {
-        setShortDescription(result.shortDescription || '');
-        setAppDescription(result.longDescription || '');
-        setValueProposition(result.valueProposition || '');
-        setKeyFeatures((result.keyFeatures || []).join('\n'));
-        setTopBenefits((result.topBenefits || []).join('\n'));
-        toast({ title: "Auto-remplissage terminé ✨" });
-      }
-    } finally { setIsAutoFilling(false); }
-  };
-
-  const handleGenerateHooks = async () => {
-    setIsGeneratingHooks(true);
-    try {
-      const result = await callSuggestCopy('hooks');
-      if (result?.hooks) {
-        const hooks = result.hooks.slice(0, slides.length);
-        setSlides(prev => prev.map((s, i) => hooks[i] ? { ...s, headline: hooks[i].headline, subheadline: hooks[i].subheadline } : s));
-        toast({ title: `${hooks.length} hooks générés ✨` });
-      }
-    } finally { setIsGeneratingHooks(false); }
-  };
-
-  const handleSuggestStorylines = async () => {
-    setIsSuggestingStorylines(true);
-    try {
-      const result = await callSuggestCopy('storylines', { slideCount });
-      if (result?.slides) {
-        const newSlides: SlideItem[] = result.slides.map((s: any, i: number) => ({
-          id: `s${Date.now()}-${i}`,
-          number: s.number || i + 1,
-          objective: s.objective,
-          headline: s.headline,
-          subheadline: s.subheadline,
-          keyMessage: '',
-          rawScreenTag: s.rawScreenTag || 'home',
-          emphasis: s.emphasis || 'UI focused',
-          importance: s.importance || 'medium',
-          status: 'pending' as const,
-          locked: [],
-        }));
-        setSlides(newSlides.slice(0, maxSlides));
-        setSlideCount(Math.min(newSlides.length, maxSlides));
-        toast({ title: "Storyline générée ✨" });
-      }
-    } finally { setIsSuggestingStorylines(false); }
-  };
-
   const next = () => setCurrentStep(s => Math.min(s + 1, 7));
   const prev = () => setCurrentStep(s => Math.max(s - 1, 1));
 
@@ -279,6 +229,9 @@ const NewProject = () => {
       );
     }
   };
+
+  // Derive the final project name: always use appName if set
+  const getFinalProjectName = () => appName || projectName || 'App Screens';
 
   return (
     <DashboardLayout>
@@ -322,12 +275,12 @@ const NewProject = () => {
                 </div>
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-3">
-                    <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Project name</label>
-                    <Input value={projectName} onChange={e => setProjectName(e.target.value)} placeholder="e.g. LinguaPal US Launch" className="bg-black/5 border-border text-foreground placeholder:text-foreground/30 shadow-inner h-12 focus-visible:ring-primary focus-visible:border-primary transition-all rounded-xl" />
-                  </div>
-                  <div className="space-y-3">
                     <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">App name</label>
                     <Input value={appName} onChange={e => setAppName(e.target.value)} placeholder="e.g. LinguaPal" className="bg-black/5 border-border text-foreground placeholder:text-foreground/30 shadow-inner h-12 focus-visible:ring-primary focus-visible:border-primary transition-all rounded-xl" />
+                  </div>
+                  <div className="space-y-3">
+                    <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Project name <span className="text-foreground/30 normal-case font-medium">(optional, defaults to app name)</span></label>
+                    <Input value={projectName} onChange={e => setProjectName(e.target.value)} placeholder={appName || "e.g. LinguaPal US Launch"} className="bg-black/5 border-border text-foreground placeholder:text-foreground/30 shadow-inner h-12 focus-visible:ring-primary focus-visible:border-primary transition-all rounded-xl" />
                   </div>
                 </div>
                 <div className="space-y-3">
@@ -399,9 +352,7 @@ const NewProject = () => {
                   <Input value={shortDescription} onChange={e => setShortDescription(e.target.value)} placeholder="A brief summary of your app" className="bg-black/5 border-border text-foreground placeholder:text-foreground/30 shadow-inner h-12 focus-visible:ring-primary transition-all rounded-xl" />
                 </div>
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Long description</label>
-                  </div>
+                  <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Long description</label>
                   <Textarea value={appDescription} onChange={e => setAppDescription(e.target.value)} placeholder="Full app description..." className="bg-black/5 border-border text-foreground placeholder:text-foreground/30 shadow-inner min-h-[140px] resize-none focus-visible:ring-primary transition-all rounded-xl p-4" />
                 </div>
                 <div className="space-y-3">
@@ -554,7 +505,7 @@ const NewProject = () => {
                     ))}
                     <div className="flex items-center gap-2">
                       <input type="color" value={newColor} onChange={e => setNewColor(e.target.value)} className="h-14 w-14 rounded-full border-2 border-dashed border-border cursor-pointer bg-transparent" />
-                      <Button variant="ghost" size="sm" onClick={() => { setBrandColors(prev => [...prev, newColor]); }} className="text-xs font-bold text-primary">
+                      <Button variant="ghost" size="sm" onClick={() => { if (!brandColors.includes(newColor)) setBrandColors(prev => [...prev, newColor]); }} className="text-xs font-bold text-primary">
                         <Plus className="h-4 w-4 mr-1" /> Add
                       </Button>
                     </div>
@@ -568,8 +519,9 @@ const NewProject = () => {
                   <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Visual preferences</label>
                   <div className="flex flex-wrap gap-3">
                     {['Keep app UI untouched', 'Allow visual enhancement', 'Use premium preset palette', 'Auto-detect from assets'].map(opt => (
-                      <Badge
+                      <button
                         key={opt}
+                        type="button"
                         onClick={() => {
                           setVisualPreferences(prev =>
                             prev.includes(opt)
@@ -577,13 +529,13 @@ const NewProject = () => {
                               : [...prev, opt]
                           );
                         }}
-                        className={`font-bold border-border cursor-pointer transition-all duration-300 py-2 px-4 shadow-sm ${visualPreferences.includes(opt)
+                        className={`font-bold border cursor-pointer transition-all duration-300 py-2 px-4 shadow-sm rounded-lg text-sm ${visualPreferences.includes(opt)
                             ? 'bg-primary text-black border-primary shadow-glow'
-                            : 'bg-card/90 text-muted-foreground hover:bg-primary/20 hover:text-primary hover:border-primary/40'
+                            : 'bg-card/90 text-muted-foreground border-border hover:bg-primary/20 hover:text-primary hover:border-primary/40'
                           }`}
                       >
                         {opt}
-                      </Badge>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -605,21 +557,33 @@ const NewProject = () => {
 
                 {selectedTemplate !== 'reference' ? (
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    {['Clean SaaS', 'Feature Led', 'Modern Fintech', 'Playful EdTech', 'Dark Cinematic',
-                      'Minimal Luxury', 'Neo Brutalism', 'Gradient Flow'].map(name => (
-                        <button key={name} onClick={() => setSelectedTemplate(name)} className={`aspect-[3/4] max-h-[160px] rounded-2xl border-2 flex flex-col items-center justify-center p-4 transition-all duration-300 ${selectedTemplate === name ? 'border-primary bg-primary/10 shadow-glow scale-[1.02]' : 'border-border bg-card/90 hover:border-primary/40 hover:scale-[1.02] shadow-sm'}`}>
-                          <div className={`h-12 w-10 rounded-lg mb-3 flex items-center justify-center border transition-all duration-300 ${selectedTemplate === name ? 'bg-primary/20 border-primary/50 shadow-inner' : 'bg-black/5 border-border'}`}>
-                            <LayoutGrid className={`h-5 w-5 ${selectedTemplate === name ? 'text-primary' : 'text-foreground/30'}`} />
-                          </div>
-                          <span className={`text-xs font-bold text-center leading-tight tracking-tight ${selectedTemplate === name ? 'text-foreground' : 'text-muted-foreground'}`}>{name}</span>
-                        </button>
-                      ))}
+                    {demoTemplates.map(t => (
+                      <button key={t.id} onClick={() => setSelectedTemplate(t.name)} className={`rounded-2xl border-2 overflow-hidden transition-all duration-300 ${selectedTemplate === t.name ? 'border-primary shadow-glow scale-[1.02]' : 'border-border hover:border-primary/40 hover:scale-[1.02] shadow-sm'}`}>
+                        <div className="aspect-[9/16] relative overflow-hidden bg-card/90">
+                          {templatePreviews[t.name] ? (
+                            <img src={templatePreviews[t.name]} alt={t.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <LayoutGrid className={`h-8 w-8 ${selectedTemplate === t.name ? 'text-primary' : 'text-foreground/30'}`} />
+                            </div>
+                          )}
+                          {selectedTemplate === t.name && (
+                            <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                              <CheckCircle2 className="h-8 w-8 text-primary drop-shadow-lg" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-3 bg-card/90 border-t border-border">
+                          <span className={`text-xs font-bold tracking-tight ${selectedTemplate === t.name ? 'text-primary' : 'text-muted-foreground'}`}>{t.name}</span>
+                        </div>
+                      </button>
+                    ))}
                   </div>
                 ) : (
                   <div className="space-y-6">
                     <div className="border border-dashed border-border bg-card/90 rounded-2xl p-8 text-center hover:border-primary/40 hover:bg-black/5 transition-all duration-300 cursor-pointer shadow-inner">
                       <Upload className="h-6 w-6 text-foreground/30 mx-auto mb-3" />
-                      <p className="text-sm font-bold text-muted-foreground tracking-tight">Upload your refererence mockups</p>
+                      <p className="text-sm font-bold text-muted-foreground tracking-tight">Upload your reference mockups</p>
                     </div>
                     <div className="space-y-3">
                       <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Inspiration notes</label>
@@ -797,7 +761,7 @@ const NewProject = () => {
                       setIsSaving(true);
                       try {
                         const project = await createProject.mutateAsync({
-                          name: projectName || appName || `App Screens`,
+                          name: getFinalProjectName(),
                           app_name: appName,
                           app_description: appDescription,
                           platform,
