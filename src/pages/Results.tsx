@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  Download, RefreshCw, Globe, Loader2, Lock, Wand2, Send
+  Download, RefreshCw, Globe, Loader2, Wand2, Send
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useProject, useProjectSlides } from "@/hooks/useProjects";
@@ -102,11 +102,8 @@ const Results = () => {
   };
 
   const handleRegenerateAll = async () => {
-    if (!canRegenerate(userPlan)) {
-      toast({ title: "Plan requis", description: "La régénération n'est pas disponible sur le plan Free.", variant: "destructive" });
-      return;
-    }
     const totalCost = (slides?.length || 0) * CREDIT_COSTS.regenerateSlide;
+    if (!checkCredits(totalCost)) return;
     if (!checkCredits(totalCost)) return;
 
     setIsRegenerating(true);
@@ -147,10 +144,6 @@ const Results = () => {
   };
 
   const handleRegenerateSingle = async (slideId: string) => {
-    if (!canRegenerate(userPlan)) {
-      toast({ title: "Plan requis", description: "La régénération n'est pas disponible sur le plan Free.", variant: "destructive" });
-      return;
-    }
     if (!checkCredits(CREDIT_COSTS.regenerateSlide)) return;
 
     setRegeneratingSlideId(slideId);
@@ -226,32 +219,17 @@ const Results = () => {
             <Button
               variant="outline"
               className="rounded-xl"
-              onClick={() => {
-                if (!canTranslate(userPlan)) {
-                  toast({ title: "Plan requis", description: "Les traductions sont disponibles à partir du plan Pro.", variant: "destructive" });
-                  return;
-                }
-                setIsTranslationModalOpen(true);
-              }}
+              onClick={() => setIsTranslationModalOpen(true)}
             >
-              {!canTranslate(userPlan) && <Lock className="mr-2 h-3 w-3" />}
-              <Globe className="mr-2 h-4 w-4" /> Translate
-            </Button>
-            <Button variant="outline" className="rounded-xl" onClick={handleDownload} disabled={isExporting}>
-              {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-              Export ZIP
+              <Globe className="mr-2 h-4 w-4" /> Translate (2 cr./slide)
             </Button>
             <Button
               className="rounded-xl"
               onClick={handleRegenerateAll}
-              disabled={isRegenerating || !canRegenerate(userPlan)}
+              disabled={isRegenerating}
             >
               {isRegenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-              {!canRegenerate(userPlan) ? (
-                <><Lock className="mr-1 h-3 w-3" /> Upgrade to regenerate</>
-              ) : (
-                `Regenerate All (${(slides?.length || 0)} cr.)`
-              )}
+              Regenerate All ({(slides?.length || 0)} cr.)
             </Button>
           </div>
         </motion.div>
@@ -292,7 +270,7 @@ const Results = () => {
                 </div>
 
                 {/* Single slide regeneration */}
-                {canRegenerate(userPlan) && (
+                {(
                   <div className="mt-6 pt-4 border-t border-border">
                     {showRegenPrompt === selectedSlide.id ? (
                       <div className="space-y-3">

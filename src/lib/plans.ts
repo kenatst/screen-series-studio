@@ -49,12 +49,11 @@ export const PLANS: PlanConfig[] = [
       'Full screenshot sets',
       'HD export',
       'Brand Kit integration',
-      'Translations',
     ],
     limits: {
       maxProjects: 1,
       maxSlidesPerSet: 3,
-      translations: false,
+      translations: true,
       unlimitedTranslations: false,
       redesigns: 0,
       brandKit: false,
@@ -77,19 +76,19 @@ export const PLANS: PlanConfig[] = [
       '50 credits/month',
       'HD export, no watermark',
       'Up to 10 slides per set',
-    ],
-    notIncluded: [
       '1-Click Translations',
       'Full Brand Kit control',
+    ],
+    notIncluded: [
       'Priority generation',
     ],
     limits: {
       maxProjects: 1,
       maxSlidesPerSet: 10,
-      translations: false,
+      translations: true,
       unlimitedTranslations: false,
       redesigns: 3,
-      brandKit: false,
+      brandKit: true,
       priorityGeneration: false,
       watermark: false,
       hdExport: true,
@@ -189,6 +188,6 @@ export function hasWatermark(plan: PlanId): boolean {
   return getPlanById(plan).limits.watermark;
 }
 
-export function canRegenerate(plan: PlanId): boolean {
-  return plan !== 'free';
+export function canRegenerate(_plan: PlanId): boolean {
+  return true;
 }
