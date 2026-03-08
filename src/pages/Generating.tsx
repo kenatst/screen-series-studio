@@ -80,6 +80,19 @@ const Generating = () => {
     }
   };
 
+  const handleStopAndArchive = async () => {
+    if (!projectId) return;
+    setIsStopping(true);
+    requestAbortRef.current?.abort();
+    stopPolling();
+    try {
+      await archiveProject.mutateAsync(projectId);
+    } catch {
+      // navigate anyway
+    }
+    navigate("/dashboard/projects");
+  };
+
   const routeToResults = () => {
     if (!projectId || redirectedRef.current) return;
     redirectedRef.current = true;
