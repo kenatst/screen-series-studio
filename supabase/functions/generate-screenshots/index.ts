@@ -268,6 +268,8 @@ serve(async (req) => {
 
     let projectId: string;
     let singleSlideId: string | undefined;
+    let targetSlideNumber: number | undefined;
+    let userFeedback: string | undefined;
     let userPrompt: string | undefined;
     let forceRegenerate = false;
     let resumeGeneration = false;
@@ -276,6 +278,8 @@ serve(async (req) => {
       const body = await req.json();
       projectId = body.project_id;
       singleSlideId = body.single_slide_id;
+      targetSlideNumber = body.target_slide_number;
+      userFeedback = body.user_feedback;
       userPrompt = body.user_prompt;
       forceRegenerate = body.force_regenerate === true;
       resumeGeneration = body.resume === true;
@@ -323,7 +327,7 @@ serve(async (req) => {
       }
     }
 
-    // Determine which slides to generate
+    // Determine which slide to generate
     const genMode = singleSlideId ? "single" : (project.generation_mode || "full");
     let candidateSlides = allSlides;
 
@@ -336,17 +340,26 @@ serve(async (req) => {
         });
       }
       candidateSlides = [singleSlide];
+    } else if (targetSlideNumber) {
+      const targetSlide = allSlides.find((s: any) => s.slide_number === targetSlideNumber);
+      if (!targetSlide) {
+        return new Response(JSON.stringify({ error: "Target slide not found" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      candidateSlides = [targetSlide];
     } else if (genMode === "first-3") {
       candidateSlides = allSlides.slice(0, 3);
     } else if (genMode === "creative-direction" && allSlides.length > 0) {
       candidateSlides = [allSlides[0], allSlides[0], allSlides[0]];
     }
 
-    let slidesToGenerate = (singleSlideId || forceRegenerate)
+    let slidesToGenerate = (singleSlideId || targetSlideNumber || forceRegenerate)
       ? candidateSlides
       : candidateSlides.filter((slide: any) => !slide.image_url && (slide.status === "pending" || slide.status === "generating"));
 
-    if (!singleSlideId && resumeGeneration) {
+    if (!singleSlideId && !targetSlideNumber && resumeGeneration) {
       const generatingIds = candidateSlides.filter((s: any) => s.status === "generating").map((s: any) => s.id);
       if (generatingIds.length > 0) {
         await adminClient.from("project_slides").update({ status: "pending" }).in("id", generatingIds);
@@ -355,8 +368,17 @@ serve(async (req) => {
       slidesToGenerate = candidateSlides.filter((slide: any) => !(slide.status === "completed" && slide.image_url));
     }
 
-    // Generate ALL pending slides in a single SSE stream — no more round-tripping
-    const invocationSlides = slidesToGenerate;
+    // Process ONLY ONE slide per invocation for the interactive workflow
+    if (slidesToGenerate.length === 0) {
+      return new Response(JSON.stringify({ error: "No slides to generate" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Sort just to be safe and take the first one
+    slidesToGenerate.sort((a: any, b: any) => a.slide_number - b.slide_number);
+    const invocationSlides = [slidesToGenerate[0]];
 
     // Check credits only for this invocation batch
     const { data: profileData } = await adminClient.from("profiles").select("credits, plan").eq("id", userId).single();
@@ -480,9 +502,13 @@ serve(async (req) => {
               userPrompt
             );
 
-            const variantPrompt = genMode === "creative-direction"
+            let variantPrompt = genMode === "creative-direction"
               ? `${prompt}\n\nMETA: Provide a creative variant for this specific art direction generation with a unique aesthetic spin, while continuing to strictly respect the brand core and core UI elements.`
               : prompt;
+
+            if (userFeedback) {
+              variantPrompt += `\n\n=== USER REDESIGN INSTRUCTION ===\nYou MUST incorporate the following feedback exactly: "${userFeedback}"`;
+            }
 
             const buildContents = (promptText: string) => {
               const parts: any[] = [{ text: promptText }];
@@ -592,16 +618,26 @@ serve(async (req) => {
           }
         }
 
-        if (!singleSlideId) {
+        // Determine if there are more slides pending
+        const { data: remainingSlides } = await adminClient
+          .from("project_slides")
+          .select("status,image_url")
+          .eq("project_id", projectId);
+
+        const pendingOrGenerating = (remainingSlides || []).filter(
+          (s: any) => !s.image_url && (s.status === "pending" || s.status === "generating")
+        );
+
+        const hasMore = pendingOrGenerating.length > 0;
+
+        if (!singleSlideId && !hasMore) {
           await adminClient
             .from("projects")
             .update({ status: "completed" })
             .eq("id", projectId);
-
-          sendEvent("all-done", { projectId, hasMore: false, remaining: 0 });
-        } else {
-          sendEvent("all-done", { projectId, hasMore: false, remaining: 0 });
         }
+
+        sendEvent("all-done", { projectId, hasMore, remaining: pendingOrGenerating.length });
         controller.close();
       },
     });
