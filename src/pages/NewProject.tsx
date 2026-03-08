@@ -55,10 +55,11 @@ const NewProject = () => {
   };
 
   const handleSlideCountChange = (count: number) => {
-    setSlideCount(count);
-    const key = count <= 5 ? '5-slide' : '10-slide';
+    const clamped = Math.min(count, maxSlides);
+    setSlideCount(clamped);
+    const key = clamped <= 5 ? '5-slide' : '10-slide';
     const base = defaultStorylines[key];
-    setSlides(base.slice(0, count));
+    setSlides(base.slice(0, clamped));
   };
 
   const updateSlide = (id: string, field: keyof SlideItem, value: string) => {
