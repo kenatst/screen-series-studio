@@ -134,7 +134,7 @@ const Results = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ project_id: projectId }),
+        body: JSON.stringify({ project_id: projectId, force_regenerate: true }),
       });
 
       if (response.ok) {
