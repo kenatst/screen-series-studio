@@ -345,12 +345,12 @@ const NewProject = () => {
     }
   };
 
-  // Save as draft
+  // Save as draft — update if already saved, create otherwise
   const handleSaveDraft = async () => {
     if (!user) { toast({ title: "Not authenticated", variant: "destructive" }); return; }
     setIsSaving(true);
     try {
-      const project = await createProject.mutateAsync({
+      const projectPayload = {
         name: getFinalProjectName(),
         app_name: appName,
         app_description: appDescription,
@@ -359,12 +359,27 @@ const NewProject = () => {
         consistency_level: consistencyLevel,
         device_formats: deviceFormats as any,
         generation_mode: generationMode,
-        status: 'draft',
+        status: 'draft' as const,
         brand_kit: { colors: brandColors, fontFamily: brandFont } as any,
-        config: { primaryGoal, tone: selectedTone, shortDescription, valueProposition, keyFeatures: keyFeatures.split('\n').filter(Boolean), topBenefits: topBenefits.split('\n').filter(Boolean) } as any,
-      });
+        config: { primaryGoal, tone: selectedTone, shortDescription, valueProposition, keyFeatures: keyFeatures.split('\n').filter(Boolean), topBenefits: topBenefits.split('\n').filter(Boolean), outputLanguage } as any,
+        output_language: outputLanguage,
+      };
+
+      let projectId: string;
+
+      if (savedProjectId) {
+        // Update existing project
+        await updateProject.mutateAsync({ id: savedProjectId, ...projectPayload });
+        projectId = savedProjectId;
+      } else {
+        // Create new project
+        const project = await createProject.mutateAsync(projectPayload);
+        projectId = project.id;
+        setSavedProjectId(projectId);
+      }
+
       await saveSlides.mutateAsync({
-        projectId: project.id,
+        projectId,
         slides: slides.map((s, i) => ({
           slide_number: i + 1,
           objective: s.objective,
@@ -376,11 +391,12 @@ const NewProject = () => {
           status: 'pending',
         })),
       });
-      if (user) {
-        await uploadAssetsToStorage(project.id, user.id);
+      if (user && !savedProjectId) {
+        // Only upload assets on first save
+        await uploadAssetsToStorage(projectId, user.id);
       }
       setLastSavedAt(new Date());
-      toast({ title: "Draft saved ✓", description: `Project "${getFinalProjectName()}" saved as draft.` });
+      toast({ title: "Draft saved ✓", description: `Project "${getFinalProjectName()}" saved.` });
     } catch (e) {
       console.error("Draft save failed:", e);
       toast({ title: "Save failed", description: "Could not save draft.", variant: "destructive" });
