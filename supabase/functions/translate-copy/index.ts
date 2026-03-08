@@ -51,6 +51,21 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "No completed slides found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    const totalCost = slides.length * CREDIT_COST_PER_SLIDE;
+    const { data: profileData } = await adminClient.from("profiles").select("credits").eq("id", userId).single();
+    const currentCredits = profileData?.credits ?? 0;
+
+    if (currentCredits < totalCost) {
+      return new Response(JSON.stringify({ error: `Crédits insuffisants. Il faut ${totalCost} crédit(s), vous en avez ${currentCredits}.` }), {
+        status: 402,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (totalCost > 0) {
+      await adminClient.from("profiles").update({ credits: currentCredits - totalCost }).eq("id", userId);
+    }
+
     const ai = new GoogleGenAI({ apiKey: geminiApiKey });
     const translatedSlides: { slide_number: number; imageUrl: string }[] = [];
 

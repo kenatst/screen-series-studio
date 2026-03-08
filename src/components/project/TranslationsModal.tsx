@@ -55,7 +55,7 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId }: Translati
                         1-Click Localization
                     </DialogTitle>
                     <DialogDescription className="text-muted-foreground pt-2">
-                        Select a target language. Our engine will instantly translate all slide headlines and subheadlines, adapting layout logic. (Gemini generation coming soon).
+                        Select a target language. Translation costs 1 credit per slide and preserves the exact visual layout.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="py-6">
