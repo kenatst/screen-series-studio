@@ -10,6 +10,16 @@ import agency07 from '@/assets/gallery/agency-07-aura.png';
 import agency08 from '@/assets/gallery/agency-08-scribe.png';
 import agency09 from '@/assets/gallery/agency-09-trainer.png';
 import agency10 from '@/assets/gallery/agency-10-stackr.png';
+import agency11 from '@/assets/gallery/agency-11-trainer-ai.png';
+import agency12 from '@/assets/gallery/agency-12-stackr-yellow.png';
+import agency13 from '@/assets/gallery/agency-13-vow.png';
+import agency14 from '@/assets/gallery/agency-14-rpg.png';
+import agency15 from '@/assets/gallery/agency-15-cram.png';
+import agency16 from '@/assets/gallery/agency-16-adblock.png';
+import agency17 from '@/assets/gallery/agency-17-drift.png';
+import agency18 from '@/assets/gallery/agency-18-coaching.png';
+import agency19 from '@/assets/gallery/agency-19-tape.png';
+import agency20 from '@/assets/gallery/agency-20-solo.png';
 
 const GALLERY_ITEMS = [
     { id: 1, title: 'HabitForge', style: 'Dark & Vibrant', src: agency01 },
@@ -22,6 +32,16 @@ const GALLERY_ITEMS = [
     { id: 8, title: 'Scribe AI', style: 'Clean Corporate', src: agency08 },
     { id: 9, title: 'AI Trainer', style: 'High Energy Sport', src: agency09 },
     { id: 10, title: 'Stackr', style: 'Bold Brutalist', src: agency10 },
+    { id: 11, title: 'FitMax AI', style: 'Sport & Mascot', src: agency11 },
+    { id: 12, title: 'Stackr Cashback', style: 'Yellow Bold', src: agency12 },
+    { id: 13, title: 'Vow', style: 'Luxury Elegant', src: agency13 },
+    { id: 14, title: 'LinguaQuest', style: 'RPG Gaming', src: agency14 },
+    { id: 15, title: 'Cram', style: 'Minimal Neon', src: agency15 },
+    { id: 16, title: 'AdBlock Pro', style: 'Dark Tech', src: agency16 },
+    { id: 17, title: 'Drift Sleep', style: 'Dark Ambient', src: agency17 },
+    { id: 18, title: 'Syncy Coach', style: 'Organic Wellness', src: agency18 },
+    { id: 19, title: 'Tape', style: 'Dark Warm', src: agency19 },
+    { id: 20, title: 'Solo', style: 'Corporate Blue', src: agency20 },
 ];
 
 export const Gallery = () => {

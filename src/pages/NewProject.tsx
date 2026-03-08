@@ -18,29 +18,29 @@ import { getMaxSlides } from "@/lib/plans";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-// Gallery images for template previews
-import slide01 from "@/assets/gallery/slide-01-learners.png";
-import slide02 from "@/assets/gallery/slide-02-allinone.png";
-import slide03 from "@/assets/gallery/slide-03-bitesized.png";
-import slide04 from "@/assets/gallery/slide-04-speaking.png";
-import slide05 from "@/assets/gallery/slide-05-streak.png";
-import slide06 from "@/assets/gallery/slide-06-widgets.png";
-import slide07 from "@/assets/gallery/slide-07-culture.png";
-import slide08 from "@/assets/gallery/slide-08-progress.png";
-import slide09 from "@/assets/gallery/slide-09-motivation.png";
-import slide10 from "@/assets/gallery/slide-10-closing.png";
+// Agency gallery images for template previews
+import agency01 from "@/assets/gallery/agency-01-habit.png";
+import agency02 from "@/assets/gallery/agency-02-coach.png";
+import agency03 from "@/assets/gallery/agency-03-map.png";
+import agency04 from "@/assets/gallery/agency-04-subs.png";
+import agency05 from "@/assets/gallery/agency-05-water.png";
+import agency06 from "@/assets/gallery/agency-06-sugar.png";
+import agency07 from "@/assets/gallery/agency-07-aura.png";
+import agency08 from "@/assets/gallery/agency-08-scribe.png";
+import agency09 from "@/assets/gallery/agency-09-trainer.png";
+import agency10 from "@/assets/gallery/agency-10-stackr.png";
 
 const templatePreviews: Record<string, string> = {
-  'Clean SaaS': slide01,
-  'Bold Gaming': slide02,
-  'Premium Gradient': slide03,
-  'Educational Playful': slide04,
-  'Lifestyle': slide05,
-  'Luxury Minimal': slide06,
-  'Feature-Led': slide07,
-  'Comparison-Driven': slide08,
-  'Mascot-Led': slide09,
-  'Cinematic': slide10,
+  'Clean SaaS': agency08,
+  'Bold Gaming': agency09,
+  'Premium Gradient': agency04,
+  'Educational Playful': agency05,
+  'Lifestyle': agency06,
+  'Luxury Minimal': agency07,
+  'Feature-Led': agency01,
+  'Comparison-Driven': agency03,
+  'Mascot-Led': agency02,
+  'Cinematic': agency10,
 };
 
 const steps = [
