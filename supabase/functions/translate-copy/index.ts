@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
+import { GoogleGenAI } from "npm:@google/genai@^1.44.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,96 +18,113 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const geminiApiKey = Deno.env.get("GEMINI_API_KEY")!;
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(authHeader.replace("Bearer ", ""));
-    if (claimsError || !claimsData?.claims) {
+    const { data: userData, error: userError } = await userClient.auth.getUser();
+    if (userError || !userData.user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+    const userId = userData.user.id;
 
-    const { project_id, target_language } = await req.json();
+    const { project_id, target_language, source_language } = await req.json();
     if (!project_id || !target_language) {
       return new Response(JSON.stringify({ error: "project_id and target_language required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Fetch slides
-    const { data: slides, error } = await userClient.from("project_slides").select("id, headline, subheadline, slide_number").eq("project_id", project_id).order("slide_number");
+    const adminClient = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Fetch completed slides with images
+    const { data: slides, error } = await userClient
+      .from("project_slides")
+      .select("id, slide_number, image_url, headline, subheadline")
+      .eq("project_id", project_id)
+      .eq("status", "completed")
+      .order("slide_number");
+
     if (error || !slides?.length) {
-      return new Response(JSON.stringify({ error: "No slides found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "No completed slides found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Use Lovable AI to translate
-    const prompt = `Translate these App Store screenshot headlines and subheadlines to ${target_language}.
-Return a JSON array with objects: { "slide_number": number, "headline": "translated", "subheadline": "translated" }
-Rules:
-- Keep translations concise for mobile screens
-- Adapt tone and idioms culturally
-- Preserve marketing impact
-- Character limit: headlines max 40 chars, subheadlines max 60 chars
+    const ai = new GoogleGenAI({ apiKey: geminiApiKey });
+    const translatedSlides: { slide_number: number; imageUrl: string }[] = [];
 
-Input:
-${JSON.stringify(slides.map(s => ({ slide_number: s.slide_number, headline: s.headline, subheadline: s.subheadline })))}`;
+    for (const slide of slides) {
+      try {
+        // Download the existing slide image from storage
+        const storagePath = `${userId}/${project_id}/slide-${slide.slide_number}.png`;
+        const { data: fileData } = await adminClient.storage.from("generated-outputs").download(storagePath);
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: "You are a professional app store localization expert. Return only valid JSON." },
-          { role: "user", content: prompt },
-        ],
-        tools: [{
-          type: "function",
-          function: {
-            name: "return_translations",
-            description: "Return translated slide copy",
-            parameters: {
-              type: "object",
-              properties: {
-                translations: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      slide_number: { type: "number" },
-                      headline: { type: "string" },
-                      subheadline: { type: "string" },
-                    },
-                    required: ["slide_number", "headline", "subheadline"],
-                  },
-                },
-              },
-              required: ["translations"],
-            },
-          },
-        }],
-        tool_choice: { type: "function", function: { name: "return_translations" } },
-      }),
-    });
+        if (!fileData) {
+          console.error(`No image found for slide ${slide.slide_number}`);
+          continue;
+        }
 
-    if (!aiResponse.ok) {
-      const status = aiResponse.status;
-      if (status === 429) return new Response(JSON.stringify({ error: "Rate limited, try again later" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      if (status === 402) return new Response(JSON.stringify({ error: "Payment required" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      throw new Error("AI translation failed");
+        const arrayBuffer = await fileData.arrayBuffer();
+        const imageBase64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+
+        // Use Gemini image generation to translate text in the image
+        const translationPrompt = `Translate all visible text in the image from ${source_language || "English"} to natural ${target_language}.
+
+Do not change anything else.
+Do not modify layout, spacing, alignment, font size, font weight, colors, or image composition.
+Do not add, remove, or rephrase content.
+Keep the tone calm, minimal, and reassuring.
+Text translation only.`;
+
+        const contents: any[] = [
+          { text: translationPrompt },
+          { inlineData: { mimeType: "image/png", data: imageBase64 } },
+        ];
+
+        const response = await ai.models.generateContent({
+          model: "gemini-3.1-flash-image-preview",
+          contents,
+          config: {
+            responseModalities: ["TEXT", "IMAGE"],
+            imageConfig: { aspectRatio: "9:16", imageSize: "2K" },
+          } as any,
+        });
+
+        let newImageBase64 = "";
+        if (response.candidates && response.candidates[0]) {
+          for (const part of response.candidates[0].content!.parts!) {
+            if ((part as any).inlineData) {
+              newImageBase64 = (part as any).inlineData.data;
+            }
+          }
+        }
+
+        if (!newImageBase64) {
+          console.error(`No translated image generated for slide ${slide.slide_number}`);
+          continue;
+        }
+
+        // Upload translated image with locale suffix
+        const langCode = target_language.toLowerCase().replace(/\s+/g, "-").slice(0, 5);
+        const translatedPath = `${userId}/${project_id}/slide-${slide.slide_number}-${langCode}.png`;
+        const imageBytes = Uint8Array.from(atob(newImageBase64), (c) => c.charCodeAt(0));
+        await adminClient.storage.from("generated-outputs").upload(translatedPath, imageBytes, {
+          contentType: "image/png",
+          upsert: true,
+        });
+
+        const { data: signedData } = await adminClient.storage.from("generated-outputs").createSignedUrl(translatedPath, 60 * 60 * 24 * 7);
+        translatedSlides.push({
+          slide_number: slide.slide_number,
+          imageUrl: signedData?.signedUrl || "",
+        });
+      } catch (err: any) {
+        console.error(`Translation error for slide ${slide.slide_number}:`, err);
+      }
     }
 
-    const aiData = await aiResponse.json();
-    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
-    const translations = toolCall ? JSON.parse(toolCall.function.arguments).translations : [];
-
-    return new Response(JSON.stringify({ translations }), {
+    return new Response(JSON.stringify({ translations: translatedSlides }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-
   } catch (error: any) {
     console.error("translate-copy error:", error);
     return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });

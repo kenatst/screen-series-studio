@@ -1,5 +1,8 @@
 project_id = "hqypdazxdrmkpqtakapb"
 
+[functions.suggest-copy]
+verify_jwt = false
+
 [functions.generate-screenshots]
 verify_jwt = false
 
