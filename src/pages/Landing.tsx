@@ -1,6 +1,6 @@
 import { LandingNav } from "@/components/landing/LandingNav";
 import { HeroSection } from "@/components/landing/HeroSection";
-import { SocialProof } from "@/components/landing/SocialProof";
+
 import { WorkflowScrollytelling } from "@/components/landing/WorkflowScrollytelling";
 import { ConsistencyEngine } from "@/components/landing/ConsistencyEngine";
 import { FeatureShowcase } from "@/components/landing/FeatureShowcase";
