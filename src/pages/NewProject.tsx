@@ -14,6 +14,7 @@ import { toneOptions, screenTags, slideObjectives, defaultStorylines, emphasisOp
 import type { SlideItem } from "@/lib/demo-data";
 import { useCreateProject, useSaveSlides } from "@/hooks/useProjects";
 import { useAuth } from "@/hooks/useAuth";
+import { getMaxSlides } from "@/lib/plans";
 
 const steps = [
   { id: 1, label: 'Project' },
