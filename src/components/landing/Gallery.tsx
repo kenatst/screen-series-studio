@@ -64,8 +64,8 @@ export const Gallery = () => {
 
                 <motion.div
                     className="flex gap-6 px-6"
-                    animate={{ x: [0, -3000] }}
-                    transition={{ repeat: Infinity, ease: "linear", duration: 50 }}
+                    animate={{ x: [0, -6000] }}
+                    transition={{ repeat: Infinity, ease: "linear", duration: 90 }}
                 >
                     {[...GALLERY_ITEMS, ...GALLERY_ITEMS].map((item, i) => (
                         <div
