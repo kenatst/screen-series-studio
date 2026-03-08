@@ -12,7 +12,8 @@ import {
 } from "lucide-react";
 import { toneOptions, screenTags, slideObjectives, defaultStorylines, emphasisOptions } from "@/lib/demo-data";
 import type { SlideItem } from "@/lib/demo-data";
-import { api } from "@/lib/api";
+import { useCreateProject, useSaveSlides } from "@/hooks/useProjects";
+import { useAuth } from "@/hooks/useAuth";
 
 const steps = [
   { id: 1, label: 'Project' },
