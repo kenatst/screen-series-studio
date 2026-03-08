@@ -668,8 +668,8 @@ const NewProject = () => {
           status: 'pending',
         })),
       });
-      if (user && !savedProjectId) {
-        // Only upload assets on first save
+      if (user) {
+        // Always upload assets (upsert handles duplicates)
         await uploadAssetsToStorage(projectId, user.id);
       }
       setLastSavedAt(new Date());
