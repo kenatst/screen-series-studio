@@ -1,4 +1,4 @@
-import { Sparkles } from 'lucide-react';
+import screenforgeLogo from '@/assets/logo-screenforge.png';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 
@@ -9,9 +9,7 @@ export const LandingFooter = () => {
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-lg h-[200px] bg-primary/10 blur-[100px] pointer-events-none rounded-full" />
 
             <div className="container mx-auto px-6 relative z-10 flex flex-col items-center text-center">
-                <div className="h-16 w-16 mb-8 rounded-2xl bg-gradient-to-br from-primary to-orange-600 flex items-center justify-center shadow-glow">
-                    <Sparkles className="h-8 w-8 text-foreground" />
-                </div>
+                <img src={screenforgeLogo} alt="ScreenForge" className="h-16 w-16 mb-8 rounded-2xl shadow-glow object-cover" />
                 <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground mb-6 max-w-2xl">
                     Ready to generate your premium screenshot sets?
                 </h2>
@@ -28,7 +26,8 @@ export const LandingFooter = () => {
                 <div className="w-full h-px bg-black/5 my-16" />
 
                 <div className="w-full flex flex-col md:flex-row justify-between items-center gap-6">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
+                        <img src={screenforgeLogo} alt="ScreenForge" className="h-7 w-7 rounded-lg object-cover" />
                         <span className="text-lg font-bold tracking-tight text-foreground">ScreenForge</span>
                         <span className="text-foreground/40 text-sm">© {new Date().getFullYear()} All rights reserved.</span>
                     </div>

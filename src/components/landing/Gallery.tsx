@@ -20,6 +20,13 @@ import agency17 from '@/assets/gallery/agency-17-drift.png';
 import agency18 from '@/assets/gallery/agency-18-coaching.png';
 import agency19 from '@/assets/gallery/agency-19-tape.png';
 import agency20 from '@/assets/gallery/agency-20-solo.png';
+import agency21 from '@/assets/gallery/agency-21-minddrop.png';
+import agency22 from '@/assets/gallery/agency-22-mealplan.png';
+import agency23 from '@/assets/gallery/agency-23-vault.jpeg';
+import agency24 from '@/assets/gallery/agency-24-linguaflow.png';
+import agency25 from '@/assets/gallery/agency-25-nestle.png';
+import agency26 from '@/assets/gallery/agency-26-lifeplan.png';
+import agency27 from '@/assets/gallery/agency-27-foxlearn.png';
 
 const GALLERY_ITEMS = [
     { id: 1, title: 'HabitForge', style: 'Dark & Vibrant', src: agency01 },
@@ -42,6 +49,13 @@ const GALLERY_ITEMS = [
     { id: 18, title: 'Syncy Coach', style: 'Organic Wellness', src: agency18 },
     { id: 19, title: 'Tape', style: 'Dark Warm', src: agency19 },
     { id: 20, title: 'Solo', style: 'Corporate Blue', src: agency20 },
+    { id: 21, title: 'MindDrop', style: 'Dark Gold Premium', src: agency21 },
+    { id: 22, title: 'MealFlow', style: 'Fresh Organic', src: agency22 },
+    { id: 23, title: 'Vault', style: 'Finance Dark', src: agency23 },
+    { id: 24, title: 'LinguaFlow', style: 'Gradient Vibrant', src: agency24 },
+    { id: 25, title: 'Nestle Home', style: 'Editorial Minimal', src: agency25 },
+    { id: 26, title: 'LifePlan', style: 'Warm Adventure', src: agency26 },
+    { id: 27, title: 'FoxLearn', style: 'Kids Colorful', src: agency27 },
 ];
 
 export const Gallery = () => {
@@ -64,8 +78,8 @@ export const Gallery = () => {
 
                 <motion.div
                     className="flex gap-6 px-6"
-                    animate={{ x: [0, -6000] }}
-                    transition={{ repeat: Infinity, ease: "linear", duration: 90 }}
+                    animate={{ x: [0, -8500] }}
+                    transition={{ repeat: Infinity, ease: "linear", duration: 120 }}
                 >
                     {[...GALLERY_ITEMS, ...GALLERY_ITEMS].map((item, i) => (
                         <div

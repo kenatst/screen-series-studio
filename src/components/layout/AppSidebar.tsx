@@ -1,7 +1,8 @@
 import {
   LayoutDashboard, FolderOpen, LayoutGrid,
-  Settings, HelpCircle, Layers,
+  Settings, HelpCircle,
 } from "lucide-react";
+import screenforgeLogo from "@/assets/logo-screenforge.png";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import {
@@ -32,9 +33,7 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <div className="flex items-center gap-3 px-3 py-4">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-orange-600 shadow-glow flex-shrink-0">
-              <Layers className="h-4 w-4 text-black" />
-            </div>
+            <img src={screenforgeLogo} alt="ScreenForge" className="h-8 w-8 rounded-lg shadow-glow object-cover flex-shrink-0" />
             {!collapsed && <span className="text-base font-bold tracking-tight text-foreground drop-shadow-md">ScreenForge</span>}
           </div>
         </SidebarGroup>
