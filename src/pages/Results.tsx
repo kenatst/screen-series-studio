@@ -4,16 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  Download, RefreshCw, Copy, Edit3, Globe, CheckCircle2,
-  X, Loader2, Lock
+  Download, RefreshCw, Globe, CheckCircle2,
+  Loader2, Lock
 } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useProject, useProjectSlides } from "@/hooks/useProjects";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { TranslationsModal } from "@/components/project/TranslationsModal";
-import { canTranslate, canRedesign } from "@/lib/plans";
+import { canTranslate } from "@/lib/plans";
 import { useToast } from "@/hooks/use-toast";
 
 const fadeUp = {
@@ -31,8 +30,8 @@ const Results = () => {
   const { data: slides, refetch: refetchSlides } = useProjectSlides(projectId);
 
   const [selectedSlideId, setSelectedSlideId] = useState<string | null>(null);
-  const [editingSlide, setEditingSlide] = useState<string | null>(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [isTranslationModalOpen, setIsTranslationModalOpen] = useState(false);
 
   const userPlan = profile?.plan || 'free';
@@ -41,6 +40,7 @@ const Results = () => {
 
   const handleDownload = async () => {
     if (!projectId) return;
+    setIsExporting(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
@@ -48,19 +48,48 @@ const Results = () => {
       const res = await fetch(`${supabaseUrl}/functions/v1/export-zip?project_id=${projectId}`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
-      const data = await res.json();
-      if (data.watermarked) {
-        toast({ title: "Export avec filigrane", description: "Passez à un plan payant pour exporter sans filigrane.", variant: "destructive" });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Export failed" }));
+        toast({ title: "Export error", description: err.error, variant: "destructive" });
+        return;
       }
-      for (const dl of data.downloads || []) {
-        window.open(dl.url, '_blank');
+
+      const contentType = res.headers.get("Content-Type");
+      if (contentType?.includes("application/zip")) {
+        // Direct ZIP download
+        const blob = await res.blob();
+        const disposition = res.headers.get("Content-Disposition");
+        const filenameMatch = disposition?.match(/filename="?([^"]+)"?/);
+        const filename = filenameMatch?.[1] || `${project?.name || 'export'}.zip`;
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        if (userPlan === 'free') {
+          toast({ title: "Export avec filigrane", description: "Passez à un plan payant pour exporter sans filigrane.", variant: "destructive" });
+        } else {
+          toast({ title: "Export terminé ✨" });
+        }
+      } else {
+        const data = await res.json();
+        toast({ title: "Export error", description: data.error || "Unexpected response", variant: "destructive" });
       }
     } catch (e) {
       console.error("Download failed", e);
+      toast({ title: "Export failed", variant: "destructive" });
+    } finally {
+      setIsExporting(false);
     }
   };
 
-  const handleRegenerate = async (slideId: string) => {
+  const handleRegenerate = async () => {
     setIsRegenerating(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -77,21 +106,21 @@ const Results = () => {
       });
 
       if (response.ok) {
-        // Wait for completion then refetch
         const reader = response.body?.getReader();
         if (reader) {
           const decoder = new TextDecoder();
-          let buffer = '';
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-            buffer += decoder.decode(value, { stream: true });
+            decoder.decode(value, { stream: true });
           }
         }
         await refetchSlides();
+        toast({ title: "Régénération terminée ✨" });
       }
     } catch (e) {
       console.error("Regeneration failed", e);
+      toast({ title: "Regeneration failed", variant: "destructive" });
     } finally {
       setIsRegenerating(false);
     }
@@ -125,20 +154,21 @@ const Results = () => {
               variant="outline"
               className="rounded-xl"
               onClick={() => {
-                if (!canTranslate(userPlan)) {
+                if (!canTranslate(userPlan as any)) {
                   toast({ title: "Plan requis", description: "Les traductions sont disponibles à partir du plan Pro.", variant: "destructive" });
                   return;
                 }
                 setIsTranslationModalOpen(true);
               }}
             >
-              {!canTranslate(userPlan) && <Lock className="mr-2 h-3 w-3" />}
+              {!canTranslate(userPlan as any) && <Lock className="mr-2 h-3 w-3" />}
               <Globe className="mr-2 h-4 w-4" /> Translate
             </Button>
-            <Button variant="outline" className="rounded-xl" onClick={handleDownload}>
-              <Download className="mr-2 h-4 w-4" /> Export
+            <Button variant="outline" className="rounded-xl" onClick={handleDownload} disabled={isExporting}>
+              {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+              Export ZIP
             </Button>
-            <Button className="rounded-xl" onClick={() => handleRegenerate('')} disabled={isRegenerating}>
+            <Button className="rounded-xl" onClick={handleRegenerate} disabled={isRegenerating}>
               {isRegenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
               Regenerate All
             </Button>
@@ -186,7 +216,7 @@ const Results = () => {
           {/* Thumbnail rail */}
           <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={2} className="space-y-3">
             <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-4">All Slides</h3>
-            {slides.map((slide, i) => (
+            {slides.map((slide) => (
               <div
                 key={slide.id}
                 onClick={() => setSelectedSlideId(slide.id)}

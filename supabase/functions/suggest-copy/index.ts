@@ -1,0 +1,156 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  try {
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+
+    const { type, appName, appDescription, storeUrl, platform, slideCount } = await req.json();
+
+    let systemPrompt = "";
+    let userPrompt = "";
+    let toolDef: any = null;
+    let toolChoice: any = null;
+
+    if (type === "auto-fill") {
+      systemPrompt = "You are an expert ASO (App Store Optimization) copywriter. Extract or generate compelling app marketing copy.";
+      userPrompt = storeUrl
+        ? `Given this app store URL: ${storeUrl}\nGenerate marketing copy for the app "${appName || 'this app'}". Include a short description (1 sentence), long description (2-3 sentences), value proposition (1 sentence), key features (3-5 bullet points), and top benefits (3-5 bullet points).`
+        : `Generate marketing copy for an app called "${appName}". Description: ${appDescription || 'Not provided'}. Platform: ${platform || 'both'}. Include a short description, long description, value proposition, key features, and top benefits.`;
+      toolDef = {
+        type: "function",
+        function: {
+          name: "return_app_copy",
+          description: "Return structured app marketing copy",
+          parameters: {
+            type: "object",
+            properties: {
+              shortDescription: { type: "string", description: "One sentence summary" },
+              longDescription: { type: "string", description: "2-3 sentence full description" },
+              valueProposition: { type: "string", description: "One compelling value line" },
+              keyFeatures: { type: "array", items: { type: "string" }, description: "3-5 key features" },
+              topBenefits: { type: "array", items: { type: "string" }, description: "3-5 user benefits" },
+            },
+            required: ["shortDescription", "longDescription", "valueProposition", "keyFeatures", "topBenefits"],
+          },
+        },
+      };
+      toolChoice = { type: "function", function: { name: "return_app_copy" } };
+    } else if (type === "hooks") {
+      systemPrompt = "You are an expert App Store screenshot copywriter specializing in high-conversion headlines.";
+      userPrompt = `Generate 8 compelling headline hooks for an app called "${appName}". ${appDescription ? `Description: ${appDescription}.` : ""} Platform: ${platform || 'both'}. Each hook should be punchy, under 40 characters, and drive installs.`;
+      toolDef = {
+        type: "function",
+        function: {
+          name: "return_hooks",
+          description: "Return headline hooks",
+          parameters: {
+            type: "object",
+            properties: {
+              hooks: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    headline: { type: "string" },
+                    subheadline: { type: "string" },
+                    angle: { type: "string", description: "The marketing angle (e.g. social proof, urgency, benefit)" },
+                  },
+                  required: ["headline", "subheadline", "angle"],
+                },
+              },
+            },
+            required: ["hooks"],
+          },
+        },
+      };
+      toolChoice = { type: "function", function: { name: "return_hooks" } };
+    } else if (type === "storylines") {
+      const count = slideCount || 5;
+      systemPrompt = "You are an expert App Store Optimization strategist specializing in screenshot storyline planning.";
+      userPrompt = `Create a ${count}-slide screenshot storyline for an app called "${appName}". ${appDescription ? `Description: ${appDescription}.` : ""} Platform: ${platform || 'both'}. Each slide needs an objective, headline, subheadline, emphasis type, and importance level. Follow ASO best practices for slide ordering.`;
+      toolDef = {
+        type: "function",
+        function: {
+          name: "return_storyline",
+          description: "Return a complete screenshot storyline",
+          parameters: {
+            type: "object",
+            properties: {
+              slides: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    number: { type: "number" },
+                    objective: { type: "string" },
+                    headline: { type: "string" },
+                    subheadline: { type: "string" },
+                    emphasis: { type: "string", enum: ["UI focused", "text focused", "mascot focused", "illustration focused", "cinematic background", "clean product showcase", "icon-driven", "feature comparison"] },
+                    importance: { type: "string", enum: ["high", "medium", "low"] },
+                    rawScreenTag: { type: "string" },
+                  },
+                  required: ["number", "objective", "headline", "subheadline", "emphasis", "importance"],
+                },
+              },
+            },
+            required: ["slides"],
+          },
+        },
+      };
+      toolChoice = { type: "function", function: { name: "return_storyline" } };
+    } else {
+      return new Response(JSON.stringify({ error: "Invalid type. Use: auto-fill, hooks, or storylines" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-3-flash-preview",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        tools: [toolDef],
+        tool_choice: toolChoice,
+      }),
+    });
+
+    if (!aiResponse.ok) {
+      const status = aiResponse.status;
+      if (status === 429) return new Response(JSON.stringify({ error: "Rate limited, try again later" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (status === 402) return new Response(JSON.stringify({ error: "Payment required" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const errText = await aiResponse.text();
+      console.error("AI error:", status, errText);
+      throw new Error("AI request failed");
+    }
+
+    const aiData = await aiResponse.json();
+    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+    const result = toolCall ? JSON.parse(toolCall.function.arguments) : {};
+
+    return new Response(JSON.stringify({ type, result }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (error: any) {
+    console.error("suggest-copy error:", error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
