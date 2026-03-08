@@ -91,45 +91,57 @@ export type Database = {
       }
       project_slides: {
         Row: {
+          attempt_count: number
           config: Json | null
           created_at: string
           emphasis: string | null
+          generation_ms: number | null
           headline: string | null
           id: string
           image_url: string | null
           importance: string | null
+          last_error: string | null
           objective: string | null
           project_id: string
+          quality_score: number | null
           raw_screen_tag: string | null
           slide_number: number
           status: string
           subheadline: string | null
         }
         Insert: {
+          attempt_count?: number
           config?: Json | null
           created_at?: string
           emphasis?: string | null
+          generation_ms?: number | null
           headline?: string | null
           id?: string
           image_url?: string | null
           importance?: string | null
+          last_error?: string | null
           objective?: string | null
           project_id: string
+          quality_score?: number | null
           raw_screen_tag?: string | null
           slide_number: number
           status?: string
           subheadline?: string | null
         }
         Update: {
+          attempt_count?: number
           config?: Json | null
           created_at?: string
           emphasis?: string | null
+          generation_ms?: number | null
           headline?: string | null
           id?: string
           image_url?: string | null
           importance?: string | null
+          last_error?: string | null
           objective?: string | null
           project_id?: string
+          quality_score?: number | null
           raw_screen_tag?: string | null
           slide_number?: number
           status?: string
@@ -157,6 +169,7 @@ export type Database = {
           generation_mode: string | null
           id: string
           name: string
+          output_language: string
           platform: string | null
           status: string
           template_id: string | null
@@ -174,6 +187,7 @@ export type Database = {
           generation_mode?: string | null
           id?: string
           name: string
+          output_language?: string
           platform?: string | null
           status?: string
           template_id?: string | null
@@ -191,6 +205,7 @@ export type Database = {
           generation_mode?: string | null
           id?: string
           name?: string
+          output_language?: string
           platform?: string | null
           status?: string
           template_id?: string | null
