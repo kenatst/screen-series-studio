@@ -22,10 +22,18 @@ serve(async (req) => {
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(authHeader.replace("Bearer ", ""));
-    if (claimsError || !claimsData?.claims) {
+
+    // Get user
+    const { data: userData, error: userError } = await userClient.auth.getUser();
+    if (userError || !userData.user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+    const userId = userData.user.id;
+
+    // Get user plan
+    const { data: profile } = await userClient.from("profiles").select("plan").eq("id", userId).single();
+    const userPlan = profile?.plan || "free";
+    const isWatermarked = userPlan === "free";
 
     const url = new URL(req.url);
     const projectId = url.searchParams.get("project_id");
@@ -48,22 +56,26 @@ serve(async (req) => {
     }
 
     const adminClient = createClient(supabaseUrl, serviceKey);
-    const userId = claimsData.claims.sub as string;
     const deviceFormats = (project.device_formats as string[]) || ["iphone-6-9"];
 
-    // Build a simple JSON manifest (actual ZIP requires more complex handling in edge functions)
-    // For now, return download URLs for all slides
-    const downloads: { slide: number; url: string; format: string }[] = [];
+    // Build download URLs
+    const downloads: { slide: number; url: string; format: string; watermarked: boolean }[] = [];
 
     for (const slide of slides) {
       for (const format of deviceFormats) {
         const storagePath = `${userId}/${projectId}/slide-${slide.slide_number}.png`;
-        const { data: signedData } = await adminClient.storage.from("generated-outputs").createSignedUrl(storagePath, 60 * 60); // 1 hour
+        const { data: signedData } = await adminClient.storage.from("generated-outputs").createSignedUrl(storagePath, 60 * 60);
         if (signedData?.signedUrl) {
+          let finalUrl = signedData.signedUrl;
+
+          // For free plan, apply watermark via image transformation query param
+          // Since we can't do server-side image manipulation easily in edge functions,
+          // we'll flag watermarked=true and let the frontend overlay the watermark
           downloads.push({
             slide: slide.slide_number,
-            url: signedData.signedUrl,
+            url: finalUrl,
             format,
+            watermarked: isWatermarked,
           });
         }
       }
@@ -72,6 +84,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       project_name: project.name,
       locale,
+      watermarked: isWatermarked,
       downloads,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

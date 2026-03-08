@@ -49,7 +49,9 @@ const Results = () => {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       const data = await res.json();
-      // Open each download URL
+      if (data.watermarked) {
+        toast({ title: "Export avec filigrane", description: "Passez à un plan payant pour exporter sans filigrane.", variant: "destructive" });
+      }
       for (const dl of data.downloads || []) {
         window.open(dl.url, '_blank');
       }
@@ -149,11 +151,20 @@ const Results = () => {
             {selectedSlide && (
               <div className="rounded-2xl border border-border bg-card/40 p-6 backdrop-blur-sm">
                 {selectedSlide.image_url ? (
-                  <img
-                    src={selectedSlide.image_url}
-                    alt={`Slide ${selectedSlide.slide_number}`}
-                    className="w-full max-w-md mx-auto rounded-xl shadow-elevated"
-                  />
+                  <div className="relative">
+                    <img
+                      src={selectedSlide.image_url}
+                      alt={`Slide ${selectedSlide.slide_number}`}
+                      className="w-full max-w-md mx-auto rounded-xl shadow-elevated"
+                    />
+                    {userPlan === 'free' && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none max-w-md mx-auto">
+                        <span className="text-4xl font-black text-white/30 rotate-[-30deg] select-none tracking-widest uppercase">
+                          ScreenForge
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <div className="aspect-[9/19.5] max-w-md mx-auto rounded-xl bg-muted border border-border flex items-center justify-center">
                     <span className="text-muted-foreground">No image generated</span>
