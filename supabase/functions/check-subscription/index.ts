@@ -11,7 +11,6 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CHECK-SUBSCRIPTION] ${step}${details ? ` - ${JSON.stringify(details)}` : ''}`);
 };
 
-/** Map product name → plan id */
 const PRODUCT_NAME_TO_PLAN: Record<string, string> = {
   "ScreenForge Starter": "starter",
   "ScreenForge Pro": "pro",
@@ -60,11 +59,13 @@ serve(async (req) => {
     logStep("Found Stripe customer", { customerId });
     await supabaseClient.from("profiles").update({ stripe_customer_id: customerId }).eq("id", user.id);
 
+    logStep("Listing subscriptions...");
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
       status: "active",
       limit: 1,
     });
+    logStep("Subscriptions listed", { count: subscriptions.data.length });
 
     if (subscriptions.data.length === 0) {
       logStep("No active subscription");
@@ -75,15 +76,43 @@ serve(async (req) => {
     }
 
     const subscription = subscriptions.data[0];
-    const productId = subscription.items.data[0].price.product as string;
+    logStep("Raw subscription data", {
+      id: subscription.id,
+      status: subscription.status,
+      current_period_end: subscription.current_period_end,
+      current_period_end_type: typeof subscription.current_period_end,
+    });
 
-    // Resolve plan from product name
+    const priceItem = subscription.items?.data?.[0];
+    if (!priceItem) {
+      logStep("No price item found in subscription");
+      return new Response(JSON.stringify({ subscribed: true, plan: "starter", subscription_end: null }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const productId = priceItem.price.product as string;
+    logStep("Retrieving product", { productId });
+
     const product = await stripe.products.retrieve(productId);
     const plan = PRODUCT_NAME_TO_PLAN[product.name] || "starter";
-    const subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
-    logStep("Active subscription found", { plan, productName: product.name, subscriptionEnd });
+    logStep("Product resolved", { productName: product.name, plan });
 
-    await supabaseClient.from("profiles").update({ plan }).eq("id", user.id);
+    // Safely compute subscription end
+    let subscriptionEnd: string | null = null;
+    const rawEnd = subscription.current_period_end;
+    if (rawEnd && typeof rawEnd === "number" && rawEnd > 0) {
+      const d = new Date(rawEnd * 1000);
+      if (!isNaN(d.getTime())) {
+        subscriptionEnd = d.toISOString();
+      }
+    }
+
+    logStep("Active subscription found", { plan, subscriptionEnd });
+
+    const PLAN_CREDITS: Record<string, number> = { free: 3, starter: 50, pro: 200, unlimited: 1000 };
+    const credits = PLAN_CREDITS[plan] || 3;
+    await supabaseClient.from("profiles").update({ plan, credits }).eq("id", user.id);
 
     return new Response(JSON.stringify({
       subscribed: true,
@@ -93,7 +122,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: any) {
-    logStep("ERROR", { message: error.message });
+    logStep("ERROR", { message: error.message, stack: error.stack?.slice(0, 500) });
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
