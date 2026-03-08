@@ -303,12 +303,61 @@ const Dashboard = () => {
                     <Badge variant="outline" className="text-xs">{project.platform}</Badge>
                     <Badge className={`text-xs ${statusColors[project.status] || statusColors.draft}`}>{project.status}</Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-3">
-                    Updated {new Date(project.updated_at).toLocaleDateString()}
-                  </p>
+                  <div className="flex items-center justify-between mt-3">
+                    <p className="text-xs text-muted-foreground">
+                      Updated {new Date(project.updated_at).toLocaleDateString()}
+                    </p>
+                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => handleArchive(e, project.id)}>
+                      <Archive className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </motion.div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Archived projects */}
+        {archivedProjects.length > 0 && (
+          <div className="mt-12">
+            <button
+              onClick={() => setShowArchived(!showArchived)}
+              className="flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors mb-4"
+            >
+              <Archive className="h-4 w-4" />
+              Archived ({archivedProjects.length})
+              <span className="text-xs">{showArchived ? '▼' : '▶'}</span>
+            </button>
+            {showArchived && (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {archivedProjects.map((project, i) => (
+                  <motion.div
+                    key={project.id}
+                    initial="hidden" animate="visible" variants={fadeUp} custom={i}
+                    className="group rounded-2xl border border-border/50 bg-card/20 p-6 transition-all duration-300 backdrop-blur-sm opacity-60 hover:opacity-100"
+                  >
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-12 h-16 rounded-lg border border-border overflow-hidden flex-shrink-0 grayscale">
+                        <ProjectThumbnail projectId={project.id} />
+                      </div>
+                      <h3 className="font-bold text-lg text-foreground tracking-tight truncate flex-1">{project.app_name || project.name}</h3>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs">{project.platform}</Badge>
+                      <Badge className="text-xs bg-muted text-muted-foreground/60">archived</Badge>
+                    </div>
+                    <div className="flex items-center justify-between mt-3">
+                      <p className="text-xs text-muted-foreground">
+                        Updated {new Date(project.updated_at).toLocaleDateString()}
+                      </p>
+                      <Button variant="outline" size="sm" className="h-7 px-3 text-xs rounded-xl" onClick={(e) => handleUnarchive(e, project.id)}>
+                        <ArchiveRestore className="h-3 w-3 mr-1" /> Restore
+                      </Button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
