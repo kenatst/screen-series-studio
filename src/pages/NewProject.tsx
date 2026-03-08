@@ -45,7 +45,7 @@ import agency23 from "@/assets/gallery/agency-23-vault.jpeg";
 import agency24 from "@/assets/gallery/agency-24-linguaflow.png";
 import agency25 from "@/assets/gallery/agency-25-nestle.png";
 import agency26 from "@/assets/gallery/agency-26-lifeplan.png";
-import agency27 from "@/assets/gallery/agency-27-foxlearn.png";
+
 
 const templatePreviews: Record<string, string> = {
   'Habit Tracker': agency01,
@@ -74,7 +74,7 @@ const templatePreviews: Record<string, string> = {
   'LinguaFlow': agency24,
   'Nestle Wellness': agency25,
   'LifePlan Goals': agency26,
-  'FoxLearn Kids': agency27,
+  
 };
 
 const steps = [

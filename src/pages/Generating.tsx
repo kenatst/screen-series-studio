@@ -145,116 +145,142 @@ const Generating = () => {
       }, 2500);
     };
 
-    const startGenerationStream = async (accessToken: string) => {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      requestAbortRef.current = new AbortController();
+    const startGenerationStream = async (accessToken: string, resume = false): Promise<"done" | "hasMore" | "busy" | "error"> => {
+      try {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        requestAbortRef.current = new AbortController();
 
-      const response = await fetch(`${supabaseUrl}/functions/v1/generate-screenshots`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ project_id: projectId }),
-        signal: requestAbortRef.current.signal,
-      });
+        const response = await fetch(`${supabaseUrl}/functions/v1/generate-screenshots`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ project_id: projectId, resume }),
+          signal: requestAbortRef.current.signal,
+        });
 
-      if (response.status === 409) {
-        startPolling();
-        return;
-      }
+        if (response.status === 409) return "busy";
+        if (!response.ok || !response.body) return "error";
 
-      if (!response.ok || !response.body) {
-        startPolling();
-        return;
-      }
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let hasMore = false;
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
+          let newlineIndex: number;
+          while ((newlineIndex = buffer.indexOf("\n\n")) !== -1) {
+            const chunk = buffer.slice(0, newlineIndex);
+            buffer = buffer.slice(newlineIndex + 2);
 
-        let newlineIndex: number;
-        while ((newlineIndex = buffer.indexOf("\n\n")) !== -1) {
-          const chunk = buffer.slice(0, newlineIndex);
-          buffer = buffer.slice(newlineIndex + 2);
+            const lines = chunk.split("\n");
+            let eventType = "";
+            let eventData = "";
 
-          const lines = chunk.split("\n");
-          let eventType = "";
-          let eventData = "";
-
-          for (const line of lines) {
-            if (line.startsWith("event: ")) eventType = line.slice(7);
-            else if (line.startsWith("data: ")) eventData = line.slice(6);
-          }
-
-          if (!eventType || !eventData) continue;
-
-          try {
-            const data = JSON.parse(eventData);
-
-            if (eventType === "slide-start") {
-              const index = Math.max(0, (data.slideNumber || 1) - 1);
-              setCurrentStage(4);
-
-              setSlideStatuses((prev) => {
-                const length = Math.max(prev.length, index + 1, data.total || 0);
-                const next = Array.from({ length }, (_, i) => prev[i] ?? "pending") as SlideUiStatus[];
-                next[index] = "generating";
-                return next;
-              });
-
-              setSlideImages((prev) => {
-                const length = Math.max(prev.length, index + 1, data.total || 0);
-                return Array.from({ length }, (_, i) => prev[i] ?? null);
-              });
+            for (const line of lines) {
+              if (line.startsWith("event: ")) eventType = line.slice(7);
+              else if (line.startsWith("data: ")) eventData = line.slice(6);
             }
 
-            if (eventType === "slide-done") {
-              const index = Math.max(0, (data.slideNumber || 1) - 1);
+            if (!eventType || !eventData) continue;
 
-              setSlideStatuses((prev) => {
-                const length = Math.max(prev.length, index + 1);
-                const next = Array.from({ length }, (_, i) => prev[i] ?? "pending") as SlideUiStatus[];
-                next[index] = "completed";
-                return next;
-              });
+            try {
+              const data = JSON.parse(eventData);
 
-              setSlideImages((prev) => {
-                const length = Math.max(prev.length, index + 1);
-                const next = Array.from({ length }, (_, i) => prev[i] ?? null);
-                next[index] = data.imageUrl || next[index];
-                return next;
-              });
+              if (eventType === "slide-start") {
+                const index = Math.max(0, (data.slideNumber || 1) - 1);
+                setCurrentStage(4);
+                setSlideStatuses((prev) => {
+                  const length = Math.max(prev.length, index + 1, data.total || 0);
+                  const next = Array.from({ length }, (_, i) => prev[i] ?? "pending") as SlideUiStatus[];
+                  next[index] = "generating";
+                  return next;
+                });
+                setSlideImages((prev) => {
+                  const length = Math.max(prev.length, index + 1, data.total || 0);
+                  return Array.from({ length }, (_, i) => prev[i] ?? null);
+                });
+              }
+
+              if (eventType === "slide-done") {
+                const index = Math.max(0, (data.slideNumber || 1) - 1);
+                setSlideStatuses((prev) => {
+                  const length = Math.max(prev.length, index + 1);
+                  const next = Array.from({ length }, (_, i) => prev[i] ?? "pending") as SlideUiStatus[];
+                  next[index] = "completed";
+                  return next;
+                });
+                setSlideImages((prev) => {
+                  const length = Math.max(prev.length, index + 1);
+                  const next = Array.from({ length }, (_, i) => prev[i] ?? null);
+                  next[index] = data.imageUrl || next[index];
+                  return next;
+                });
+              }
+
+              if (eventType === "slide-error") {
+                const index = Math.max(0, (data.slideNumber || 1) - 1);
+                setSlideStatuses((prev) => {
+                  const length = Math.max(prev.length, index + 1);
+                  const next = Array.from({ length }, (_, i) => prev[i] ?? "pending") as SlideUiStatus[];
+                  next[index] = "error";
+                  return next;
+                });
+              }
+
+              if (eventType === "all-done") {
+                hasMore = Boolean(data.hasMore);
+                if (!hasMore) {
+                  setCurrentStage(6);
+                  setProgress(100);
+                }
+              }
+            } catch {
+              // Ignore malformed SSE events
             }
-
-            if (eventType === "slide-error") {
-              const index = Math.max(0, (data.slideNumber || 1) - 1);
-              setSlideStatuses((prev) => {
-                const length = Math.max(prev.length, index + 1);
-                const next = Array.from({ length }, (_, i) => prev[i] ?? "pending") as SlideUiStatus[];
-                next[index] = "error";
-                return next;
-              });
-            }
-
-            if (eventType === "all-done") {
-              setCurrentStage(6);
-              setProgress(100);
-              routeToResults();
-              stopPolling();
-              return;
-            }
-          } catch {
-            // Ignore malformed SSE events
           }
         }
-      }
 
+        return hasMore ? "hasMore" : "done";
+      } catch {
+        return "error";
+      }
+    };
+
+    const processQueue = async (accessToken: string, initialResume: boolean) => {
+      let resume = initialResume;
+      for (let round = 0; round < 12; round++) {
+        const result = await startGenerationStream(accessToken, resume);
+
+        if (result === "hasMore") {
+          resume = false;
+          continue;
+        }
+
+        if (result === "done") {
+          routeToResults();
+          stopPolling();
+          return;
+        }
+
+        if (result === "busy") {
+          startPolling();
+          return;
+        }
+
+        if (!resume) {
+          resume = true;
+          continue;
+        }
+
+        startPolling();
+        return;
+      }
       startPolling();
     };
 
@@ -289,12 +315,7 @@ const Generating = () => {
         return;
       }
 
-      if (project?.status === "generating" && hasStarted) {
-        startPolling();
-        return;
-      }
-
-      await startGenerationStream(session.access_token);
+      await processQueue(session.access_token, project?.status === "generating" && hasStarted);
     };
 
     const timer = window.setTimeout(bootstrap, 500);
