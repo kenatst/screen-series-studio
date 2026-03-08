@@ -1,7 +1,8 @@
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, X } from 'lucide-react';
+import { CheckCircle2, X, Info } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Link, useNavigate } from 'react-router-dom';
 import { PLANS } from '@/lib/plans';
 import { useAuth } from '@/hooks/useAuth';
