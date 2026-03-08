@@ -24,6 +24,8 @@ const fadeUp = {
 const Results = () => {
   const navigate = useNavigate();
   const { projectId } = useParams();
+  const { profile } = useAuth();
+  const { toast } = useToast();
 
   const { data: project } = useProject(projectId);
   const { data: slides, refetch: refetchSlides } = useProjectSlides(projectId);
@@ -32,6 +34,8 @@ const Results = () => {
   const [editingSlide, setEditingSlide] = useState<string | null>(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isTranslationModalOpen, setIsTranslationModalOpen] = useState(false);
+
+  const userPlan = profile?.plan || 'free';
 
   const selectedSlide = slides?.find(s => s.id === selectedSlideId) || slides?.[0];
 
