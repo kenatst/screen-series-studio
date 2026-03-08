@@ -119,7 +119,18 @@ const Results = () => {
             </div>
           </div>
           <div className="flex gap-3">
-            <Button variant="outline" className="rounded-xl" onClick={() => setIsTranslationModalOpen(true)}>
+            <Button
+              variant="outline"
+              className="rounded-xl"
+              onClick={() => {
+                if (!canTranslate(userPlan)) {
+                  toast({ title: "Plan requis", description: "Les traductions sont disponibles à partir du plan Pro.", variant: "destructive" });
+                  return;
+                }
+                setIsTranslationModalOpen(true);
+              }}
+            >
+              {!canTranslate(userPlan) && <Lock className="mr-2 h-3 w-3" />}
               <Globe className="mr-2 h-4 w-4" /> Translate
             </Button>
             <Button variant="outline" className="rounded-xl" onClick={handleDownload}>
