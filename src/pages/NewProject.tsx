@@ -220,7 +220,7 @@ const NewProject = () => {
       rawScreenTag: s.raw_screen_tag || 'home',
       emphasis: s.emphasis || 'UI focused',
       importance: (s.importance as any) || 'medium',
-      status: s.status || 'pending',
+      status: (s.status as SlideItem['status']) || 'pending',
       locked: [],
     }));
     setSlides(hydratedSlides);
