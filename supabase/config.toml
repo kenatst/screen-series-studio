@@ -1,1 +1,10 @@
 project_id = "hqypdazxdrmkpqtakapb"
+
+[functions.generate-screenshots]
+verify_jwt = false
+
+[functions.translate-copy]
+verify_jwt = false
+
+[functions.export-zip]
+verify_jwt = false

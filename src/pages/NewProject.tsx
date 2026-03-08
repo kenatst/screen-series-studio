@@ -12,7 +12,8 @@ import {
 } from "lucide-react";
 import { toneOptions, screenTags, slideObjectives, defaultStorylines, emphasisOptions } from "@/lib/demo-data";
 import type { SlideItem } from "@/lib/demo-data";
-import { api } from "@/lib/api";
+import { useCreateProject, useSaveSlides } from "@/hooks/useProjects";
+import { useAuth } from "@/hooks/useAuth";
 
 const steps = [
   { id: 1, label: 'Project' },
@@ -26,6 +27,9 @@ const steps = [
 
 const NewProject = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const createProject = useCreateProject();
+  const saveSlides = useSaveSlides();
   const [currentStep, setCurrentStep] = useState(1);
   const [slideCount, setSlideCount] = useState(5);
   const [slides, setSlides] = useState<SlideItem[]>(defaultStorylines['5-slide']);
@@ -35,8 +39,10 @@ const NewProject = () => {
   const [uploadedScreens, setUploadedScreens] = useState<string[]>([]);
   const [platform, setPlatform] = useState('both');
   const [primaryGoal, setPrimaryGoal] = useState('');
+  const [projectName, setProjectName] = useState('');
+  const [appName, setAppName] = useState('');
+  const [appDescription, setAppDescription] = useState('');
   const [deviceFormats, setDeviceFormats] = useState<string[]>(['iphone-6-5', 'iphone-6-9']);
-  const [projectId] = useState(`proj-${Date.now()}`);
   const [isSaving, setIsSaving] = useState(false);
   const [generationMode, setGenerationMode] = useState<'full' | 'creative-direction' | 'first-3'>('full');
 
@@ -567,20 +573,33 @@ const NewProject = () => {
                     onClick={async () => {
                       setIsSaving(true);
                       try {
-                        const projectData = {
-                          id: projectId,
-                          name: `Project ${projectId.split('-')[1]}`, // fallback name
+                        const project = await createProject.mutateAsync({
+                          name: projectName || `Project ${Date.now()}`,
+                          app_name: appName,
+                          app_description: appDescription,
                           platform,
-                          slides,
-                          brandKit: { colors: [] }, // simplified for demo
-                          templateId: selectedTemplate !== 'reference' ? selectedTemplate.toLowerCase().replace(/\s+/g, '-') : 'clean-saas',
-                          consistencyLevel,
-                          deviceFormats,
-                          generationMode,
-                          status: 'generating'
-                        };
-                        await api.saveProject(projectData);
-                        navigate(`/project/${projectId}/generating`);
+                          template_id: selectedTemplate !== 'reference' ? selectedTemplate.toLowerCase().replace(/\s+/g, '-') : 'clean-saas',
+                          consistency_level: consistencyLevel,
+                          device_formats: deviceFormats as any,
+                          generation_mode: generationMode,
+                          status: 'draft',
+                          brand_kit: { colors: [] } as any,
+                          config: { primaryGoal, tone: selectedTone } as any,
+                        });
+                        await saveSlides.mutateAsync({
+                          projectId: project.id,
+                          slides: slides.map((s, i) => ({
+                            slide_number: i + 1,
+                            objective: s.objective,
+                            headline: s.headline,
+                            subheadline: s.subheadline || '',
+                            raw_screen_tag: s.rawScreenTag,
+                            emphasis: s.emphasis,
+                            importance: s.importance,
+                            status: 'pending',
+                          })),
+                        });
+                        navigate(`/project/${project.id}/generating`);
                       } catch (e) {
                         console.error("Failed to save project", e);
                         setIsSaving(false);
