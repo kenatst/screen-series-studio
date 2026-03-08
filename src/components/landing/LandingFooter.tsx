@@ -28,7 +28,8 @@ export const LandingFooter = () => {
                 <div className="w-full h-px bg-black/5 my-16" />
 
                 <div className="w-full flex flex-col md:flex-row justify-between items-center gap-6">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
+                        <img src={screenforgeLogo} alt="ScreenForge" className="h-7 w-7 rounded-lg object-cover" />
                         <span className="text-lg font-bold tracking-tight text-foreground">ScreenForge</span>
                         <span className="text-foreground/40 text-sm">© {new Date().getFullYear()} All rights reserved.</span>
                     </div>
