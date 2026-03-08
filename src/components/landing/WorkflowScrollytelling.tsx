@@ -64,7 +64,7 @@ export const WorkflowScrollytelling = () => {
     return (
         <section id="workflow" ref={containerRef} className="relative bg-background" style={{ height: '300vh' }}>
             {/* Sticky container that stays in view while scrolling */}
-            <div className="sticky top-0 h-screen w-full flex items-center overflow-hidden">
+            <div className="sticky top-0 h-screen w-full flex items-center overflow-visible">
                 {/* Decorative background glow that shifts based on step */}
                 <motion.div
                     className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-[150px] pointer-events-none mix-blend-screen opacity-20"
