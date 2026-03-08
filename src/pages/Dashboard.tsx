@@ -51,8 +51,11 @@ const Dashboard = () => {
             <p className="text-muted-foreground mt-1 font-medium text-lg">Create, edit, and export your screenshot sets</p>
           </div>
           <div className="flex items-center gap-3">
+            <Badge variant="outline" className="text-xs font-bold uppercase tracking-wider">
+              <Crown className="h-3 w-3 mr-1" /> {plan.name}
+            </Badge>
             <Button variant="outline" size="sm" onClick={signOut} className="rounded-xl">Sign out</Button>
-            <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm rounded-xl px-6" onClick={() => navigate('/project/new')}>
+            <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm rounded-xl px-6" onClick={handleNewProject}>
               <Plus className="mr-2 h-5 w-5" /> New project
             </Button>
           </div>
