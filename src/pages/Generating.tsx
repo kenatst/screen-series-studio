@@ -2,7 +2,20 @@ import { useEffect, useRef, useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate, useParams } from "react-router-dom";
-import { Sparkles, CheckCircle2, Loader2, AlertCircle, Clock } from "lucide-react";
+import { Sparkles, CheckCircle2, Loader2, AlertCircle, Clock, StopCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useArchiveProject } from "@/hooks/useProjects";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { motion } from "framer-motion";
 import { useProject, useProjectSlides } from "@/hooks/useProjects";
 import { supabase } from "@/integrations/supabase/client";
