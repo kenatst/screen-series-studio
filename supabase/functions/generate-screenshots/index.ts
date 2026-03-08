@@ -273,24 +273,27 @@ serve(async (req) => {
       candidateSlides = [allSlides[0], allSlides[0], allSlides[0]];
     }
 
-    const slidesToGenerate = (singleSlideId || forceRegenerate)
+    let slidesToGenerate = (singleSlideId || forceRegenerate)
       ? candidateSlides
-      : candidateSlides.filter((slide: any) => !(slide.status === "completed" && slide.image_url));
+      : candidateSlides.filter((slide: any) => !slide.image_url && (slide.status === "pending" || slide.status === "generating"));
 
     if (!singleSlideId && resumeGeneration) {
-      const generatingIds = slidesToGenerate.filter((s: any) => s.status === "generating").map((s: any) => s.id);
+      const generatingIds = candidateSlides.filter((s: any) => s.status === "generating").map((s: any) => s.id);
       if (generatingIds.length > 0) {
         await adminClient.from("project_slides").update({ status: "pending" }).in("id", generatingIds);
-        for (const slide of slidesToGenerate) {
-          if (slide.status === "generating") slide.status = "pending";
-        }
       }
+
+      slidesToGenerate = candidateSlides.filter((slide: any) => !(slide.status === "completed" && slide.image_url));
     }
 
-    // Check credits
+    const invocationSlides = (!singleSlideId && !forceRegenerate)
+      ? slidesToGenerate.slice(0, AUTO_BATCH_SIZE)
+      : slidesToGenerate;
+
+    // Check credits only for this invocation batch
     const { data: profileData } = await adminClient.from("profiles").select("credits, plan").eq("id", userId).single();
     const currentCredits = profileData?.credits ?? 0;
-    const totalCost = slidesToGenerate.length * CREDIT_COST_PER_SLIDE;
+    const totalCost = invocationSlides.length * CREDIT_COST_PER_SLIDE;
 
     if (currentCredits < totalCost) {
       return new Response(JSON.stringify({ error: `Crédits insuffisants. Il faut ${totalCost} crédit(s), vous en avez ${currentCredits}.` }), {
