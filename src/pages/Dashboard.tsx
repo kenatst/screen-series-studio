@@ -261,7 +261,7 @@ const Dashboard = () => {
                   onClick={() => {
                     if (project.status === 'completed') navigate(`/project/${project.id}/results`);
                     else if (project.status === 'generating') navigate(`/project/${project.id}/generating`);
-                    else if (project.status === 'draft') navigate(`/project/${project.id}/results`);
+                    else if (project.status === 'draft') navigate(`/project/new?project=${project.id}`);
                     else navigate(`/project/${project.id}/planner`);
                   }}
                 >
