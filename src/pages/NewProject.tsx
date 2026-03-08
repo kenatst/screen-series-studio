@@ -548,6 +548,29 @@ const NewProject = () => {
                   </div>
                 </div>
 
+                {/* Output Language */}
+                <div className="space-y-3">
+                  <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Output language</label>
+                  <p className="text-xs text-foreground/40 font-medium -mt-1">The language used for headlines and subheadlines on your screenshots.</p>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { code: 'en', label: '🇺🇸 English' },
+                      { code: 'fr', label: '🇫🇷 Français' },
+                      { code: 'de', label: '🇩🇪 Deutsch' },
+                      { code: 'es', label: '🇪🇸 Español' },
+                      { code: 'it', label: '🇮🇹 Italiano' },
+                      { code: 'pt', label: '🇧🇷 Português' },
+                      { code: 'ja', label: '🇯🇵 日本語' },
+                      { code: 'ko', label: '🇰🇷 한국어' },
+                      { code: 'zh', label: '🇨🇳 中文' },
+                      { code: 'ar', label: '🇸🇦 العربية' },
+                    ].map(lang => (
+                      <button key={lang.code} onClick={() => setOutputLanguage(lang.code)} className={`px-4 py-2.5 rounded-lg text-sm font-bold border transition-all duration-300 ${outputLanguage === lang.code ? 'bg-primary/20 text-primary border-primary shadow-glow' : 'bg-black/5 text-muted-foreground border-border hover:border-primary/40 hover:text-foreground'}`}>
+                        {lang.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <AnimatePresence>
                   {(platform === 'ios' || platform === 'both') && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-3 overflow-hidden">
