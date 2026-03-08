@@ -29,18 +29,52 @@ import agency07 from "@/assets/gallery/agency-07-aura.png";
 import agency08 from "@/assets/gallery/agency-08-scribe.png";
 import agency09 from "@/assets/gallery/agency-09-trainer.png";
 import agency10 from "@/assets/gallery/agency-10-stackr.png";
+import agency11 from "@/assets/gallery/agency-11-trainer-ai.png";
+import agency12 from "@/assets/gallery/agency-12-stackr-yellow.png";
+import agency13 from "@/assets/gallery/agency-13-vow.png";
+import agency14 from "@/assets/gallery/agency-14-rpg.png";
+import agency15 from "@/assets/gallery/agency-15-cram.png";
+import agency16 from "@/assets/gallery/agency-16-adblock.png";
+import agency17 from "@/assets/gallery/agency-17-drift.png";
+import agency18 from "@/assets/gallery/agency-18-coaching.png";
+import agency19 from "@/assets/gallery/agency-19-tape.png";
+import agency20 from "@/assets/gallery/agency-20-solo.png";
+import agency21 from "@/assets/gallery/agency-21-minddrop.png";
+import agency22 from "@/assets/gallery/agency-22-mealplan.png";
+import agency23 from "@/assets/gallery/agency-23-vault.jpeg";
+import agency24 from "@/assets/gallery/agency-24-linguaflow.png";
+import agency25 from "@/assets/gallery/agency-25-nestle.png";
+import agency26 from "@/assets/gallery/agency-26-lifeplan.png";
+import agency27 from "@/assets/gallery/agency-27-foxlearn.png";
 
 const templatePreviews: Record<string, string> = {
-  'Clean SaaS': agency08,
-  'Bold Gaming': agency09,
-  'Premium Gradient': agency04,
-  'Educational Playful': agency05,
-  'Lifestyle': agency06,
-  'Luxury Minimal': agency07,
-  'Feature-Led': agency01,
-  'Comparison-Driven': agency03,
-  'Mascot-Led': agency02,
-  'Cinematic': agency10,
+  'Habit Tracker': agency01,
+  'AI Coach': agency02,
+  'Map Explorer': agency03,
+  'Subscription Manager': agency04,
+  'Hydration': agency05,
+  'Sugar Free': agency06,
+  'Aura Mood': agency07,
+  'Scribe Notes': agency08,
+  'Personal Trainer': agency09,
+  'Stackr Finance': agency10,
+  'Trainer AI': agency11,
+  'Stackr Yellow': agency12,
+  'Vow Couples': agency13,
+  'RPG Gaming': agency14,
+  'Cram Study': agency15,
+  'AdBlock Shield': agency16,
+  'Drift Meditation': agency17,
+  'Life Coaching': agency18,
+  'Tape Recorder': agency19,
+  'Solo Travel': agency20,
+  'MindDrop Journal': agency21,
+  'Meal Planner': agency22,
+  'Vault Security': agency23,
+  'LinguaFlow': agency24,
+  'Nestle Wellness': agency25,
+  'LifePlan Goals': agency26,
+  'FoxLearn Kids': agency27,
 };
 
 const steps = [
@@ -556,12 +590,12 @@ const NewProject = () => {
                 </div>
 
                 {selectedTemplate !== 'reference' ? (
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 max-h-[600px] overflow-y-auto pr-1">
                     {demoTemplates.map(t => (
                       <button key={t.id} onClick={() => setSelectedTemplate(t.name)} className={`rounded-2xl border-2 overflow-hidden transition-all duration-300 ${selectedTemplate === t.name ? 'border-primary shadow-glow scale-[1.02]' : 'border-border hover:border-primary/40 hover:scale-[1.02] shadow-sm'}`}>
-                        <div className="aspect-[9/16] relative overflow-hidden bg-card/90">
+                        <div className="aspect-[3/4] relative overflow-hidden bg-card/90">
                           {templatePreviews[t.name] ? (
-                            <img src={templatePreviews[t.name]} alt={t.name} className="w-full h-full object-cover" />
+                            <img src={templatePreviews[t.name]} alt={t.name} className="w-full h-full object-contain" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
                               <LayoutGrid className={`h-8 w-8 ${selectedTemplate === t.name ? 'text-primary' : 'text-foreground/30'}`} />

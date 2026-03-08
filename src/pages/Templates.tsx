@@ -3,7 +3,66 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { demoTemplates } from "@/lib/demo-data";
-import { Search, LayoutGrid } from "lucide-react";
+import { Search } from "lucide-react";
+
+// Agency gallery images
+import agency01 from "@/assets/gallery/agency-01-habit.png";
+import agency02 from "@/assets/gallery/agency-02-coach.png";
+import agency03 from "@/assets/gallery/agency-03-map.png";
+import agency04 from "@/assets/gallery/agency-04-subs.png";
+import agency05 from "@/assets/gallery/agency-05-water.png";
+import agency06 from "@/assets/gallery/agency-06-sugar.png";
+import agency07 from "@/assets/gallery/agency-07-aura.png";
+import agency08 from "@/assets/gallery/agency-08-scribe.png";
+import agency09 from "@/assets/gallery/agency-09-trainer.png";
+import agency10 from "@/assets/gallery/agency-10-stackr.png";
+import agency11 from "@/assets/gallery/agency-11-trainer-ai.png";
+import agency12 from "@/assets/gallery/agency-12-stackr-yellow.png";
+import agency13 from "@/assets/gallery/agency-13-vow.png";
+import agency14 from "@/assets/gallery/agency-14-rpg.png";
+import agency15 from "@/assets/gallery/agency-15-cram.png";
+import agency16 from "@/assets/gallery/agency-16-adblock.png";
+import agency17 from "@/assets/gallery/agency-17-drift.png";
+import agency18 from "@/assets/gallery/agency-18-coaching.png";
+import agency19 from "@/assets/gallery/agency-19-tape.png";
+import agency20 from "@/assets/gallery/agency-20-solo.png";
+import agency21 from "@/assets/gallery/agency-21-minddrop.png";
+import agency22 from "@/assets/gallery/agency-22-mealplan.png";
+import agency23 from "@/assets/gallery/agency-23-vault.jpeg";
+import agency24 from "@/assets/gallery/agency-24-linguaflow.png";
+import agency25 from "@/assets/gallery/agency-25-nestle.png";
+import agency26 from "@/assets/gallery/agency-26-lifeplan.png";
+import agency27 from "@/assets/gallery/agency-27-foxlearn.png";
+
+const templatePreviews: Record<string, string> = {
+  'Habit Tracker': agency01,
+  'AI Coach': agency02,
+  'Map Explorer': agency03,
+  'Subscription Manager': agency04,
+  'Hydration': agency05,
+  'Sugar Free': agency06,
+  'Aura Mood': agency07,
+  'Scribe Notes': agency08,
+  'Personal Trainer': agency09,
+  'Stackr Finance': agency10,
+  'Trainer AI': agency11,
+  'Stackr Yellow': agency12,
+  'Vow Couples': agency13,
+  'RPG Gaming': agency14,
+  'Cram Study': agency15,
+  'AdBlock Shield': agency16,
+  'Drift Meditation': agency17,
+  'Life Coaching': agency18,
+  'Tape Recorder': agency19,
+  'Solo Travel': agency20,
+  'MindDrop Journal': agency21,
+  'Meal Planner': agency22,
+  'Vault Security': agency23,
+  'LinguaFlow': agency24,
+  'Nestle Wellness': agency25,
+  'LifePlan Goals': agency26,
+  'FoxLearn Kids': agency27,
+};
 
 const categories = ['All', 'Business', 'Entertainment', 'Education', 'Lifestyle', 'Luxury', 'Media'];
 const tones = ['All', 'corporate', 'bold', 'premium', 'playful', 'minimalist'];
@@ -68,18 +127,23 @@ const Templates = () => {
         </div>
 
         {/* Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {filtered.map(template => (
             <div
               key={template.id}
               className="group rounded-2xl border border-border bg-zinc-900/40 overflow-hidden hover:border-primary/40 hover:shadow-glow transition-all duration-300 cursor-pointer backdrop-blur-sm"
             >
-              <div className="aspect-[3/4] flex flex-col items-center justify-center p-4 bg-gradient-to-br from-white/5 to-transparent border-b border-border relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
-                <LayoutGrid className="h-10 w-10 text-primary/30 mb-3 group-hover:scale-110 group-hover:text-primary transition-all duration-500 relative z-10" />
-                <span className="text-sm font-bold text-foreground text-center drop-shadow-md relative z-10">{template.name}</span>
+              <div className="aspect-[3/4] relative overflow-hidden bg-gradient-to-br from-white/5 to-transparent border-b border-border">
+                {templatePreviews[template.name] ? (
+                  <img src={templatePreviews[template.name]} alt={template.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <span className="text-sm font-bold text-foreground/30">{template.name}</span>
+                  </div>
+                )}
               </div>
               <div className="p-4 space-y-3 bg-card/90">
+                <span className="text-sm font-bold text-foreground">{template.name}</span>
                 <div className="flex flex-wrap gap-1.5">
                   {template.tags.map(tag => (
                     <Badge key={tag} className="bg-black/5 text-muted-foreground text-[10px] border-border uppercase tracking-wider">{tag}</Badge>
