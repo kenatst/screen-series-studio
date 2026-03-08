@@ -49,7 +49,9 @@ const Results = () => {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       const data = await res.json();
-      // Open each download URL
+      if (data.watermarked) {
+        toast({ title: "Export avec filigrane", description: "Passez à un plan payant pour exporter sans filigrane.", variant: "destructive" });
+      }
       for (const dl of data.downloads || []) {
         window.open(dl.url, '_blank');
       }
