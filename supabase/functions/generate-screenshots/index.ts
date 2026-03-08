@@ -408,7 +408,8 @@ serve(async (req) => {
           const displayNum = genMode === "creative-direction" ? i + 1 : slide.slide_number;
 
           sendEvent("slide-start", { slideNumber: displayNum, total: invocationSlides.length });
-          await adminClient.from("project_slides").update({ status: "generating" }).eq("id", slide.id);
+          const slideStartMs = Date.now();
+          await adminClient.from("project_slides").update({ status: "generating", attempt_count: (slide.attempt_count || 0) + 1 }).eq("id", slide.id);
 
           try {
             const prompt = buildSlidePrompt(
