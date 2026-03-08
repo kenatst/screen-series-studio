@@ -22,8 +22,18 @@ const statusColors: Record<string, string> = {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, signOut, profile } = useAuth();
+  const { toast } = useToast();
   const { data: projects, isLoading } = useProjects();
+  const plan = getPlanById(profile?.plan || 'free');
+
+  const handleNewProject = () => {
+    if (!canCreateProject(profile?.plan || 'free', projects?.length || 0)) {
+      toast({ title: "Limite atteinte", description: `Votre plan ${plan.name} permet ${plan.limits.maxProjects} projet(s). Passez à un plan supérieur.`, variant: "destructive" });
+      return;
+    }
+    navigate('/project/new');
+  };
 
   const currentProject = projects?.[0];
   const recentProjects = projects?.slice(1) || [];
