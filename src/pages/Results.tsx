@@ -189,7 +189,7 @@ const Results = () => {
 
       <TranslationsModal
         isOpen={isTranslationModalOpen}
-        onClose={() => setIsTranslationModalOpen(false)}
+        onOpenChange={setIsTranslationModalOpen}
         projectId={projectId || ''}
       />
     </DashboardLayout>
