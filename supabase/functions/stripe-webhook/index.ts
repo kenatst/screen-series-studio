@@ -70,6 +70,40 @@ serve(async (req) => {
         break;
       }
 
+      case "invoice.paid": {
+        const invoice = event.data.object as Stripe.Invoice;
+        const customerId = invoice.customer as string;
+
+        // Send receipt email via Stripe by ensuring receipt_email is set
+        if (invoice.customer_email) {
+          try {
+            await stripe.invoices.sendInvoice(invoice.id);
+            logStep("Invoice receipt sent", { invoiceId: invoice.id, email: invoice.customer_email });
+          } catch (sendErr: any) {
+            // Invoice may already be sent or in a state that doesn't allow sending
+            logStep("Could not send invoice (may already be sent)", { error: sendErr.message });
+          }
+        }
+
+        // Also sync plan status
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("stripe_customer_id", customerId)
+          .single();
+
+        if (prof) {
+          const sub = await stripe.subscriptions.list({ customer: customerId, status: "active", limit: 1 });
+          if (sub.data.length > 0) {
+            const priceId = sub.data[0].items.data[0]?.price?.id;
+            const activePlan = PRICE_TO_PLAN[priceId] || "starter";
+            await supabase.from("profiles").update({ plan: activePlan }).eq("id", prof.id);
+            logStep("Plan synced on invoice.paid", { userId: prof.id, plan: activePlan });
+          }
+        }
+        break;
+      }
+
       case "customer.subscription.updated":
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
