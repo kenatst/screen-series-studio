@@ -931,7 +931,7 @@ const NewProject = () => {
                         {slides.map((slide) => (
                           <div key={slide.id} className="rounded-2xl border border-border bg-card/90 p-5 shadow-elevated hover:border-primary/40 hover:shadow-glow transition-all duration-300 group">
                             <div className="flex items-start gap-4">
-                              <GripVertical className="h-5 w-5 text-foreground/20 mt-3 cursor-grab flex-shrink-0 opacity-40 group-hover:opacity-100 transition-opacity hover:text-foreground" />
+                              <div className="h-5 w-5 mt-3 flex-shrink-0" />
                               <div className="flex-1 space-y-4">
                                 <div className="flex items-center gap-3">
                                   <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 border border-primary/20 shadow-inner">
