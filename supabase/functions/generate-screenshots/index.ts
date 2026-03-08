@@ -296,7 +296,14 @@ serve(async (req) => {
     // Check credits only for this invocation batch
     const { data: profileData } = await adminClient.from("profiles").select("credits, plan").eq("id", userId).single();
     const currentCredits = profileData?.credits ?? 0;
-    const totalCost = invocationSlides.length * CREDIT_COST_PER_SLIDE;
+
+    const billableSlides = invocationSlides.filter((slide: any) => {
+      if (singleSlideId || forceRegenerate) return true;
+      if (resumeGeneration && slide.status === "generating") return false;
+      return true;
+    });
+
+    const totalCost = billableSlides.length * CREDIT_COST_PER_SLIDE;
 
     if (currentCredits < totalCost) {
       return new Response(JSON.stringify({ error: `Crédits insuffisants. Il faut ${totalCost} crédit(s), vous en avez ${currentCredits}.` }), {
