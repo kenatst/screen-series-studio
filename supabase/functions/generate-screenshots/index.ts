@@ -8,6 +8,8 @@ const corsHeaders = {
 };
 
 const CREDIT_COST_PER_SLIDE = 1;
+const AUTO_BATCH_SIZE = 1;
+const QUALITY_SCORE_MIN = 78;
 
 function buildConsistencyBlock(
   level: string,
