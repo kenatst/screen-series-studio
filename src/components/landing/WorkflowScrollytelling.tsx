@@ -151,7 +151,7 @@ export const WorkflowScrollytelling = () => {
                                         transition={{ duration: 0.5, type: "spring" }}
                                         className="w-full h-full flex flex-col items-center justify-center gap-6"
                                     >
-                                        <img src={screenforgeLogo} alt="ScreenForge" className="w-24 h-24 rounded-2xl shadow-glow object-cover border border-border" />
+                                        <img src={appLogo} alt="ShotApp AI" className="w-24 h-24 rounded-2xl shadow-glow object-cover border border-border" />
                                         <div className="flex gap-4">
                                             <div className="w-12 h-12 rounded-full bg-[hsl(var(--primary))] border border-border shadow-md" />
                                             <div className="w-12 h-12 rounded-full bg-[hsl(30,90%,45%)] border border-border shadow-md" />
