@@ -85,7 +85,11 @@ const Generating = () => {
       window.clearInterval(pollIntervalRef.current);
       pollIntervalRef.current = null;
     }
-  }, []);
+    // Also unsubscribe realtime channel
+    if (projectId) {
+      supabase.removeChannel(supabase.channel(`slides-${projectId}`));
+    }
+  }, [projectId]);
 
   const handleStopAndArchive = async () => {
     if (!projectId) return;
