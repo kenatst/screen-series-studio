@@ -1,0 +1,55 @@
+{
+    "nav": {
+        "workflow": "Flujo de trabajo",
+        "examples": "Ejemplos",
+        "pricing": "Precios",
+        "faq": "FAQ",
+        "login": "Iniciar sesión",
+        "start": "Prueba gratuita"
+    },
+    "hero": {
+        "badge": "Diseñado para App Store y Google Play",
+        "title": "Genera sets de capturas que parecen",
+        "titleHighlight": "de clase mundial",
+        "titleSuffix": "— en minutos.",
+        "subtitle": "Sube tus pantallas de app, elige un estilo, define cada diapositiva y orquesta hasta 10 visuales listos para la tienda en un lote coherente.",
+        "cta": "Comenzar prueba gratuita",
+        "ctaSecondary": "Ver el flujo",
+        "scroll": "Desplázate para explorar"
+    },
+    "consistency": {
+        "badge": "Lo que nos diferencia",
+        "title": "El Motor de Consistencia",
+        "subtitle": "ShotApp AI no genera imágenes aisladas. Orquesta un sistema visual cohesionado.",
+        "rulesLabel": "Reglas Globales",
+        "features": {
+            "colors": "Lógica de color compartida",
+            "typography": "Tipografía sincronizada",
+            "layout": "Ritmos de diseño globales",
+            "coherence": "Coherencia slide a slide",
+            "direction": "Dirección creativa única"
+        }
+    },
+    "pricing": {
+        "badge": "Precios",
+        "title": "Precios simples y transparentes.",
+        "subtitle": "Deja de pagar miles por la producción manual de capturas.",
+        "mostPopular": "Más Popular",
+        "yourPlan": "Tu Plan",
+        "currentPlan": "Plan Actual",
+        "creditsPerMonth": "créditos/mes"
+    },
+    "faq": {
+        "title": "Preguntas Frecuentes",
+        "subtitle": "Todo lo que necesitas saber sobre ShotApp AI."
+    },
+    "footer": {
+        "cta": "¿Listo para generar tus sets de capturas premium?",
+        "ctaSubtitle": "Únete a fundadores y equipos ASO que ahorran horas de diseño.",
+        "ctaButton": "Iniciar prueba gratuita hoy",
+        "noCard": "Sin tarjeta de crédito. 7 días de prueba gratuita.",
+        "privacy": "Política de Privacidad",
+        "terms": "Términos de Servicio",
+        "rights": "Todos los derechos reservados."
+    }
+}

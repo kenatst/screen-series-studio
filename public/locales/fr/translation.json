@@ -1,0 +1,55 @@
+{
+    "nav": {
+        "workflow": "Processus",
+        "examples": "Exemples",
+        "pricing": "Tarifs",
+        "faq": "FAQ",
+        "login": "Se connecter",
+        "start": "Essai gratuit"
+    },
+    "hero": {
+        "badge": "Conçu pour l'App Store & Google Play",
+        "title": "Générez des sets de captures qui ont l'air",
+        "titleHighlight": "extraordinaires",
+        "titleSuffix": "— en quelques minutes.",
+        "subtitle": "Importez vos écrans, choisissez un style, définissez chaque slide et orchestrez jusqu'à 10 visuels cohérents en un seul batch.",
+        "cta": "Commencer gratuitement",
+        "ctaSecondary": "Voir le workflow",
+        "scroll": "Défiler pour explorer"
+    },
+    "consistency": {
+        "badge": "Ce qui nous différencie",
+        "title": "Le Moteur de Cohérence",
+        "subtitle": "ShotApp AI ne génère pas des images isolées. Il orchestre un système visuel cohérent. Une seule direction créative se propage globalement à travers tout votre set de captures.",
+        "rulesLabel": "Règles Globales",
+        "features": {
+            "colors": "Logique de couleurs partagée",
+            "typography": "Typographie synchronisée",
+            "layout": "Rythmes de mise en page globaux",
+            "coherence": "Cohérence slide à slide",
+            "direction": "Direction créative unique"
+        }
+    },
+    "pricing": {
+        "badge": "Tarifs",
+        "title": "Des tarifs simples et transparents.",
+        "subtitle": "Arrêtez de payer des milliers d'euros pour la production manuelle de captures. Automatisez la perfection à une fraction du coût.",
+        "mostPopular": "Le Plus Populaire",
+        "yourPlan": "Votre Plan",
+        "currentPlan": "Plan Actuel",
+        "creditsPerMonth": "crédits/mois"
+    },
+    "faq": {
+        "title": "Questions Fréquentes",
+        "subtitle": "Tout ce que vous devez savoir sur ShotApp AI."
+    },
+    "footer": {
+        "cta": "Prêt à générer vos sets de captures premium ?",
+        "ctaSubtitle": "Rejoignez les fondateurs et équipes ASO qui économisent des heures de design tout en augmentant leurs conversions.",
+        "ctaButton": "Commencer l'essai gratuit",
+        "noCard": "Pas de carte bancaire requise. 7 jours d'essai gratuit.",
+        "privacy": "Politique de Confidentialité",
+        "terms": "Conditions d'Utilisation",
+        "rights": "Tous droits réservés."
+    }
+}

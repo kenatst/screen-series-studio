@@ -1,0 +1,55 @@
+{
+    "nav": {
+        "workflow": "Workflow",
+        "examples": "Examples",
+        "pricing": "Pricing",
+        "faq": "FAQ",
+        "login": "Log in",
+        "start": "Start free trial"
+    },
+    "hero": {
+        "badge": "Built for App Store & Google Play",
+        "title": "Generate screenshot sets that look",
+        "titleHighlight": "world-class",
+        "titleSuffix": "— in minutes.",
+        "subtitle": "Upload your app screens, choose a style, define each slide, and orchestrate up to 10 store-ready visuals in one coherent batch.",
+        "cta": "Start free trial",
+        "ctaSecondary": "Watch the workflow",
+        "scroll": "Scroll to explore"
+    },
+    "consistency": {
+        "badge": "The Differentiator",
+        "title": "The Consistency Engine",
+        "subtitle": "ShotApp AI doesn't generate isolated images. It orchestrates a cohesive visual system. One shared creative direction propagates globally across your entire screenshot set.",
+        "rulesLabel": "Global Rules",
+        "features": {
+            "colors": "Shared color logic",
+            "typography": "Synchronized typography",
+            "layout": "Global layout rhythms",
+            "coherence": "Slide-to-slide coherence",
+            "direction": "Single creative direction"
+        }
+    },
+    "pricing": {
+        "badge": "Pricing",
+        "title": "Simple, transparent pricing.",
+        "subtitle": "Stop paying thousands for manual screenshot production. Automate perfection at a fraction of the cost.",
+        "mostPopular": "Most Popular",
+        "yourPlan": "Your Plan",
+        "currentPlan": "Current Plan",
+        "creditsPerMonth": "credits/month"
+    },
+    "faq": {
+        "title": "Frequently Asked Questions",
+        "subtitle": "Everything you need to know about ShotApp AI."
+    },
+    "footer": {
+        "cta": "Ready to generate your premium screenshot sets?",
+        "ctaSubtitle": "Join leading founders and ASO teams saving hours of design time while increasing conversions.",
+        "ctaButton": "Start free trial today",
+        "noCard": "No credit card required. 7-day free trial.",
+        "privacy": "Privacy Policy",
+        "terms": "Terms of Service",
+        "rights": "All rights reserved."
+    }
+}

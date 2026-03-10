@@ -1,0 +1,55 @@
+{
+    "nav": {
+        "workflow": "工作流程",
+        "examples": "案例",
+        "pricing": "价格",
+        "faq": "常见问题",
+        "login": "登录",
+        "start": "免费开始"
+    },
+    "hero": {
+        "badge": "专为 App Store 和 Google Play 打造",
+        "title": "生成看起来",
+        "titleHighlight": "世界级",
+        "titleSuffix": "的截图集 — 只需几分钟。",
+        "subtitle": "上传您的应用截图，选择风格，定义每张幻灯片，并在一个连贯的批次中编排多达10个商店级视觉效果。",
+        "cta": "开始免费试用",
+        "ctaSecondary": "查看工作流程",
+        "scroll": "向下滚动探索"
+    },
+    "consistency": {
+        "badge": "我们的差异化优势",
+        "title": "一致性引擎",
+        "subtitle": "ShotApp AI 不只是生成孤立的图片，而是编排一个连贯的视觉系统。",
+        "rulesLabel": "全局规则",
+        "features": {
+            "colors": "共享色彩逻辑",
+            "typography": "同步排版",
+            "layout": "全局布局节奏",
+            "coherence": "幻灯片间的一致性",
+            "direction": "单一创意方向"
+        }
+    },
+    "pricing": {
+        "badge": "价格",
+        "title": "简单透明的定价。",
+        "subtitle": "不再为手动截图制作支付数千美元。",
+        "mostPopular": "最受欢迎",
+        "yourPlan": "您的计划",
+        "currentPlan": "当前计划",
+        "creditsPerMonth": "积分/月"
+    },
+    "faq": {
+        "title": "常见问题",
+        "subtitle": "关于 ShotApp AI 您需要知道的一切。"
+    },
+    "footer": {
+        "cta": "准备好生成您的高端截图集了吗？",
+        "ctaSubtitle": "加入节省设计时间同时提高转化率的顶级创始人和ASO团队。",
+        "ctaButton": "立即开始免费试用",
+        "noCard": "无需信用卡。7天免费试用。",
+        "privacy": "隐私政策",
+        "terms": "服务条款",
+        "rights": "版权所有。"
+    }
+}

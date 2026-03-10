@@ -1,0 +1,55 @@
+{
+    "nav": {
+        "workflow": "ワークフロー",
+        "examples": "実例",
+        "pricing": "料金",
+        "faq": "よくある質問",
+        "login": "ログイン",
+        "start": "無料トライアル開始"
+    },
+    "hero": {
+        "badge": "App Store & Google Play 向けに構築",
+        "title": "見た目が",
+        "titleHighlight": "世界クラス",
+        "titleSuffix": "のスクリーンショットセットを — 数分で生成。",
+        "subtitle": "アプリの画面をアップロードし、スタイルを選び、各スライドを定義して、最大10枚の一貫したストア向けビジュアルを一括で作成します。",
+        "cta": "無料トライアルを開始",
+        "ctaSecondary": "ワークフローを見る",
+        "scroll": "スクロールして探る"
+    },
+    "consistency": {
+        "badge": "私たちの差別化要因",
+        "title": "コンシステンシーエンジン",
+        "subtitle": "ShotApp AI は孤立した画像を生成するのではなく、一貫したビジュアルシステムをオーケストレーションします。",
+        "rulesLabel": "グローバルルール",
+        "features": {
+            "colors": "共有カラーロジック",
+            "typography": "同期したタイポグラフィ",
+            "layout": "グローバルレイアウトリズム",
+            "coherence": "スライド間の一貫性",
+            "direction": "単一のクリエイティブ方向"
+        }
+    },
+    "pricing": {
+        "badge": "料金",
+        "title": "シンプルで透明な料金体系。",
+        "subtitle": "手動スクリーンショット制作に何千ドルも支払うのをやめましょう。",
+        "mostPopular": "最も人気",
+        "yourPlan": "あなたのプラン",
+        "currentPlan": "現在のプラン",
+        "creditsPerMonth": "クレジット/月"
+    },
+    "faq": {
+        "title": "よくある質問",
+        "subtitle": "ShotApp AI について知っておくべきことすべて。"
+    },
+    "footer": {
+        "cta": "プレミアムスクリーンショットセットを生成する準備はできていますか？",
+        "ctaSubtitle": "何時間ものデザイン時間を節約し、コンバージョンを高めているトップ創業者とASOチームに参加しましょう。",
+        "ctaButton": "今すぐ無料トライアルを開始",
+        "noCard": "クレジットカード不要。7日間の無料トライアル。",
+        "privacy": "プライバシーポリシー",
+        "terms": "利用規約",
+        "rights": "全著作権所有。"
+    }
+}

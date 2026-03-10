@@ -3,36 +3,41 @@ import { motion, useInView } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, SlidersHorizontal } from 'lucide-react';
 
+import galleryImg1 from '@/assets/gallery/agency-21-minddrop.png';
+import galleryImg2 from '@/assets/gallery/agency-01-habit.png';
+import galleryImg3 from '@/assets/gallery/agency-13-vow.png';
+import galleryImg4 from '@/assets/gallery/agency-11-trainer-ai.png';
+import galleryImg5 from '@/assets/gallery/agency-24-linguaflow.png';
+
 export const ConsistencyEngine = () => {
     const ref = useRef(null);
     const isInView = useInView(ref, { once: true, margin: "-100px" });
 
     const cards = [
-        { angle: -14, x: -380, y: 100, delay: 0.2, src: "https://storage.googleapis.com/mfc-live-user-files/558c4953-ad47-49e0-ade1-0b5c159bf461/506a7824-2c93-41bb-ad68-07f7c108139b.png" },
-        { angle: -7, x: -190, y: 65, delay: 0.4, src: "https://storage.googleapis.com/mfc-live-user-files/558c4953-ad47-49e0-ade1-0b5c159bf461/4769395b-017e-412d-bade-a396e95c4cf8.png" },
-        { angle: 0, x: 0, y: 40, delay: 0.6, src: "https://storage.googleapis.com/mfc-live-user-files/558c4953-ad47-49e0-ade1-0b5c159bf461/52e50ad7-9092-411a-823a-f1262d4e7855.png" },
-        { angle: 7, x: 190, y: 65, delay: 0.8, src: "https://storage.googleapis.com/mfc-live-user-files/558c4953-ad47-49e0-ade1-0b5c159bf461/1a21643c-6878-43d6-befa-429cbda078b6.png" },
-        { angle: 14, x: 380, y: 100, delay: 1.0, src: "https://storage.googleapis.com/mfc-live-user-files/558c4953-ad47-49e0-ade1-0b5c159bf461/c6cce01d-55e2-45a7-93cf-8d9ad7bc9100.png" },
+        { angle: -14, x: -380, y: 100, delay: 0.2, src: galleryImg1 },
+        { angle: -7, x: -190, y: 65, delay: 0.4, src: galleryImg2 },
+        { angle: 0, x: 0, y: 40, delay: 0.6, src: galleryImg3 },
+        { angle: 7, x: 190, y: 65, delay: 0.8, src: galleryImg4 },
+        { angle: 14, x: 380, y: 100, delay: 1.0, src: galleryImg5 },
     ];
 
     return (
-        <section className="py-24 bg-surface-elevated relative overflow-hidden">
+        <section className="py-24 bg-surface-elevated relative overflow-x-hidden">
             <div className="container mx-auto px-6" ref={ref}>
                 <div className="text-center mb-16 max-w-3xl mx-auto">
                     <Badge className="mb-4 bg-primary/10 text-primary border-primary/20 shadow-sm font-semibold uppercase tracking-wider">
                         The Differentiator
                     </Badge>
                     <h2 className="text-4xl md:text-5xl font-black tracking-tight text-foreground mb-6">
-                        Le Moteur de Cohérence
+                        The Consistency Engine
                     </h2>
                     <p className="text-lg text-muted-foreground leading-relaxed font-medium">
-                        ScreenForge doesn't generate isolated images. It orchestrates a cohesive visual system.
+                        ShotApp AI doesn't generate isolated images. It orchestrates a cohesive visual system.
                         One shared creative direction propagates globally across your entire screenshot set.
                     </p>
                 </div>
 
-                <div className="relative h-[650px] md:h-[750px] w-full max-w-[1200px] mx-auto flex items-center justify-center mt-8 perspective-[1200px]">
-
+                <div className="relative w-full max-w-[1100px] mx-auto" style={{ minHeight: '700px' }}>
                     {/* Central Rule Node - Positioned AT THE TOP */}
                     <motion.div
                         className="absolute z-30 w-56 bg-zinc-900/95 backdrop-blur-xl border border-primary/30 rounded-2xl p-5 shadow-[0_0_40px_-10px_rgba(245,166,35,0.4)] left-1/2 top-1/2 -translate-x-1/2 flex flex-col items-center justify-center text-center -mt-[280px] md:-mt-[320px]"

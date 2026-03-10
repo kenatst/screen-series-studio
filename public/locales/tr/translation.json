@@ -1,0 +1,55 @@
+{
+    "nav": {
+        "workflow": "İş Akışı",
+        "examples": "Örnekler",
+        "pricing": "Fiyatlar",
+        "faq": "SSS",
+        "login": "Giriş Yap",
+        "start": "Ücretsiz deneyin"
+    },
+    "hero": {
+        "badge": "App Store ve Google Play için oluşturuldu",
+        "title": "Görünüşü",
+        "titleHighlight": "dünya standartlarında",
+        "titleSuffix": "olan ekran görüntüsü setleri oluşturun — dakikalar içinde.",
+        "subtitle": "Uygulama ekranlarınızı yükleyin, stil seçin, her slaydı tanımlayın ve tek bir tutarlı grup halinde 10 mağazaya hazır görseli düzenleyin.",
+        "cta": "Ücretsiz denemeyi başlat",
+        "ctaSecondary": "İş akışını izle",
+        "scroll": "Keşfetmek için kaydırın"
+    },
+    "consistency": {
+        "badge": "Bizi farklı kılan şey",
+        "title": "Tutarlılık Motoru",
+        "subtitle": "ShotApp AI izole edilmiş resimler oluşturmaz. Tutarlı bir görsel sistem orkestre eder.",
+        "rulesLabel": "Genel Kurallar",
+        "features": {
+            "colors": "Paylaşılan renk mantığı",
+            "typography": "Senkronize tipografi",
+            "layout": "Global düzen ritimleri",
+            "coherence": "Slayttan slayta tutarlılık",
+            "direction": "Tek yaratıcı yön"
+        }
+    },
+    "pricing": {
+        "badge": "Fiyatlar",
+        "title": "Basit, şeffaf fiyatlandırma.",
+        "subtitle": "Manuel ekran görüntüsü üretimi için binlerce ödemeyi durdurun.",
+        "mostPopular": "En Popüler",
+        "yourPlan": "Planınız",
+        "currentPlan": "Mevcut Plan",
+        "creditsPerMonth": "kredi/ay"
+    },
+    "faq": {
+        "title": "Sıkça Sorulan Sorular",
+        "subtitle": "ShotApp AI hakkında bilmeniz gereken her şey."
+    },
+    "footer": {
+        "cta": "Premium ekran görüntüsü setlerinizi oluşturmaya hazır mısınız?",
+        "ctaSubtitle": "Tasarım sürelerini kısaltırken dönüşümleri artıran önde gelen kurucular ve ASO ekiplerine katılın.",
+        "ctaButton": "Bugün ücretsiz denemeyi başlatın",
+        "noCard": "Kredi kartı gerekmez. 7 günlük ücretsiz deneme.",
+        "privacy": "Gizlilik Politikası",
+        "terms": "Hizmet Şartları",
+        "rights": "Tüm hakları saklıdır."
+    }
+}

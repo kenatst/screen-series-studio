@@ -7,8 +7,8 @@ import {
 
 const faqs = [
     {
-        q: "Do I need design skills to use ScreenForge?",
-        a: "Not at all. ScreenForge is built specifically to automate the design process. You provide the app screenshots and text, and our Engine handles layout, consistency, lighting, and typography."
+        q: "Do I need design skills to use ShotApp AI?",
+        a: "Not at all. ShotApp AI is built specifically to automate the design process. You provide the app screenshots and text, and our Engine handles layout, consistency, lighting, and typography."
     },
     {
         q: "Can I use my own fonts and brand colors?",
@@ -16,7 +16,7 @@ const faqs = [
     },
     {
         q: "How does the AI ensure consistency?",
-        a: "Unlike generic image generators, ScreenForge uses a deterministic layout and styling pipeline governed by the Consistency Engine. It applies a global style graph across all slides in a set simultaneously, rather than rendering them individually."
+        a: "Unlike generic image generators, ShotApp AI uses a deterministic layout and styling pipeline governed by the Consistency Engine. It applies a global style graph across all slides in a set simultaneously, rather than rendering them individually."
     },
     {
         q: "What format do I get the final screenshots in?",
@@ -36,7 +36,7 @@ export const FaqSection = () => {
                     <h2 className="text-3xl md:text-4xl font-black tracking-tight text-foreground mb-4">
                         Frequently Asked Questions
                     </h2>
-                    <p className="text-muted-foreground">Everything you need to know about ScreenForge.</p>
+                    <p className="text-muted-foreground">Everything you need to know about ShotApp AI.</p>
                 </div>
 
                 <Accordion type="single" collapsible className="w-full space-y-4">

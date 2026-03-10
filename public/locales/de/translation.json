@@ -1,0 +1,55 @@
+{
+    "nav": {
+        "workflow": "Workflow",
+        "examples": "Beispiele",
+        "pricing": "Preise",
+        "faq": "FAQ",
+        "login": "Anmelden",
+        "start": "Kostenlos starten"
+    },
+    "hero": {
+        "badge": "Gebaut für App Store & Google Play",
+        "title": "Erzeuge Screenshots, die",
+        "titleHighlight": "weltklasse",
+        "titleSuffix": "aussehen — in Minuten.",
+        "subtitle": "Lade deine App-Screens hoch, wähle einen Stil, definiere jede Folie und orchestriere bis zu 10 produktionsreife Visuals in einem kohärenten Batch.",
+        "cta": "Kostenlos starten",
+        "ctaSecondary": "Workflow ansehen",
+        "scroll": "Scrollen zum Erkunden"
+    },
+    "consistency": {
+        "badge": "Was uns unterscheidet",
+        "title": "Die Konsistenz-Engine",
+        "subtitle": "ShotApp AI generiert keine isolierten Bilder. Es orchestriert ein kohärentes visuelles System.",
+        "rulesLabel": "Globale Regeln",
+        "features": {
+            "colors": "Geteilte Farblogik",
+            "typography": "Synchronisierte Typografie",
+            "layout": "Globale Layout-Rhythmen",
+            "coherence": "Folie-zu-Folie-Kohärenz",
+            "direction": "Einheitliche kreative Richtung"
+        }
+    },
+    "pricing": {
+        "badge": "Preise",
+        "title": "Einfache, transparente Preise.",
+        "subtitle": "Hör auf, Tausende für manuelle Screenshot-Produktion zu zahlen.",
+        "mostPopular": "Am beliebtesten",
+        "yourPlan": "Dein Plan",
+        "currentPlan": "Aktueller Plan",
+        "creditsPerMonth": "Credits/Monat"
+    },
+    "faq": {
+        "title": "Häufige Fragen",
+        "subtitle": "Alles, was Sie über ShotApp AI wissen müssen."
+    },
+    "footer": {
+        "cta": "Bereit, deine Premium-Screenshot-Sets zu generieren?",
+        "ctaSubtitle": "Schließe dich führenden Gründern und ASO-Teams an.",
+        "ctaButton": "Kostenlose Testversion starten",
+        "noCard": "Keine Kreditkarte erforderlich. 7-Tage-Testversion.",
+        "privacy": "Datenschutzrichtlinie",
+        "terms": "Nutzungsbedingungen",
+        "rights": "Alle Rechte vorbehalten."
+    }
+}
