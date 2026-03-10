@@ -102,11 +102,11 @@ export const ConsistencyEngine = () => {
                 {/* ── Feature Pills ── */}
                 <div className="mt-20 flex flex-wrap justify-center gap-4 max-w-4xl mx-auto">
                     {[
-                        'Logique de couleurs partagée',
-                        'Typographie synchronisée',
-                        'Rythmes de mise en page globaux',
-                        'Cohérence slide-à-slide',
-                        'Direction créative unique'
+                        'Shared color logic',
+                        'Synchronized typography',
+                        'Global layout rhythm',
+                        'Slide-to-slide coherence',
+                        'Unified creative direction'
                     ].map((feature, i) => (
                         <motion.div
                             key={feature}
