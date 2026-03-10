@@ -34,7 +34,7 @@ export const ConsistencyEngine = () => {
                 {/* ── Main Visual ── */}
                 <div className="relative w-full max-w-[1200px] mx-auto flex flex-col items-center">
 
-                    {/* ── Règles Globales Node (top) ── */}
+                    {/* ── Global Rules Node (top) ── */}
                     <motion.div
                         className="relative z-30 bg-[#18181B] border border-white/5 rounded-3xl p-6 shadow-2xl flex flex-col items-center text-center w-[280px]"
                         initial={{ scale: 0.8, opacity: 0, y: -30 }}
