@@ -479,7 +479,7 @@ const Results = () => {
               <Lock className="h-5 w-5 text-primary" /> Export with watermark
             </DialogTitle>
             <DialogDescription className="text-muted-foreground pt-3">
-              The free plan exports your slides with a ScreenForge watermark.
+              The free plan exports your slides with a ShotApp AI watermark.
               Upgrade to a premium plan for perfect, high-resolution exports.
             </DialogDescription>
           </DialogHeader>

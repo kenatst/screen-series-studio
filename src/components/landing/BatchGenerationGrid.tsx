@@ -38,8 +38,8 @@ export const BatchGenerationGrid = () => {
                     Générez <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-400">10 visuels parfaits</span> en un clic.
                 </h2>
                 <p className="text-lg text-muted-foreground max-w-2xl mx-auto font-medium">
-                    Pourquoi construire écran par écran quand le moteur comprend toute votre narration ?
-                    ScreenForge génère le lot complet simultanément.
+                    Why build screen by screen when the engine understands your entire narrative?
+                    ShotApp AI generates the complete set simultaneously.
                 </p>
             </div>
 

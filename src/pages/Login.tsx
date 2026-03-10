@@ -130,7 +130,26 @@ const Login = () => {
               <div className="flex items-center justify-between">
                 <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Password</label>
                 {!isSignUp && (
-                  <button onClick={handleResetPassword} disabled={submitting} type="button" className="text-xs text-primary font-bold hover:underline">
+                  <button
+                    onClick={async () => {
+                      if (!email) { toast({ title: "Enter your email first", variant: "destructive" }); return; }
+                      setSubmitting(true);
+                      try {
+                        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                          redirectTo: window.location.origin + "/login",
+                        });
+                        if (error) throw error;
+                        toast({ title: "Check your email", description: "Password reset link sent." });
+                      } catch (err: any) {
+                        toast({ title: "Error", description: err.message, variant: "destructive" });
+                      } finally {
+                        setSubmitting(false);
+                      }
+                    }}
+                    disabled={submitting}
+                    type="button"
+                    className="text-xs text-primary font-bold hover:underline"
+                  >
                     Forgot password?
                   </button>
                 )}

@@ -98,7 +98,7 @@ function createWatermarkSvgBytes(width = 1290, height = 2796): Uint8Array {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
     <defs>
       <pattern id="wm" patternUnits="userSpaceOnUse" width="400" height="300" patternTransform="rotate(-30)">
-        <text x="10" y="150" font-family="Arial,sans-serif" font-size="48" font-weight="900" fill="rgba(255,255,255,0.15)" letter-spacing="8">ScreenForge</text>
+        <text x="10" y="150" font-family="Arial,sans-serif" font-size="48" font-weight="900" fill="rgba(255,255,255,0.15)" letter-spacing="8">ShotApp AI</text>
       </pattern>
     </defs>
     <rect width="100%" height="100%" fill="url(#wm)"/>

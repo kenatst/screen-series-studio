@@ -274,7 +274,7 @@ export const WorkflowScrollytelling = () => {
                                             <div className="text-5xl">📦</div>
                                         </div>
                                         <div className="text-center">
-                                            <h4 className="text-foreground font-bold text-xl mb-2">ScreenForge-Set.zip</h4>
+                                            <h4 className="text-foreground font-bold text-xl mb-2">ShotApp-Set.zip</h4>
                                             <p className="text-muted-foreground">10 High-Res PNGs (10.4 MB)</p>
                                         </div>
                                         <div className="px-6 py-2 rounded-full bg-primary/20 border border-primary/50 text-foreground font-medium flex items-center gap-2">
