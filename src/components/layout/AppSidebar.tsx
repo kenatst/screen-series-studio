@@ -2,7 +2,7 @@ import {
   LayoutDashboard, FolderOpen, LayoutGrid,
   Settings, HelpCircle,
 } from "lucide-react";
-import screenforgeLogo from "@/assets/logo-screenforge.png";
+import appLogo from "@/assets/logo-screenforge.png";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import {
@@ -18,7 +18,7 @@ const mainItems = [
 
 const bottomItems = [
   { title: "Settings & Billing", url: "/dashboard/settings", icon: Settings },
-  { title: "Help", url: "mailto:support@screenforge.app", icon: HelpCircle },
+  { title: "Help", url: "mailto:support@shotapp.ai", icon: HelpCircle },
 ];
 
 export function AppSidebar() {
@@ -32,8 +32,8 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <div className="flex items-center gap-3 px-3 py-4">
-            <img src={screenforgeLogo} alt="ScreenForge" className="h-8 w-8 rounded-lg shadow-glow object-cover flex-shrink-0" />
-            {!collapsed && <span className="text-base font-bold tracking-tight text-foreground drop-shadow-md">ScreenForge</span>}
+            <img src={appLogo} alt="ShotApp AI" className="h-8 w-8 rounded-lg shadow-glow object-cover flex-shrink-0" />
+            {!collapsed && <span className="text-base font-bold tracking-tight text-foreground drop-shadow-md">ShotApp AI</span>}
           </div>
         </SidebarGroup>
 

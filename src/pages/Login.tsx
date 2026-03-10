@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
 import { Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
-import screenforgeLogo from "@/assets/logo-screenforge.png";
+import appLogo from "@/assets/logo-screenforge.png";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
@@ -80,8 +80,8 @@ const Login = () => {
       >
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-3 mb-6">
-            <img src={screenforgeLogo} alt="ScreenForge" className="h-10 w-10 rounded-xl shadow-glow object-cover" />
-            <span className="text-xl font-black tracking-tight text-foreground">ScreenForge</span>
+            <img src={appLogo} alt="ShotApp AI" className="h-10 w-10 rounded-xl shadow-glow object-cover" />
+            <span className="text-xl font-black tracking-tight text-foreground">ShotApp AI</span>
           </div>
           <h1 className="text-3xl font-black tracking-tight text-foreground mb-2">
             {isSignUp ? "Create your account" : "Welcome back"}
@@ -130,7 +130,26 @@ const Login = () => {
               <div className="flex items-center justify-between">
                 <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Password</label>
                 {!isSignUp && (
-                  <button onClick={handleResetPassword} disabled={submitting} type="button" className="text-xs text-primary font-bold hover:underline">
+                  <button
+                    onClick={async () => {
+                      if (!email) { toast({ title: "Enter your email first", variant: "destructive" }); return; }
+                      setSubmitting(true);
+                      try {
+                        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                          redirectTo: window.location.origin + "/login",
+                        });
+                        if (error) throw error;
+                        toast({ title: "Check your email", description: "Password reset link sent." });
+                      } catch (err: any) {
+                        toast({ title: "Error", description: err.message, variant: "destructive" });
+                      } finally {
+                        setSubmitting(false);
+                      }
+                    }}
+                    disabled={submitting}
+                    type="button"
+                    className="text-xs text-primary font-bold hover:underline"
+                  >
                     Forgot password?
                   </button>
                 )}

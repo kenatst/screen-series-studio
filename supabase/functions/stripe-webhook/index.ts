@@ -9,6 +9,10 @@ const corsHeaders = {
 
 /** Map product name → plan id */
 const PRODUCT_NAME_TO_PLAN: Record<string, string> = {
+  "ShotApp Starter": "starter",
+  "ShotApp Pro": "pro",
+  "ShotApp Unlimited": "unlimited",
+  // Legacy names for backward compatibility
   "ScreenForge Starter": "starter",
   "ScreenForge Pro": "pro",
   "ScreenForge Unlimited": "unlimited",

@@ -1,4 +1,4 @@
-import screenforgeLogo from '@/assets/logo-screenforge.png';
+import appLogo from '@/assets/logo-screenforge.png';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 
@@ -26,7 +26,7 @@ export const LandingFooter = () => {
 
                 <div className="w-full flex flex-col md:flex-row justify-between items-center gap-6">
                     <div className="flex items-center gap-3">
-                        <img src={screenforgeLogo} alt="ShotApp AI" className="h-7 w-7 rounded-lg object-cover" />
+                        <img src={appLogo} alt="ShotApp AI" className="h-7 w-7 rounded-lg object-cover" />
                         <span className="text-sm font-medium text-muted-foreground">© {new Date().getFullYear()} ShotApp AI. All rights reserved.</span>
                     </div>
                     <div className="flex gap-6 text-sm text-foreground/40">

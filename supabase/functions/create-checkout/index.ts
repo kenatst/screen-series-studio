@@ -13,9 +13,9 @@ const logStep = (step: string, details?: any) => {
 
 /** Plan definitions — prices in cents (EUR) */
 const PLAN_DEFS: Record<string, { name: string; amount: number; description: string }> = {
-  starter: { name: "ScreenForge Starter", amount: 4900, description: "50 credits/month, 1 workspace, HD export" },
-  pro: { name: "ScreenForge Pro", amount: 9900, description: "200 credits/month, 3 workspaces, priority generation" },
-  unlimited: { name: "ScreenForge Unlimited", amount: 39900, description: "1000 credits/month, unlimited projects" },
+  starter: { name: "ShotApp Starter", amount: 4900, description: "50 credits/month, 1 workspace, HD export" },
+  pro: { name: "ShotApp Pro", amount: 9900, description: "200 credits/month, 3 workspaces, priority generation" },
+  unlimited: { name: "ShotApp Unlimited", amount: 39900, description: "1000 credits/month, unlimited projects" },
 };
 
 /**

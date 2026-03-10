@@ -34,7 +34,7 @@ export const ConsistencyEngine = () => {
                 {/* ── Main Visual ── */}
                 <div className="relative w-full max-w-[1200px] mx-auto flex flex-col items-center">
 
-                    {/* ── Règles Globales Node (top) ── */}
+                    {/* ── Global Rules Node (top) ── */}
                     <motion.div
                         className="relative z-30 bg-[#18181B] border border-white/5 rounded-3xl p-6 shadow-2xl flex flex-col items-center text-center w-[280px]"
                         initial={{ scale: 0.8, opacity: 0, y: -30 }}
@@ -44,7 +44,7 @@ export const ConsistencyEngine = () => {
                         <div className="h-12 w-12 bg-[#FF9500]/10 rounded-full flex items-center justify-center mb-4">
                             <SlidersHorizontal className="h-6 w-6 text-[#FF9500]" />
                         </div>
-                        <span className="text-white tracking-tight mb-4 text-xl" style={{ fontFamily: '"Inter", sans-serif', fontWeight: 800 }}>Règles Globales</span>
+                        <span className="text-white tracking-tight mb-4 text-xl" style={{ fontFamily: '"Inter", sans-serif', fontWeight: 800 }}>Global Rules</span>
                         <div className="flex gap-3 mb-4">
                             <div className="h-4 w-4 rounded-full bg-[#FF9500]" />
                             <div className="h-4 w-4 rounded-full border border-white/20 bg-transparent" />
@@ -102,11 +102,11 @@ export const ConsistencyEngine = () => {
                 {/* ── Feature Pills ── */}
                 <div className="mt-20 flex flex-wrap justify-center gap-4 max-w-4xl mx-auto">
                     {[
-                        'Logique de couleurs partagée',
-                        'Typographie synchronisée',
-                        'Rythmes de mise en page globaux',
-                        'Cohérence slide-à-slide',
-                        'Direction créative unique'
+                        'Shared color logic',
+                        'Synchronized typography',
+                        'Global layout rhythm',
+                        'Slide-to-slide coherence',
+                        'Unified creative direction'
                     ].map((feature, i) => (
                         <motion.div
                             key={feature}

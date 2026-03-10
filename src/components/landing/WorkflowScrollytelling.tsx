@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import screenforgeLogo from '@/assets/logo-screenforge.png';
+import appLogo from '@/assets/logo-screenforge.png';
 import agency13 from '@/assets/gallery/agency-13-vow.png';
 import agency11 from '@/assets/gallery/agency-11-trainer-ai.png';
 import agency14 from '@/assets/gallery/agency-14-rpg.png';
@@ -151,7 +151,7 @@ export const WorkflowScrollytelling = () => {
                                         transition={{ duration: 0.5, type: "spring" }}
                                         className="w-full h-full flex flex-col items-center justify-center gap-6"
                                     >
-                                        <img src={screenforgeLogo} alt="ScreenForge" className="w-24 h-24 rounded-2xl shadow-glow object-cover border border-border" />
+                                        <img src={appLogo} alt="ShotApp AI" className="w-24 h-24 rounded-2xl shadow-glow object-cover border border-border" />
                                         <div className="flex gap-4">
                                             <div className="w-12 h-12 rounded-full bg-[hsl(var(--primary))] border border-border shadow-md" />
                                             <div className="w-12 h-12 rounded-full bg-[hsl(30,90%,45%)] border border-border shadow-md" />
@@ -274,7 +274,7 @@ export const WorkflowScrollytelling = () => {
                                             <div className="text-5xl">📦</div>
                                         </div>
                                         <div className="text-center">
-                                            <h4 className="text-foreground font-bold text-xl mb-2">ScreenForge-Set.zip</h4>
+                                            <h4 className="text-foreground font-bold text-xl mb-2">ShotApp-Set.zip</h4>
                                             <p className="text-muted-foreground">10 High-Res PNGs (10.4 MB)</p>
                                         </div>
                                         <div className="px-6 py-2 rounded-full bg-primary/20 border border-primary/50 text-foreground font-medium flex items-center gap-2">

@@ -292,7 +292,7 @@ const Results = () => {
                     {userPlan === 'free' && !isSlideLocked && (
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none max-w-md mx-auto">
                         <span className="text-4xl font-black text-white/30 rotate-[-30deg] select-none tracking-widest uppercase">
-                          ScreenForge
+                          ShotApp AI
                         </span>
                       </div>
                     )}
@@ -479,7 +479,7 @@ const Results = () => {
               <Lock className="h-5 w-5 text-primary" /> Export with watermark
             </DialogTitle>
             <DialogDescription className="text-muted-foreground pt-3">
-              The free plan exports your slides with a ScreenForge watermark.
+              The free plan exports your slides with a ShotApp AI watermark.
               Upgrade to a premium plan for perfect, high-resolution exports.
             </DialogDescription>
           </DialogHeader>

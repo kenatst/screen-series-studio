@@ -208,15 +208,15 @@ const features = [
     {
         id: 'references',
         icon: ImageIcon,
-        title: 'Génération par Références',
-        description: "Importez des moodboards ou des captures concurrentes. ShotApp AI extrait la mise en page, l'ambiance et la hiérarchie sans copier leur identité visuelle.",
+        title: 'Reference-Based Generation',
+        description: "Import moodboards or competitor screenshots. ShotApp AI extracts the layout, mood, and hierarchy without copying their visual identity.",
         visual: <ReferenceVisual />,
     },
     {
         id: 'editing',
         icon: RefreshCw,
-        title: 'Édition Chirurgicale',
-        description: "Trouvé une faute ou besoin d'un layout différent pour la slide 3 ? Régénérez des parties isolées sans perdre la connexion visuelle avec les slides 1, 2, 4 et 5.",
+        title: 'Surgical Editing',
+        description: "Found a typo or need a different layout for slide 3? Regenerate isolated parts without losing visual consistency with slides 1, 2, 4, and 5.",
         visual: <EditingVisual />,
     },
     {
