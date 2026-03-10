@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
-import { LayoutGrid, Image as ImageIcon, RefreshCw, Globe, ArrowRight, Sparkles, Cpu } from 'lucide-react';
+import { LayoutGrid, Image as ImageIcon, RefreshCw, Globe, ArrowRight, Cpu } from 'lucide-react';
 
 import locEn from '@/assets/features/localization-en.webp';
 import locJp from '@/assets/features/localization-jp.jpeg';
@@ -65,10 +65,9 @@ const PlannerVisual = () => (
     </div>
 );
 
-/* ─── Reference-Based Generation Visual (horizontal layout like the screenshot) ─── */
+/* ─── Reference-Based Generation Visual ─── */
 const ReferenceVisual = () => (
     <div className="w-full h-full flex items-center justify-center bg-zinc-900 border border-border rounded-2xl shadow-elevated relative overflow-hidden">
-        {/* Grid background pattern */}
         <div className="absolute inset-0 opacity-10" style={{
             backgroundImage: 'linear-gradient(hsl(var(--border)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--border)) 1px, transparent 1px)',
             backgroundSize: '40px 40px'
@@ -95,7 +94,6 @@ const ReferenceVisual = () => (
             <div className="flex items-center gap-1 sm:gap-2 shrink-0">
                 <div className="h-px w-4 sm:w-8 bg-gradient-to-r from-transparent to-primary/60" />
                 <div className="relative">
-                    {/* Glow */}
                     <div className="absolute -inset-2 bg-primary/20 rounded-2xl blur-xl" />
                     <div className="relative h-10 w-10 sm:h-14 sm:w-14 rounded-xl bg-gradient-to-br from-zinc-800 to-zinc-900 border border-primary/40 flex items-center justify-center shadow-[0_0_30px_-5px_hsl(var(--primary)/0.4)]">
                         <Cpu className="w-5 h-5 sm:w-7 sm:h-7 text-primary" />
@@ -104,7 +102,7 @@ const ReferenceVisual = () => (
                 <div className="h-px w-4 sm:w-8 bg-gradient-to-r from-primary/60 to-transparent" />
             </div>
 
-            {/* OUTPUT — 3 travel slides, slightly overlapping and fanned */}
+            {/* OUTPUT — 3 travel slides */}
             <div className="flex shrink-0 relative">
                 {[
                     { src: travelSlide1, label: 'Meet Tripora', z: 10, rotate: -3, offset: 0 },
@@ -127,24 +125,53 @@ const ReferenceVisual = () => (
     </div>
 );
 
-/* ─── Surgical Editing Visual ─── */
-const EditingVisual = () => (
-    <div className="w-full h-full p-6 flex items-center justify-center bg-zinc-900 border border-border rounded-2xl shadow-elevated relative">
-        <div className="flex gap-2 w-full max-w-[280px]">
-            {[1, 2, 3].map(i => (
-                <div key={i} className={`flex-1 aspect-[9/19.5] rounded-lg border ${i === 2 ? 'border-primary ring-2 ring-primary/20 bg-primary/10' : 'border-border bg-black/5'} flex items-center justify-center relative overflow-hidden`}>
-                    {i === 2 && (
-                        <motion.div
-                            className="absolute inset-0 bg-[conic-gradient(from_90deg_at_50%_50%,transparent_0%,hsl(var(--primary)/0.3)_100%)] animate-spin"
-                            style={{ animationDuration: '3s' }}
-                        />
-                    )}
-                    <div className="h-4 w-4 rounded-full bg-white/20 relative z-10" />
-                </div>
-            ))}
+/* ─── Surgical Editing Visual — 3 NutriTrack screenshots ─── */
+const EditingVisual = () => {
+    const slides = [
+        { src: '/screenshots/nt-1-calories.png', label: 'Slide 1', active: false },
+        { src: '/screenshots/nt-2-meals.png', label: 'Slide 2', active: true },
+        { src: '/screenshots/nt-3-nutrition.png', label: 'Slide 3', active: false },
+    ];
+
+    return (
+        <div className="w-full h-full flex items-center justify-center bg-zinc-900 border border-border rounded-2xl shadow-elevated relative overflow-hidden p-4 sm:p-6">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent" />
+            <div className="relative z-10 flex gap-3 sm:gap-4 items-end justify-center w-full">
+                {slides.map((slide, i) => (
+                    <motion.div
+                        key={i}
+                        className="flex flex-col items-center gap-2"
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: i * 0.15, duration: 0.5 }}
+                    >
+                        <div className={`relative w-20 sm:w-28 md:w-32 aspect-[9/19.5] rounded-xl overflow-hidden shadow-2xl transition-all duration-500 ${slide.active
+                                ? 'border-2 border-primary ring-4 ring-primary/20 scale-105 shadow-[0_0_40px_-8px_rgba(245,166,35,0.5)]'
+                                : 'border border-white/10 opacity-70 scale-95'
+                            }`}>
+                            <img
+                                src={slide.src}
+                                alt={slide.label}
+                                className="w-full h-full object-cover"
+                            />
+                            {slide.active && (
+                                <motion.div
+                                    className="absolute inset-0 bg-primary/10 mix-blend-overlay pointer-events-none"
+                                    animate={{ opacity: [0, 0.3, 0] }}
+                                    transition={{ duration: 2, repeat: Infinity }}
+                                />
+                            )}
+                        </div>
+                        <span className={`text-xs font-medium ${slide.active ? 'text-primary' : 'text-muted-foreground'}`}>
+                            {slide.label}
+                        </span>
+                    </motion.div>
+                ))}
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 /* ─── Localization Visual ─── */
 const LocalizationVisual = () => (
@@ -181,15 +208,15 @@ const features = [
     {
         id: 'references',
         icon: ImageIcon,
-        title: 'Reference-Based Generation',
-        description: 'Upload moodboards or competitor screenshots. ScreenForge extracts the layout, mood, and hierarchy without copying their literal branding.',
+        title: 'Génération par Références',
+        description: "Importez des moodboards ou des captures concurrentes. ShotApp AI extrait la mise en page, l'ambiance et la hiérarchie sans copier leur identité visuelle.",
         visual: <ReferenceVisual />,
     },
     {
         id: 'editing',
         icon: RefreshCw,
-        title: 'Surgical Slide Editing',
-        description: 'Found a typo or want a different layout for slide 3? Regenerate heavily isolated parts without losing the visual connection to slides 1, 2, 4, and 5.',
+        title: 'Édition Chirurgicale',
+        description: "Trouvé une faute ou besoin d'un layout différent pour la slide 3 ? Régénérez des parties isolées sans perdre la connexion visuelle avec les slides 1, 2, 4 et 5.",
         visual: <EditingVisual />,
     },
     {
@@ -234,7 +261,7 @@ export const FeatureShowcase = () => {
                                     </p>
                                 </div>
 
-                                {/* Visual Block — auto height, no forced aspect ratio */}
+                                {/* Visual Block */}
                                 <div className="flex-1 w-full min-h-[300px] md:min-h-[400px] perspective-[1000px]">
                                     <motion.div
                                         className="w-full h-full"

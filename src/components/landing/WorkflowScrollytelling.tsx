@@ -16,7 +16,7 @@ const steps = [
     {
         id: 2,
         title: 'Inject your Brand Kit',
-        description: 'Upload your logo, define your primary colors, and select your typography. ScreenForge locks these in as global variables.',
+        description: 'Upload your logo, define your primary colors, and select your typography. ShotApp AI locks these in as global variables.',
     },
     {
         id: 3,
