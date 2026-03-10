@@ -17,7 +17,6 @@ const Landing = () => {
       <LandingNav />
       <main>
         <HeroSection />
-        <TrustedBy />
         <div className="h-24 bg-background w-full"></div>
         <WorkflowScrollytelling />
         <ConsistencyEngine />

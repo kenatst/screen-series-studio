@@ -32,83 +32,75 @@ export const ConsistencyEngine = () => {
                 </div>
 
                 {/* ── Main Visual ── */}
-                <div className="relative w-full max-w-[1100px] mx-auto flex flex-col items-center">
+                <div className="relative w-full max-w-[1200px] mx-auto flex flex-col items-center">
 
                     {/* ── Règles Globales Node (top) ── */}
                     <motion.div
-                        className="relative z-30 bg-zinc-900/95 backdrop-blur-xl border border-primary/30 rounded-2xl p-5 shadow-[0_0_40px_-10px_rgba(245,166,35,0.4)] flex flex-col items-center text-center"
+                        className="relative z-30 bg-[#18181B] border border-white/5 rounded-3xl p-6 shadow-2xl flex flex-col items-center text-center w-[280px]"
                         initial={{ scale: 0.8, opacity: 0, y: -30 }}
                         animate={isInView ? { scale: 1, opacity: 1, y: 0 } : {}}
                         transition={{ duration: 0.6, type: "spring" }}
                     >
-                        <div className="h-12 w-12 bg-primary/20 rounded-full flex items-center justify-center mb-3 border border-primary/40 shadow-inner">
-                            <SlidersHorizontal className="h-6 w-6 text-primary drop-shadow-[0_0_8px_rgba(245,166,35,0.8)]" />
+                        <div className="h-12 w-12 bg-[#FF9500]/10 rounded-full flex items-center justify-center mb-4">
+                            <SlidersHorizontal className="h-6 w-6 text-[#FF9500]" />
                         </div>
-                        <span className="text-foreground tracking-tight mb-3 text-lg" style={{ fontFamily: '"Inter", sans-serif', fontWeight: 800 }}>Règles Globales</span>
-                        <div className="flex gap-2 mb-2">
-                            <div className="h-3 w-3 rounded-full bg-primary shadow-[0_0_8px_rgba(245,166,35,0.8)]" />
-                            <div className="h-3 w-3 rounded-full bg-orange-300/50 shadow-[0_0_6px_rgba(200,150,80,0.6)]" />
-                            <div className="h-3 w-3 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+                        <span className="text-white tracking-tight mb-4 text-xl" style={{ fontFamily: '"Inter", sans-serif', fontWeight: 800 }}>Règles Globales</span>
+                        <div className="flex gap-3 mb-4">
+                            <div className="h-4 w-4 rounded-full bg-[#FF9500]" />
+                            <div className="h-4 w-4 rounded-full border border-white/20 bg-transparent" />
+                            <div className="h-4 w-4 rounded-full bg-[#FF3B30]" />
                         </div>
-                        <span className="text-xs text-muted-foreground font-mono">font: Inter Bold</span>
+                        <div className="bg-[#111111] border border-white/5 rounded px-3 py-1.5 w-full">
+                            <span className="text-sm text-[#A1A1AA] font-mono">font: Inter Bold</span>
+                        </div>
                     </motion.div>
 
                     {/* ── SVG Connecting Lines ── */}
-                    <svg className="w-full h-[100px] relative z-10 overflow-visible" viewBox="0 0 1100 100" preserveAspectRatio="xMidYMid meet">
-                        {/* Central trunk line from node down */}
-                        <motion.line
-                            x1="550" y1="0" x2="550" y2="35"
-                            stroke="hsl(30, 90%, 50%)" strokeWidth="2" strokeDasharray="4 4"
-                            initial={{ pathLength: 0, opacity: 0 }}
-                            animate={isInView ? { pathLength: 1, opacity: 0.7 } : {}}
-                            transition={{ duration: 0.5, delay: 0.6 }}
-                        />
-                        {/* Horizontal bar */}
-                        <motion.line
-                            x1="100" y1="35" x2="1000" y2="35"
-                            stroke="hsl(30, 90%, 50%)" strokeWidth="2" strokeDasharray="4 4"
-                            initial={{ pathLength: 0, opacity: 0 }}
-                            animate={isInView ? { pathLength: 1, opacity: 0.5 } : {}}
-                            transition={{ duration: 0.6, delay: 0.8 }}
-                        />
-                        {/* 5 vertical drops */}
-                        {[100, 325, 550, 775, 1000].map((x, i) => (
-                            <motion.line
-                                key={i}
-                                x1={x} y1="35" x2={x} y2="100"
-                                stroke="hsl(30, 90%, 50%)" strokeWidth="2" strokeDasharray="4 4"
+                    <div className="w-full relative h-[120px] -mt-2 z-10">
+                        <svg className="w-full h-full absolute inset-0 preserve-3d" preserveAspectRatio="none">
+                            <motion.path
+                                d="M 600,0 L 600,120"
+                                stroke="#FF9500" strokeWidth="1.5" fill="none"
                                 initial={{ pathLength: 0, opacity: 0 }}
-                                animate={isInView ? { pathLength: 1, opacity: 0.5 } : {}}
-                                transition={{ duration: 0.4, delay: 1.0 + i * 0.1 }}
+                                animate={isInView ? { pathLength: 1, opacity: 0.7 } : {}}
+                                transition={{ duration: 0.5, delay: 0.6 }}
                             />
-                        ))}
-                    </svg>
+                            {[150, 375, 825, 1050].map((x, i) => (
+                                <motion.path
+                                    key={i}
+                                    d={`M 600,0 C 600,60 ${x},60 ${x},120`}
+                                    stroke="#FF9500" strokeWidth="1.5" fill="none"
+                                    initial={{ pathLength: 0, opacity: 0 }}
+                                    animate={isInView ? { pathLength: 1, opacity: 0.7 } : {}}
+                                    transition={{ duration: 0.6, delay: 0.8 + i * 0.1 }}
+                                />
+                            ))}
+                        </svg>
+                    </div>
 
                     {/* ── 5 Screenshot Cards ── */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 md:gap-6 w-full mt-2 relative z-20">
+                    <div className="flex justify-between w-full relative z-20 gap-3">
                         {cards.map((card, i) => (
                             <motion.div
                                 key={card.label}
-                                className="flex flex-col items-center gap-3"
+                                className="flex-1 rounded-3xl overflow-hidden border border-white/10 shadow-[0_15px_40px_-15px_rgba(0,0,0,0.5)] cursor-pointer"
                                 initial={{ opacity: 0, y: 40 }}
                                 animate={isInView ? { opacity: 1, y: 0 } : {}}
                                 transition={{ delay: 1.2 + i * 0.15, duration: 0.6, type: "spring", bounce: 0.3 }}
+                                whileHover={{ y: -5, boxShadow: "0 20px 50px -15px rgba(255,149,0,0.2)" }}
                             >
-                                <div className="w-full aspect-[9/19.5] rounded-2xl border border-white/10 shadow-2xl overflow-hidden bg-black group cursor-pointer">
-                                    <img
-                                        src={card.src}
-                                        alt={card.label}
-                                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                                    />
-                                </div>
-                                <span className="text-sm font-medium text-muted-foreground">{card.label}</span>
+                                <img
+                                    src={card.src}
+                                    alt={card.label}
+                                    className="w-full h-auto object-cover"
+                                />
                             </motion.div>
                         ))}
                     </div>
                 </div>
 
                 {/* ── Feature Pills ── */}
-                <div className="mt-16 flex flex-wrap justify-center gap-4 max-w-4xl mx-auto">
+                <div className="mt-20 flex flex-wrap justify-center gap-4 max-w-4xl mx-auto">
                     {[
                         'Logique de couleurs partagée',
                         'Typographie synchronisée',
@@ -118,13 +110,13 @@ export const ConsistencyEngine = () => {
                     ].map((feature, i) => (
                         <motion.div
                             key={feature}
-                            className="flex items-center gap-2 bg-black/40 backdrop-blur-md border border-white/5 rounded-full px-5 py-2.5 shadow-xl"
+                            className="flex items-center gap-2.5 bg-[#18181B] border border-white/5 rounded-full px-6 py-3 shadow-md"
                             initial={{ opacity: 0, y: 15 }}
                             animate={isInView ? { opacity: 1, y: 0 } : {}}
                             transition={{ delay: 2.0 + (i * 0.1), duration: 0.5 }}
                         >
-                            <CheckCircle2 className="h-4 w-4 text-primary" />
-                            <span className="text-sm font-medium text-white/80">{feature}</span>
+                            <CheckCircle2 className="h-4 w-4 text-[#FF9500]" />
+                            <span className="text-sm font-medium text-[#D4D4D8]">{feature}</span>
                         </motion.div>
                     ))}
                 </div>

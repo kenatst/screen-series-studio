@@ -83,13 +83,44 @@ export const Gallery = () => {
                 >
                     {[...GALLERY_ITEMS, ...GALLERY_ITEMS].map((item, i) => (
                         <div
-                            key={`${item.id}-${i}`}
+                            key={`row1-${item.id}-${i}`}
                             className="relative w-[320px] md:w-[480px] aspect-video rounded-2xl overflow-hidden group flex-shrink-0 cursor-pointer border border-border bg-card/50"
                         >
-                            <img 
-                                src={item.src} 
-                                alt={item.title} 
-                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                            <img
+                                src={item.src}
+                                alt={item.title}
+                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                            />
+
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
+                                <div>
+                                    <h4 className="text-white font-bold text-lg">{item.title}</h4>
+                                    <span className="text-white/80 text-sm font-medium">{item.style}</span>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </motion.div>
+            </div>
+            {/* Second row */}
+            <div className="relative w-full flex overflow-hidden mt-6">
+                <div className="absolute top-0 bottom-0 left-0 w-32 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
+                <div className="absolute top-0 bottom-0 right-0 w-32 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
+
+                <motion.div
+                    className="flex gap-6 px-6"
+                    animate={{ x: [-8500, 0] }}
+                    transition={{ repeat: Infinity, ease: "linear", duration: 120 }}
+                >
+                    {[...GALLERY_ITEMS, ...GALLERY_ITEMS].reverse().map((item, i) => (
+                        <div
+                            key={`row2-${item.id}-${i}`}
+                            className="relative w-[320px] md:w-[480px] aspect-video rounded-2xl overflow-hidden group flex-shrink-0 cursor-pointer border border-border bg-card/50"
+                        >
+                            <img
+                                src={item.src}
+                                alt={item.title}
+                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                             />
 
                             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">

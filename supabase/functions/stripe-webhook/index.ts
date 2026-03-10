@@ -162,7 +162,19 @@ serve(async (req) => {
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
         const customerId = invoice.customer as string;
-        logStep("Payment failed", { customerId });
+
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("stripe_customer_id", customerId)
+          .single();
+
+        if (profile) {
+          await supabase.from("profiles").update({ plan: "free", credits: 3 }).eq("id", profile.id);
+          logStep("Payment failed, downgraded to free", { customerId, userId: profile.id });
+        } else {
+          logStep("Payment failed, no profile found", { customerId });
+        }
         break;
       }
 

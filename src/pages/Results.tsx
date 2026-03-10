@@ -86,7 +86,10 @@ const Results = () => {
       if (!session) return;
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const res = await fetch(`${supabaseUrl}/functions/v1/export-zip?project_id=${projectId}`, {
-        headers: { Authorization: `Bearer ${session.access_token}` },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "x-client-version": "1.0.0"
+        },
       });
 
       if (!res.ok) {
@@ -173,6 +176,7 @@ const Results = () => {
           project_id: projectId,
           single_slide_id: slideId,
           user_prompt: regenPrompt || undefined,
+          idempotency_key: crypto.randomUUID(),
         }),
       });
 

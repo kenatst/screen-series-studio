@@ -178,7 +178,7 @@ const Generating = () => {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({ project_id: projectId, resume, target_slide_number: targetSlide, user_feedback: userFeedback }),
+        body: JSON.stringify({ project_id: projectId, resume, target_slide_number: targetSlide, user_feedback: userFeedback, idempotency_key: crypto.randomUUID() }),
         signal: requestAbortRef.current.signal,
       });
 

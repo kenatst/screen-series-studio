@@ -121,10 +121,15 @@ const Settings_Page = () => {
           </div>
 
           <div className="flex gap-3 flex-wrap">
-            {profile?.plan !== "free" && (
+            {profile?.plan !== "free" ? (
               <Button onClick={handleManageSubscription} disabled={isOpeningPortal} variant="outline" className="rounded-xl">
                 {isOpeningPortal ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CreditCard className="h-4 w-4 mr-2" />}
                 Manage subscription
+                <ExternalLink className="h-3 w-3 ml-2" />
+              </Button>
+            ) : (
+              <Button onClick={() => window.location.href = '/#pricing'} className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90">
+                Upgrade plan
                 <ExternalLink className="h-3 w-3 ml-2" />
               </Button>
             )}
@@ -135,52 +140,7 @@ const Settings_Page = () => {
           </div>
         </motion.div>
 
-        {/* Available Plans */}
-        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          <h2 className="text-xl font-bold text-foreground mb-4 tracking-tight">Available plans</h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {PLANS.map((p) => {
-              const isCurrent = profile?.plan === p.id;
-              return (
-                <div
-                  key={p.id}
-                  className={`rounded-2xl p-5 flex flex-col border transition-all duration-300 hover:-translate-y-1 ${isCurrent ? "border-primary/50 bg-primary/5 shadow-glow" : p.popular ? "border-primary/30 bg-card" : "border-border bg-card/50 hover:border-primary/20"
-                    }`}
-                >
-                  {p.popular && !isCurrent && (
-                    <Badge className="mb-3 w-fit bg-primary/20 text-primary border-primary/30 text-[10px]">Popular</Badge>
-                  )}
-                  {isCurrent && (
-                    <Badge className="mb-3 w-fit bg-green-500/20 text-green-400 border-green-500/30 text-[10px]">Current</Badge>
-                  )}
-                  <h3 className="font-bold text-foreground text-lg">{p.name}</h3>
-                  <div className="mt-1 mb-2">
-                    <span className="text-2xl font-black text-foreground">{p.priceValue === 0 ? "€0" : p.price}</span>
-                    <span className="text-muted-foreground text-xs">/mo</span>
-                  </div>
-                  <p className="text-xs text-primary font-bold mb-4">{p.monthlyCredits} credits/mo</p>
-                  <div className="space-y-2 flex-1 mb-4">
-                    {p.features.slice(0, 4).map(f => (
-                      <div key={f} className="flex gap-2 text-xs">
-                        <CheckCircle2 className="h-3 w-3 text-primary shrink-0 mt-0.5" />
-                        <span className="text-muted-foreground">{f}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <Button
-                    size="sm"
-                    disabled={isCurrent || p.id === "free"}
-                    onClick={() => handleUpgrade(p.id)}
-                    className={`rounded-xl text-xs font-bold ${isCurrent ? "bg-muted text-muted-foreground" : "bg-primary text-primary-foreground hover:bg-primary/90"
-                      }`}
-                  >
-                    {isCurrent ? "Current" : p.id === "free" ? "Free" : p.cta}
-                  </Button>
-                </div>
-              );
-            })}
-          </div>
-        </motion.div>
+
 
         {/* Account Info */}
         <motion.div

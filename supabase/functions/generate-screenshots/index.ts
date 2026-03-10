@@ -256,6 +256,9 @@ function isRateLimited(ip: string): boolean {
   return false;
 }
 
+// In-memory idempotency map
+const idempotencyCache = new Set<string>();
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -282,7 +285,15 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const geminiApiKey = Deno.env.get("GEMINI_API_KEY")!;
+
+    const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
+    if (!geminiApiKey || geminiApiKey.trim() === "") {
+      console.error("CRITICAL ERROR: GEMINI_API_KEY is not configured.");
+      return new Response(JSON.stringify({ error: "Configuration Error: AI Engine API Key is missing. Please contact support." }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
@@ -303,6 +314,7 @@ serve(async (req) => {
     let userPrompt: string | undefined;
     let forceRegenerate = false;
     let resumeGeneration = false;
+    let idempotencyKey: string | undefined;
 
     if (req.method === "POST") {
       const body = await req.json();
@@ -313,11 +325,23 @@ serve(async (req) => {
       userPrompt = body.user_prompt;
       forceRegenerate = body.force_regenerate === true;
       resumeGeneration = body.resume === true;
+      idempotencyKey = body.idempotency_key;
     } else {
       const url = new URL(req.url);
       projectId = url.searchParams.get("project_id") || "";
       forceRegenerate = url.searchParams.get("force_regenerate") === "true";
       resumeGeneration = url.searchParams.get("resume") === "true";
+    }
+
+    if (idempotencyKey) {
+      if (idempotencyCache.has(idempotencyKey)) {
+        return new Response(JSON.stringify({ error: "Duplicate request detected in progress" }), {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      idempotencyCache.add(idempotencyKey);
+      setTimeout(() => idempotencyCache.delete(idempotencyKey!), 60000); // clear after 1 min
     }
 
     if (!projectId) {

@@ -198,18 +198,39 @@ export const WorkflowScrollytelling = () => {
                                         animate={{ opacity: 1, scale: 1, y: 0 }}
                                         exit={{ opacity: 0, scale: 1.1 }}
                                         transition={{ duration: 0.5, type: "spring" }}
-                                        className="w-full h-full flex flex-col gap-4 justify-center"
+                                        className="w-full h-full p-4 sm:p-6 flex flex-col gap-4 items-center justify-center bg-[#111111] border border-white/5 rounded-2xl shadow-elevated relative overflow-hidden"
                                     >
-                                        {[1, 2, 3].map(i => (
-                                            <div key={i} className="w-full bg-black/5 border border-border rounded-xl p-4 flex items-center gap-4">
-                                                <div className="h-12 w-8 bg-zinc-800 rounded border border-border" />
-                                                <div className="flex-1 space-y-2">
-                                                    <div className="w-3/4 h-3 bg-white/20 rounded" />
-                                                    <div className="w-1/2 h-2 bg-white/10 rounded" />
+                                        <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent pointer-events-none" />
+
+                                        <div className="relative z-10 w-full flex flex-col gap-4">
+                                            {[
+                                                { id: 1, title: 'Hero / First Impression', priority: 'high', priorityColor: 'bg-red-500/10 text-red-500 border border-red-500/20', input: 'Your Fitness Journey Starts Here', icon: '📱', screenType: 'home' },
+                                                { id: 2, title: 'Core Feature', priority: 'high', priorityColor: 'bg-red-500/10 text-red-500 border border-red-500/20', input: 'AI-Powered Workout Plans', icon: '📱', screenType: 'dashboard' },
+                                                { id: 3, title: 'Social Proof', priority: 'medium', priorityColor: 'bg-amber-500/10 text-amber-500 border border-amber-500/20', input: 'Join 500K+ Active Users', icon: '📱', screenType: 'reviews' },
+                                            ].map((slide) => (
+                                                <div key={slide.id} className="w-full bg-[#18181A] border border-white/5 rounded-xl p-3 sm:p-4 flex gap-3 sm:gap-4 transition-all duration-300 hover:border-white/10">
+                                                    <div className="flex flex-col items-center pt-1 gap-2 shrink-0 opacity-40 hidden sm:flex">
+                                                        <div className="w-1 h-1 rounded-full bg-white" />
+                                                        <div className="w-1 h-1 rounded-full bg-white" />
+                                                        <div className="w-1 h-1 rounded-full bg-white" />
+                                                    </div>
+                                                    <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-[#FF9500] shrink-0 flex items-center justify-center text-black font-bold text-sm sm:text-lg shadow-[0_0_15px_-3px_rgba(255,149,0,0.5)]">
+                                                        {slide.id}
+                                                    </div>
+                                                    <div className="flex flex-col flex-1 gap-2 sm:gap-3">
+                                                        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                                                            <span className="text-white font-bold text-xs sm:text-sm tracking-tight">{slide.title}</span>
+                                                            <span className={`text-[8px] sm:text-[10px] font-semibold px-2 py-0.5 rounded-md ${slide.priorityColor}`}>
+                                                                {slide.priority}
+                                                            </span>
+                                                        </div>
+                                                        <div className="w-full bg-[#111111] border border-white/5 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-xs text-[#A1A1AA]">
+                                                            {slide.input}
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div className="px-3 py-1 rounded bg-primary/20 text-primary text-xs font-medium border border-primary/20">High</div>
-                                            </div>
-                                        ))}
+                                            ))}
+                                        </div>
                                     </motion.div>
                                 )}
 

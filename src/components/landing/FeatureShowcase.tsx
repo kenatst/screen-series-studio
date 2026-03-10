@@ -18,7 +18,7 @@ const fadeUp = {
 /* ─── Planner Visual ─── */
 const PlannerVisual = () => (
     <div className="w-full h-full flex items-center justify-center bg-zinc-900 border border-border rounded-2xl shadow-elevated relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
         <div className="relative z-10 flex flex-col gap-3 p-4 sm:p-5 w-full">
             <div>
                 <h4 className="text-foreground font-bold text-sm sm:text-lg">Screenshot Planner</h4>
@@ -52,7 +52,7 @@ const PlannerVisual = () => (
                             <span className="text-[9px] sm:text-[10px] text-muted-foreground truncate">{slide.sub}</span>
                         </div>
                     </div>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                         {slide.tags.map(t => (
                             <div key={t} className="h-6 px-2 bg-card/40 border border-border rounded-lg flex items-center">
                                 <span className="text-[9px] sm:text-[10px] text-muted-foreground">{t}</span>
@@ -76,48 +76,48 @@ const ReferenceVisual = () => (
 
         <div className="relative z-10 flex items-center justify-center gap-2 sm:gap-4 w-full px-3 sm:px-6 py-4">
             {/* INPUT — 2 weather slides */}
-            <div className="flex gap-1.5 sm:gap-2 shrink-0">
+            <div className="flex gap-2 sm:gap-3 shrink-0">
                 {[
                     { src: weatherSlide1, label: 'Meet Cloudy' },
                     { src: weatherSlide2, label: 'Daily Briefing' },
                 ].map((s, i) => (
-                    <div key={i} className="flex flex-col items-center gap-1">
-                        <div className="w-14 sm:w-20 md:w-24 aspect-[9/19.5] rounded-lg border border-border/60 overflow-hidden shadow-lg bg-zinc-800">
-                            <img src={s.src} alt={s.label} className="w-full h-full object-cover" />
+                    <div key={i} className="flex flex-col items-center gap-1.5">
+                        <div className="w-14 sm:w-20 md:w-24 aspect-[9/19.5] rounded-xl border border-border/60 overflow-hidden shadow-lg bg-black flex items-center justify-center p-1">
+                            <img src={s.src} alt={s.label} className="w-full h-full object-contain" />
                         </div>
-                        <span className="text-[8px] sm:text-[9px] text-muted-foreground">{s.label}</span>
+                        <span className="text-[9px] sm:text-[10px] text-muted-foreground">{s.label}</span>
                     </div>
                 ))}
             </div>
 
             {/* Arrow → AI Chip → Arrow */}
             <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-                <div className="h-px w-4 sm:w-8 bg-gradient-to-r from-transparent to-primary/60" />
+                <div className="h-px w-3 sm:w-6 lg:w-10 bg-gradient-to-r from-transparent to-primary/60" />
                 <div className="relative">
                     <div className="absolute -inset-2 bg-primary/20 rounded-2xl blur-xl" />
                     <div className="relative h-10 w-10 sm:h-14 sm:w-14 rounded-xl bg-gradient-to-br from-zinc-800 to-zinc-900 border border-primary/40 flex items-center justify-center shadow-[0_0_30px_-5px_hsl(var(--primary)/0.4)]">
                         <Cpu className="w-5 h-5 sm:w-7 sm:h-7 text-primary" />
                     </div>
                 </div>
-                <div className="h-px w-4 sm:w-8 bg-gradient-to-r from-primary/60 to-transparent" />
+                <div className="h-px w-3 sm:w-6 lg:w-10 bg-gradient-to-r from-primary/60 to-transparent" />
             </div>
 
             {/* OUTPUT — 3 travel slides */}
             <div className="flex shrink-0 relative">
                 {[
                     { src: travelSlide1, label: 'Meet Tripora', z: 10, rotate: -3, offset: 0 },
-                    { src: travelSlide2, label: 'Your Trip', z: 20, rotate: 0, offset: -6 },
-                    { src: travelSlide3, label: 'Travel Beautifully', z: 30, rotate: 3, offset: -12 },
+                    { src: travelSlide2, label: 'Your Trip', z: 20, rotate: 0, offset: -8 },
+                    { src: travelSlide3, label: 'Travel Beautifully', z: 30, rotate: 3, offset: -16 },
                 ].map((s, i) => (
                     <div
                         key={i}
-                        className="flex flex-col items-center gap-1"
+                        className="flex flex-col items-center gap-1.5"
                         style={{ zIndex: s.z, marginLeft: i > 0 ? `${s.offset}px` : 0, transform: `rotate(${s.rotate}deg)` }}
                     >
-                        <div className="w-14 sm:w-20 md:w-24 aspect-[9/19.5] rounded-lg border-2 border-primary/60 overflow-hidden shadow-[0_0_20px_-5px_hsl(var(--primary)/0.3)] bg-zinc-800">
-                            <img src={s.src} alt={s.label} className="w-full h-full object-cover" />
+                        <div className="w-14 sm:w-20 md:w-24 aspect-[9/19.5] rounded-xl border-2 border-primary/60 overflow-hidden shadow-[0_0_20px_-5px_hsl(var(--primary)/0.3)] bg-black flex items-center justify-center p-1">
+                            <img src={s.src} alt={s.label} className="w-full h-full object-contain" />
                         </div>
-                        <span className="text-[8px] sm:text-[9px] text-primary font-medium">{s.label}</span>
+                        <span className="text-[9px] sm:text-[10px] text-primary font-medium">{s.label}</span>
                     </div>
                 ))}
             </div>
@@ -147,8 +147,8 @@ const EditingVisual = () => {
                         transition={{ delay: i * 0.15, duration: 0.5 }}
                     >
                         <div className={`relative w-20 sm:w-28 md:w-32 aspect-[9/19.5] rounded-xl overflow-hidden shadow-2xl transition-all duration-500 ${slide.active
-                                ? 'border-2 border-primary ring-4 ring-primary/20 scale-105 shadow-[0_0_40px_-8px_rgba(245,166,35,0.5)]'
-                                : 'border border-white/10 opacity-70 scale-95'
+                            ? 'border-2 border-primary ring-4 ring-primary/20 scale-105 shadow-[0_0_40px_-8px_rgba(245,166,35,0.5)]'
+                            : 'border border-white/10 opacity-70 scale-95'
                             }`}>
                             <img
                                 src={slide.src}
@@ -262,9 +262,9 @@ export const FeatureShowcase = () => {
                                 </div>
 
                                 {/* Visual Block */}
-                                <div className="flex-1 w-full min-h-[300px] md:min-h-[400px] perspective-[1000px]">
+                                <div className="flex-1 w-full min-h-[400px] lg:min-h-[500px] perspective-[1000px]">
                                     <motion.div
-                                        className="w-full h-full"
+                                        className="w-full h-full flex items-center justify-center p-4 sm:p-0"
                                         whileHover={{ scale: 1.02, rotateY: isEven ? -5 : 5 }}
                                         transition={{ type: "spring", bounce: 0.4 }}
                                     >

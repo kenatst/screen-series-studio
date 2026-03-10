@@ -24,9 +24,9 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   profile: null,
   loading: true,
-  signOut: async () => {},
-  refreshProfile: async () => {},
-  checkSubscription: async () => {},
+  signOut: async () => { },
+  refreshProfile: async () => { },
+  checkSubscription: async () => { },
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -83,17 +83,47 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [session?.user?.id, checkSubscription, fetchProfile]);
 
   useEffect(() => {
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let mounted = true;
+
     const hydrate = async (nextSession: Session | null) => {
+      if (!mounted) return;
       setSession(nextSession);
 
       if (nextSession?.user?.id) {
         await checkSubscription(nextSession.user.id);
         await fetchProfile(nextSession.user.id);
+
+        if (channel) await supabase.removeChannel(channel);
+
+        // Setup realtime listener for profile changes (like credit usage)
+        channel = supabase.channel('profile-updates')
+          .on(
+            'postgres_changes',
+            { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${nextSession.user.id}` },
+            (payload) => {
+              setProfile((prev) => {
+                if (!prev) return prev;
+                return {
+                  ...prev,
+                  plan: (payload.new?.plan as PlanId) ?? prev.plan,
+                  credits: typeof payload.new?.credits === "number" ? payload.new.credits : prev.credits,
+                  subscriptionEnd: payload.new?.subscription_end ?? prev.subscriptionEnd,
+                };
+              });
+            }
+          )
+          .subscribe();
+
       } else {
         setProfile(null);
+        if (channel) {
+          await supabase.removeChannel(channel);
+          channel = null;
+        }
       }
 
-      setLoading(false);
+      if (mounted) setLoading(false);
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
@@ -104,7 +134,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       void hydrate(initialSession);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+      if (channel) supabase.removeChannel(channel);
+    };
   }, [checkSubscription, fetchProfile]);
 
   // More frequent sync to reduce perceived delay after checkout return
