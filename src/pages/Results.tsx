@@ -15,6 +15,8 @@ import { TranslationsModal } from "@/components/project/TranslationsModal";
 import { canTranslate, canRegenerate, CREDIT_COSTS } from "@/lib/plans";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 15 },
