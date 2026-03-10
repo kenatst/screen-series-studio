@@ -80,8 +80,8 @@ const Login = () => {
       >
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-3 mb-6">
-            <img src={screenforgeLogo} alt="ScreenForge" className="h-10 w-10 rounded-xl shadow-glow object-cover" />
-            <span className="text-xl font-black tracking-tight text-foreground">ScreenForge</span>
+            <img src={appLogo} alt="ShotApp AI" className="h-10 w-10 rounded-xl shadow-glow object-cover" />
+            <span className="text-xl font-black tracking-tight text-foreground">ShotApp AI</span>
           </div>
           <h1 className="text-3xl font-black tracking-tight text-foreground mb-2">
             {isSignUp ? "Create your account" : "Welcome back"}
