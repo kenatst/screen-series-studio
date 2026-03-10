@@ -39,7 +39,7 @@ export const PLANS: PlanConfig[] = [
     name: 'Free',
     price: 'Free',
     priceValue: 0,
-    description: 'Testez la puissance de ScreenForge.',
+    description: 'Try the power of ShotApp AI.',
     features: [
       '3 credits included',
       'Standard templates',
