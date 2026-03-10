@@ -292,7 +292,7 @@ const Results = () => {
                     {userPlan === 'free' && !isSlideLocked && (
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none max-w-md mx-auto">
                         <span className="text-4xl font-black text-white/30 rotate-[-30deg] select-none tracking-widest uppercase">
-                          ScreenForge
+                          ShotApp AI
                         </span>
                       </div>
                     )}
