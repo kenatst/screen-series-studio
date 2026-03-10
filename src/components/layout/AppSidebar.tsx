@@ -18,7 +18,7 @@ const mainItems = [
 
 const bottomItems = [
   { title: "Settings & Billing", url: "/dashboard/settings", icon: Settings },
-  { title: "Help", url: "mailto:support@screenforge.app", icon: HelpCircle },
+  { title: "Help", url: "mailto:support@shotapp.ai", icon: HelpCircle },
 ];
 
 export function AppSidebar() {
