@@ -44,7 +44,7 @@ export const ConsistencyEngine = () => {
                         <div className="h-12 w-12 bg-[#FF9500]/10 rounded-full flex items-center justify-center mb-4">
                             <SlidersHorizontal className="h-6 w-6 text-[#FF9500]" />
                         </div>
-                        <span className="text-white tracking-tight mb-4 text-xl" style={{ fontFamily: '"Inter", sans-serif', fontWeight: 800 }}>Règles Globales</span>
+                        <span className="text-white tracking-tight mb-4 text-xl" style={{ fontFamily: '"Inter", sans-serif', fontWeight: 800 }}>Global Rules</span>
                         <div className="flex gap-3 mb-4">
                             <div className="h-4 w-4 rounded-full bg-[#FF9500]" />
                             <div className="h-4 w-4 rounded-full border border-white/20 bg-transparent" />
