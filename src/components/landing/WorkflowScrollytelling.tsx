@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import screenforgeLogo from '@/assets/logo-screenforge.png';
+import appLogo from '@/assets/logo-screenforge.png';
 import agency13 from '@/assets/gallery/agency-13-vow.png';
 import agency11 from '@/assets/gallery/agency-11-trainer-ai.png';
 import agency14 from '@/assets/gallery/agency-14-rpg.png';
