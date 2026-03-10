@@ -19,4 +19,9 @@ However, there are a few **major architectural refactors** that require your rob
    - Right now, `Generating.tsx` initiates the generation through a long-polling fetch. If the user refreshes or closes the tab, the UI breaks (even though the Edge Function might finish in the background).
    - **Task:** Move away from making the user wait on the `fetch` response. Use Supabase Realtime to listen for `project_slides` changes where `status === 'completed'`. Have `Generating.tsx` just pull from the DB subscription rather than holding a pending request.
 
+4. **Iterative Generation Flow (Slide-by-Slide)**
+   - **CRITICAL ARCHITECTURAL CHANGE:** We are moving away from batch-generating all slides at once.
+   - **Task:** Modify the generation pipeline so that it generates exactly **one slide at a time**. After generating Slide 1, it must wait for the user's input/approval (e.g., "Is this okay?"). Once approved, proceed to generate Slide 2, and so on.
+   - Each time a new slide is generated, all previously generated slides *must* be added to the AI context to ensure perfect visual consistency across the entire set.
+
 Thanks! The repository is fully committed and ready for you to take over.
