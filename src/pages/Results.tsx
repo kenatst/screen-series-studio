@@ -15,6 +15,8 @@ import { TranslationsModal } from "@/components/project/TranslationsModal";
 import { canTranslate, canRegenerate, CREDIT_COSTS } from "@/lib/plans";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 15 },
@@ -78,51 +80,38 @@ const Results = () => {
   };
 
   const executeDownload = async () => {
-    if (!projectId) return;
+    if (!projectId || !slides?.length) return;
     setIsExporting(true);
     setShowWatermarkWarning(false);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const res = await fetch(`${supabaseUrl}/functions/v1/export-zip?project_id=${projectId}`, {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          "x-client-version": "1.0.0"
-        },
-      });
+      const zip = new JSZip();
+      const projectFolder = zip.folder(project?.app_name || project?.name || 'export');
+      if (!projectFolder) throw new Error("Failed to create ZIP folder");
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Export failed" }));
-        toast({ title: "Export error", description: err.error, variant: "destructive" });
+      let downloadedCount = 0;
+      for (const slide of slides) {
+        if (!slide.image_url) continue;
+        try {
+          const res = await fetch(slide.image_url);
+          if (!res.ok) continue;
+          const blob = await res.blob();
+          const ext = blob.type.includes('png') ? 'png' : 'jpg';
+          projectFolder.file(`slide-${String(slide.slide_number).padStart(2, '0')}.${ext}`, blob);
+          downloadedCount++;
+        } catch (e) {
+          console.warn(`Skipped slide ${slide.slide_number}`, e);
+        }
+      }
+
+      if (downloadedCount === 0) {
+        toast({ title: "No images to export", description: "Generate slides first.", variant: "destructive" });
         return;
       }
 
-      const contentType = res.headers.get("Content-Type");
-      if (contentType?.includes("application/zip")) {
-        const blob = await res.blob();
-        const disposition = res.headers.get("Content-Disposition");
-        const filenameMatch = disposition?.match(/filename="?([^"]+)"?/);
-        const filename = filenameMatch?.[1] || `${project?.name || 'export'}.zip`;
+      const content = await zip.generateAsync({ type: "blob" });
+      saveAs(content, `${project?.app_name || project?.name || 'export'}.zip`);
 
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        if (userPlan === 'free') {
-          toast({ title: "Export with watermark complete" });
-        } else {
-          toast({ title: "Export complete ✨" });
-        }
-      } else {
-        const data = await res.json();
-        toast({ title: "Export error", description: data.error || "Unexpected response", variant: "destructive" });
-      }
+      toast({ title: userPlan === 'free' ? "Export with watermark complete" : "Export complete ✨" });
     } catch (e) {
       console.error("Download failed", e);
       toast({ title: "Export failed", variant: "destructive" });
