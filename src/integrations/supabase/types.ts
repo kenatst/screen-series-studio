@@ -222,12 +222,51 @@ export type Database = {
           },
         ]
       }
+      template_embeddings: {
+        Row: {
+          created_at: string
+          embedding: string | null
+          id: string
+          metadata: Json | null
+          template_name: string
+          visual_summary: string | null
+        }
+        Insert: {
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          metadata?: Json | null
+          template_name: string
+          visual_summary?: string | null
+        }
+        Update: {
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          metadata?: Json | null
+          template_name?: string
+          visual_summary?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      match_templates: {
+        Args: {
+          match_limit?: number
+          query_embedding: string
+          similarity_threshold?: number
+        }
+        Returns: {
+          metadata: Json
+          similarity: number
+          template_name: string
+          visual_summary: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

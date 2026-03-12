@@ -35,7 +35,7 @@ const LanguageSwitcher = forwardRef<HTMLDivElement>((props, ref) => {
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
-            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+            if (innerRef.current && !innerRef.current.contains(e.target as Node)) setOpen(false);
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
