@@ -17,14 +17,14 @@ const fadeUp = {
 
 /* ─── Planner Visual ─── */
 const PlannerVisual = () => (
-    <div className="w-full h-full flex items-center justify-center bg-zinc-900 border border-border rounded-2xl shadow-elevated relative overflow-hidden">
+    <div className="w-full h-full flex items-start justify-center bg-zinc-900 border border-border rounded-2xl shadow-elevated relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
-        <div className="relative z-10 flex flex-col gap-3 p-4 sm:p-5 w-full">
+        <div className="relative z-10 flex flex-col gap-3 p-4 sm:p-5 w-full overflow-y-auto max-h-full">
             <div>
-                <h4 className="text-foreground font-bold text-sm sm:text-lg">Screenshot Planner</h4>
+                <h4 className="text-foreground font-bold text-sm sm:text-base">Screenshot Planner</h4>
                 <p className="text-muted-foreground text-[10px] sm:text-xs">Define the content and goal of each slide.</p>
             </div>
-            <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                 <span className="text-[10px] sm:text-xs text-muted-foreground">SLIDES:</span>
                 {[3, 5, 7, 10].map((n, i) => (
                     <div key={n} className={`h-6 w-6 sm:h-8 sm:w-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold ${i === 0 ? 'bg-primary text-primary-foreground' : 'bg-card/50 text-muted-foreground border border-border'}`}>
@@ -37,18 +37,18 @@ const PlannerVisual = () => (
                 { num: 2, obj: 'Main benefit', headline: 'The #1 reason to download', sub: 'What makes you unique', tags: ['dashboard', 'UI focus'], importance: 'high' },
             ].map((slide) => (
                 <div key={slide.num} className="bg-card/30 border border-border rounded-xl p-2.5 sm:p-3 space-y-2">
-                    <div className="flex items-center gap-2">
-                        <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs">{slide.num}</div>
-                        <div className="flex-1 h-7 sm:h-8 bg-card/60 border border-border rounded-lg flex items-center px-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs flex-shrink-0">{slide.num}</div>
+                        <div className="flex-1 min-w-0 h-7 sm:h-8 bg-card/60 border border-border rounded-lg flex items-center px-2">
                             <span className="text-[10px] sm:text-xs text-muted-foreground truncate">{slide.obj}</span>
                         </div>
-                        <Badge className="bg-primary/20 text-primary border-primary/30 text-[9px] sm:text-[10px] px-1.5">{slide.importance}</Badge>
+                        <Badge className="bg-primary/20 text-primary border-primary/30 text-[9px] sm:text-[10px] px-1.5 flex-shrink-0">{slide.importance}</Badge>
                     </div>
                     <div className="flex gap-1.5">
-                        <div className="flex-1 h-7 bg-card/40 border border-border rounded-lg flex items-center px-2">
+                        <div className="flex-1 min-w-0 h-7 bg-card/40 border border-border rounded-lg flex items-center px-2">
                             <span className="text-[9px] sm:text-[10px] text-muted-foreground truncate">{slide.headline}</span>
                         </div>
-                        <div className="flex-1 h-7 bg-card/40 border border-border rounded-lg flex items-center px-2">
+                        <div className="flex-1 min-w-0 h-7 bg-card/40 border border-border rounded-lg flex items-center px-2">
                             <span className="text-[9px] sm:text-[10px] text-muted-foreground truncate">{slide.sub}</span>
                         </div>
                     </div>
@@ -74,7 +74,7 @@ const ReferenceVisual = () => (
         }} />
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/3" />
 
-        <div className="relative z-10 flex items-center justify-center gap-2 sm:gap-4 w-full px-3 sm:px-6 py-4">
+        <div className="relative z-10 flex items-center justify-center gap-2 sm:gap-4 w-full px-3 sm:px-5 py-4">
             {/* INPUT — 2 weather slides */}
             <div className="flex gap-2 sm:gap-3 shrink-0">
                 {[
@@ -82,8 +82,8 @@ const ReferenceVisual = () => (
                     { src: weatherSlide2, label: 'Daily Briefing' },
                 ].map((s, i) => (
                     <div key={i} className="flex flex-col items-center gap-1.5">
-                        <div className="w-14 sm:w-20 md:w-24 aspect-[9/19.5] rounded-xl border border-border/60 overflow-hidden shadow-lg bg-black flex items-center justify-center p-1">
-                            <img src={s.src} alt={s.label} className="w-full h-full object-contain" />
+                        <div className="w-16 sm:w-22 md:w-28 aspect-[9/19.5] rounded-xl border border-border/60 overflow-hidden shadow-lg bg-black">
+                            <img src={s.src} alt={s.label} className="w-full h-full object-cover" />
                         </div>
                         <span className="text-[9px] sm:text-[10px] text-muted-foreground">{s.label}</span>
                     </div>
@@ -106,16 +106,16 @@ const ReferenceVisual = () => (
             <div className="flex shrink-0 relative">
                 {[
                     { src: travelSlide1, label: 'Meet Tripora', z: 10, rotate: -3, offset: 0 },
-                    { src: travelSlide2, label: 'Your Trip', z: 20, rotate: 0, offset: -8 },
-                    { src: travelSlide3, label: 'Travel Beautifully', z: 30, rotate: 3, offset: -16 },
+                    { src: travelSlide2, label: 'Your Trip', z: 20, rotate: 0, offset: -10 },
+                    { src: travelSlide3, label: 'Travel Beautifully', z: 30, rotate: 3, offset: -20 },
                 ].map((s, i) => (
                     <div
                         key={i}
                         className="flex flex-col items-center gap-1.5"
                         style={{ zIndex: s.z, marginLeft: i > 0 ? `${s.offset}px` : 0, transform: `rotate(${s.rotate}deg)` }}
                     >
-                        <div className="w-14 sm:w-20 md:w-24 aspect-[9/19.5] rounded-xl border-2 border-primary/60 overflow-hidden shadow-[0_0_20px_-5px_hsl(var(--primary)/0.3)] bg-black flex items-center justify-center p-1">
-                            <img src={s.src} alt={s.label} className="w-full h-full object-contain" />
+                        <div className="w-16 sm:w-22 md:w-28 aspect-[9/19.5] rounded-xl border-2 border-primary/60 overflow-hidden shadow-[0_0_20px_-5px_hsl(var(--primary)/0.3)] bg-black">
+                            <img src={s.src} alt={s.label} className="w-full h-full object-cover" />
                         </div>
                         <span className="text-[9px] sm:text-[10px] text-primary font-medium">{s.label}</span>
                     </div>
