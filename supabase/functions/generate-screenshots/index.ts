@@ -453,10 +453,9 @@ serve(async (req) => {
       });
     }
 
-    // Deduct credits upfront (only when needed)
-    if (totalCost > 0) {
-      await adminClient.from("profiles").update({ credits: currentCredits - totalCost }).eq("id", userId);
-    }
+    // Credits are now deducted AFTER successful generation (see inside the stream loop)
+    // Reserve the credits check but don't deduct yet
+    const reservedCredits = totalCost;
 
     // Fetch reference assets from storage
     const { data: assets } = await userClient.from("assets").select("*").eq("project_id", projectId);
@@ -643,6 +642,12 @@ serve(async (req) => {
               contentType: "image/png",
               upsert: true,
             });
+
+            // Deduct credit AFTER successful generation
+            const { data: freshProfile } = await adminClient.from("profiles").select("credits").eq("id", userId).single();
+            if (freshProfile) {
+              await adminClient.from("profiles").update({ credits: Math.max(0, freshProfile.credits - CREDIT_COST_PER_SLIDE) }).eq("id", userId);
+            }
 
             // Store the storage path (not a signed URL) so it never expires
             const generationMs = Date.now() - slideStartMs;

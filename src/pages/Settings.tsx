@@ -74,13 +74,21 @@ const Settings_Page = () => {
   const handleDeleteAccount = async () => {
     if (deleteConfirmText !== "DELETE") return;
     setIsDeletingAccount(true);
-    // Sign out the user — actual account deletion must be triggered via Supabase Admin (Lovable/backend)
-    // We signal this via email and sign the user out immediately
-    await supabase.auth.signOut();
-    toast({
-      title: "Account deletion requested",
-      description: "Your session has been ended. Our team will process your deletion request within 24h.",
-    });
+    try {
+      const { error } = await supabase.functions.invoke("delete-account");
+      if (error) throw error;
+      await supabase.auth.signOut();
+      toast({
+        title: "Account deleted",
+        description: "Your account and all data have been permanently removed.",
+      });
+    } catch (e: any) {
+      toast({
+        title: "Deletion failed",
+        description: e.message || "Please contact support.",
+        variant: "destructive",
+      });
+    }
     setIsDeletingAccount(false);
     setShowDeleteDialog(false);
   };
