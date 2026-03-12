@@ -643,6 +643,12 @@ serve(async (req) => {
               upsert: true,
             });
 
+            // Deduct credit AFTER successful generation
+            const { data: freshProfile } = await adminClient.from("profiles").select("credits").eq("id", userId).single();
+            if (freshProfile) {
+              await adminClient.from("profiles").update({ credits: Math.max(0, freshProfile.credits - CREDIT_COST_PER_SLIDE) }).eq("id", userId);
+            }
+
             // Store the storage path (not a signed URL) so it never expires
             const generationMs = Date.now() - slideStartMs;
             await adminClient.from("project_slides").update({
