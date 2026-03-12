@@ -6,6 +6,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const GEMINI_EMBED_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-2-preview:embedContent";
+const EMBED_DIM = 768;
+
 // Template metadata for embedding generation
 const TEMPLATES = [
   { name: "Habit Tracker", description: "Dark vibrant habit tracking app with progress rings, streak counters, and motivational UI. Clean grid layout with purple/blue accent colors." },
@@ -40,44 +43,48 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // This function requires service role - no user auth needed
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const geminiApiKey = Deno.env.get("GEMINI_API_KEY")!;
 
     const adminClient = createClient(supabaseUrl, serviceKey);
 
+    // Optional: pass { force: true } to re-embed all templates
+    let force = false;
+    try {
+      const body = await req.json();
+      force = body?.force === true;
+    } catch { /* no body is fine */ }
+
     const results: { name: string; status: string }[] = [];
 
     for (const template of TEMPLATES) {
       try {
-        // Check if already embedded
-        const { data: existing } = await adminClient
-          .from("template_embeddings")
-          .select("id")
-          .eq("template_name", template.name)
-          .maybeSingle();
+        if (!force) {
+          const { data: existing } = await adminClient
+            .from("template_embeddings")
+            .select("id")
+            .eq("template_name", template.name)
+            .maybeSingle();
 
-        if (existing) {
-          results.push({ name: template.name, status: "already_exists" });
-          continue;
+          if (existing) {
+            results.push({ name: template.name, status: "already_exists" });
+            continue;
+          }
         }
 
-        // Generate text embedding from template description
-        const embeddingResponse = await fetch(
-          `https://generativelanguage.googleapis.com/v1/models/text-embedding-004:embedContent?key=${geminiApiKey}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              content: {
-                parts: [{ text: `App store screenshot template: ${template.name}. ${template.description}` }],
-              },
-              taskType: "RETRIEVAL_DOCUMENT",
-              outputDimensionality: 768,
-            }),
-          }
-        );
+        // Use gemini-embedding-2-preview with RETRIEVAL_DOCUMENT task type
+        const embeddingResponse = await fetch(`${GEMINI_EMBED_URL}?key=${geminiApiKey}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: {
+              parts: [{ text: `App store screenshot template: ${template.name}. ${template.description}` }],
+            },
+            taskType: "RETRIEVAL_DOCUMENT",
+            outputDimensionality: EMBED_DIM,
+          }),
+        });
 
         if (!embeddingResponse.ok) {
           const errText = await embeddingResponse.text();
@@ -89,37 +96,40 @@ serve(async (req) => {
         const embeddingData = await embeddingResponse.json();
         const values = embeddingData?.embedding?.values;
 
-        if (!values || values.length !== 768) {
-          results.push({ name: template.name, status: "invalid_embedding" });
+        if (!values || values.length !== EMBED_DIM) {
+          results.push({ name: template.name, status: `invalid_embedding_dim_${values?.length}` });
           continue;
         }
 
-        // Insert into database
-        const { error: insertError } = await adminClient
+        // Upsert into database
+        const { error: upsertError } = await adminClient
           .from("template_embeddings")
-          .insert({
-            template_name: template.name,
-            embedding: JSON.stringify(values),
-            visual_summary: template.description,
-            metadata: { tags: [], mood: "", category: "" },
-          });
+          .upsert(
+            {
+              template_name: template.name,
+              embedding: JSON.stringify(values),
+              visual_summary: template.description,
+              metadata: { tags: [], mood: "", category: "" },
+            },
+            { onConflict: "template_name" }
+          );
 
-        if (insertError) {
-          console.error(`Insert failed for ${template.name}:`, insertError);
-          results.push({ name: template.name, status: "insert_failed" });
+        if (upsertError) {
+          console.error(`Upsert failed for ${template.name}:`, upsertError);
+          results.push({ name: template.name, status: "upsert_failed" });
         } else {
           results.push({ name: template.name, status: "success" });
         }
 
         // Rate limit: small delay between API calls
-        await new Promise((resolve) => setTimeout(resolve, 200));
+        await new Promise((resolve) => setTimeout(resolve, 250));
       } catch (e: any) {
         console.error(`Error processing ${template.name}:`, e);
         results.push({ name: template.name, status: "error" });
       }
     }
 
-    return new Response(JSON.stringify({ results }), {
+    return new Response(JSON.stringify({ model: "gemini-embedding-2-preview", dimensions: EMBED_DIM, results }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: any) {
