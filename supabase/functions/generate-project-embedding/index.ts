@@ -6,6 +6,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const GEMINI_EMBED_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-2-preview:embedContent";
+const EMBED_DIM = 768;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -35,10 +38,23 @@ serve(async (req) => {
 
     const { screenshot_urls, logo_url, user_inspiration_text, app_name, app_description } = await req.json();
 
-    // Collect image parts for multimodal embedding
-    const imageParts: { weight: number; base64: string; mimeType: string }[] = [];
+    // Build multimodal parts for a single embedding call
+    // gemini-embedding-2-preview supports text + images in the same request
+    const contentParts: any[] = [];
+    const imageWeights: { index: number; weight: number }[] = [];
 
-    // Process screenshots (weight: 70% distributed)
+    // Add context text as the first part
+    const textContent = [
+      app_name ? `App: ${app_name}` : "",
+      app_description ? `Description: ${app_description}` : "",
+      user_inspiration_text ? `Style inspiration: ${user_inspiration_text}` : "",
+    ].filter(Boolean).join(". ");
+
+    if (textContent) {
+      contentParts.push({ text: textContent });
+    }
+
+    // Fetch and add screenshots as inline_data parts
     const screenshotUrls = (screenshot_urls || []).slice(0, 3);
     for (const url of screenshotUrls) {
       try {
@@ -47,13 +63,13 @@ serve(async (req) => {
         const arrayBuffer = await resp.arrayBuffer();
         const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
         const contentType = resp.headers.get("content-type") || "image/png";
-        imageParts.push({ weight: 0.7 / screenshotUrls.length, base64, mimeType: contentType });
+        contentParts.push({ inline_data: { mime_type: contentType, data: base64 } });
       } catch (e) {
         console.warn("Failed to fetch screenshot:", e);
       }
     }
 
-    // Process logo (weight: 30%)
+    // Fetch and add logo
     if (logo_url) {
       try {
         const resp = await fetch(logo_url);
@@ -61,118 +77,55 @@ serve(async (req) => {
           const arrayBuffer = await resp.arrayBuffer();
           const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
           const contentType = resp.headers.get("content-type") || "image/png";
-          imageParts.push({ weight: 0.3, base64, mimeType: contentType });
+          contentParts.push({ inline_data: { mime_type: contentType, data: base64 } });
         }
       } catch (e) {
         console.warn("Failed to fetch logo:", e);
       }
     }
 
-    if (imageParts.length === 0 && !user_inspiration_text) {
+    if (contentParts.length === 0) {
       return new Response(JSON.stringify({ error: "At least one image or text input is required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Generate embeddings using Gemini Embedding API
-    const embeddings: { vector: number[]; weight: number }[] = [];
+    // Single multimodal embedding call — gemini-embedding-2-preview handles
+    // text + images natively in a unified vector space
+    const embeddingResponse = await fetch(`${GEMINI_EMBED_URL}?key=${geminiApiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        content: { parts: contentParts },
+        taskType: "RETRIEVAL_QUERY",
+        outputDimensionality: EMBED_DIM,
+      }),
+    });
 
-    // Embed each image individually
-    for (const part of imageParts) {
-      try {
-        const embeddingResponse = await fetch(
-          `https://generativelanguage.googleapis.com/v1/models/text-embedding-004:embedContent?key=${geminiApiKey}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              content: {
-                parts: [
-                  { inline_data: { mime_type: part.mimeType, data: part.base64 } },
-                ],
-              },
-              taskType: "RETRIEVAL_QUERY",
-              outputDimensionality: 768,
-            }),
-          }
-        );
-
-        if (!embeddingResponse.ok) {
-          const errText = await embeddingResponse.text();
-          console.error("Embedding API error:", errText);
-          continue;
-        }
-
-        const embeddingData = await embeddingResponse.json();
-        const values = embeddingData?.embedding?.values;
-        if (values && values.length === 768) {
-          embeddings.push({ vector: values, weight: part.weight });
-        }
-      } catch (e) {
-        console.error("Embedding error for image:", e);
-      }
+    if (!embeddingResponse.ok) {
+      const errText = await embeddingResponse.text();
+      console.error("Gemini Embedding 2 API error:", errText);
+      return new Response(JSON.stringify({ error: "Embedding generation failed", details: errText }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // Embed text context
-    if (user_inspiration_text || app_description) {
-      const textContent = [
-        app_name ? `App: ${app_name}` : "",
-        app_description ? `Description: ${app_description}` : "",
-        user_inspiration_text ? `Style inspiration: ${user_inspiration_text}` : "",
-      ].filter(Boolean).join(". ");
+    const embeddingData = await embeddingResponse.json();
+    const projectVector = embeddingData?.embedding?.values;
 
-      if (textContent) {
-        try {
-          const textEmbeddingResponse = await fetch(
-            `https://generativelanguage.googleapis.com/v1/models/text-embedding-004:embedContent?key=${geminiApiKey}`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                content: { parts: [{ text: textContent }] },
-                taskType: "RETRIEVAL_QUERY",
-                outputDimensionality: 768,
-              }),
-            }
-          );
-
-          if (textEmbeddingResponse.ok) {
-            const textData = await textEmbeddingResponse.json();
-            const values = textData?.embedding?.values;
-            if (values && values.length === 768) {
-              // Text gets 20% weight when images exist, 100% when alone
-              const textWeight = embeddings.length > 0 ? 0.2 : 1.0;
-              embeddings.push({ vector: values, weight: textWeight });
-            }
-          }
-        } catch (e) {
-          console.error("Text embedding error:", e);
-        }
-      }
-    }
-
-    if (embeddings.length === 0) {
-      return new Response(JSON.stringify({ error: "Failed to generate any embeddings" }), {
+    if (!projectVector || projectVector.length !== EMBED_DIM) {
+      return new Response(JSON.stringify({ error: "Invalid embedding dimensions returned" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Weighted average of all embeddings → "Project DNA" vector
-    const totalWeight = embeddings.reduce((sum, e) => sum + e.weight, 0);
-    const projectVector = new Array(768).fill(0);
-    for (const emb of embeddings) {
-      const normalizedWeight = emb.weight / totalWeight;
-      for (let i = 0; i < 768; i++) {
-        projectVector[i] += emb.vector[i] * normalizedWeight;
-      }
-    }
-
-    // Normalize the final vector
+    // Normalize the vector
     const magnitude = Math.sqrt(projectVector.reduce((sum: number, v: number) => sum + v * v, 0));
     if (magnitude > 0) {
-      for (let i = 0; i < 768; i++) {
+      for (let i = 0; i < EMBED_DIM; i++) {
         projectVector[i] /= magnitude;
       }
     }
@@ -233,7 +186,8 @@ serve(async (req) => {
       JSON.stringify({
         matches: matches || [],
         copilot_summary: copilotSummary,
-        embedding_count: embeddings.length,
+        parts_count: contentParts.length,
+        model: "gemini-embedding-2-preview",
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
