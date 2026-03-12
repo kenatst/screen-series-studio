@@ -447,7 +447,7 @@ serve(async (req) => {
     const totalCost = billableSlides.length * CREDIT_COST_PER_SLIDE;
 
     if (currentCredits < totalCost) {
-      return new Response(JSON.stringify({ error: `Crédits insuffisants. Il faut ${totalCost} crédit(s), vous en avez ${currentCredits}.` }), {
+      return new Response(JSON.stringify({ error: `Insufficient credits. This action requires ${totalCost} credit(s), but you have ${currentCredits}.` }), {
         status: 402,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

@@ -103,7 +103,7 @@ const Generating = () => {
     } catch {
       // navigate anyway
     }
-    navigate("/dashboard/projects");
+    navigate("/dashboard");
   };
 
   const routeToResults = useCallback(() => {
@@ -662,8 +662,8 @@ const Generating = () => {
 
         </div>
 
-        {/* Download Results CTA — shown when all slides are generated */}
-        {!hasMoreSlides && completedCount >= slideCount && completedCount > 0 && (
+        {/* Download Results CTA — shown when all slides are generated AND review is done */}
+        {!reviewMode && !hasMoreSlides && completedCount >= slideCount && completedCount > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

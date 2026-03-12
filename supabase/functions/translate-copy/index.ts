@@ -56,18 +56,18 @@ serve(async (req) => {
     const currentCredits = profileData?.credits ?? 0;
 
     if (currentCredits < totalCost) {
-      return new Response(JSON.stringify({ error: `Crédits insuffisants. Il faut ${totalCost} crédit(s), vous en avez ${currentCredits}.` }), {
+      return new Response(JSON.stringify({ error: `Insufficient credits. This action requires ${totalCost} credit(s), but you have ${currentCredits}.` }), {
         status: 402,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    if (totalCost > 0) {
-      await adminClient.from("profiles").update({ credits: currentCredits - totalCost }).eq("id", userId);
-    }
-
+    // No upfront deduction - we deduct per successful slide in the loop below
     const ai = new GoogleGenAI({ apiKey: geminiApiKey });
     const translatedSlides: { slide_number: number; imageUrl: string }[] = [];
+
+    // Track credits for deduction loop
+    let remainingCredits = currentCredits;
 
     for (const slide of slides) {
       try {
@@ -134,6 +134,10 @@ Text translation only.`;
           slide_number: slide.slide_number,
           imageUrl: signedData?.signedUrl || "",
         });
+
+        // Deduct 1 credit per successful slide
+        remainingCredits -= 1;
+        await adminClient.from("profiles").update({ credits: remainingCredits }).eq("id", userId);
       } catch (err: any) {
         console.error(`Translation error for slide ${slide.slide_number}:`, err);
       }

@@ -1,4 +1,4 @@
-import appLogo from '@/assets/logo-screenforge.png';
+import appLogo from '@/assets/logo-shotapp.png';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 

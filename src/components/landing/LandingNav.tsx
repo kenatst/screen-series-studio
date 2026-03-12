@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import * as React from 'react';
+import { useState, useEffect, useRef, forwardRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
@@ -17,10 +18,18 @@ const LANGUAGES = [
     { code: 'ar', label: 'العربية', flag: '🇸🇦' },
 ];
 
-const LanguageSwitcher = () => {
+const LanguageSwitcher = forwardRef<HTMLDivElement>((props, ref) => {
     const { i18n } = useTranslation();
     const [open, setOpen] = useState(false);
-    const ref = useRef<HTMLDivElement>(null);
+    const innerRef = useRef<HTMLDivElement>(null);
+    const combinedRef = (node: HTMLDivElement | null) => {
+        (innerRef as any).current = node;
+        if (typeof ref === 'function') {
+            ref(node);
+        } else if (ref) {
+            (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+        }
+    };
 
     const currentLang = LANGUAGES.find(l => l.code === i18n.language.split('-')[0]) || LANGUAGES[0];
 
@@ -33,7 +42,7 @@ const LanguageSwitcher = () => {
     }, []);
 
     return (
-        <div ref={ref} className="relative">
+        <div ref={combinedRef} className="relative">
             <button
                 onClick={() => setOpen(!open)}
                 className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md"
@@ -66,7 +75,9 @@ const LanguageSwitcher = () => {
             </AnimatePresence>
         </div>
     );
-};
+});
+
+LanguageSwitcher.displayName = 'LanguageSwitcher';
 
 export const LandingNav = () => {
     const [scrolled, setScrolled] = useState(false);

@@ -95,7 +95,7 @@ export const PricingSection = () => {
                                             <ul className="space-y-0.5 text-muted-foreground">
                                                 <li>• Generate a slide: 1 credit</li>
                                                 <li>• Regenerate a slide: 1 credit</li>
-                                                <li>• Translate a slide: 2 credits</li>
+                                                <li>• Translate a slide: 1 credit</li>
                                                 <li>• Export: free</li>
                                             </ul>
                                         </TooltipContent>

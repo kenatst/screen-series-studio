@@ -8,20 +8,13 @@ However, there are a few **major architectural refactors** that require your rob
 
 1. **Deconstruct the "God Component" (`NewProject.tsx`)**
    - The file `src/pages/NewProject.tsx` is >1200 lines long and handles 7 different wizard steps, massive local state, drag-and-drop, and API uploading.
-   - **Task:** Break it down into a `<ProjectWizardProvider>` (context) and split the UI into tiny, maintainable step components (e.g., `Step1_ProjectInfo.tsx`, `Step2_AppInfo.tsx`, etc.). Separate business logic (like color extraction) into custom hooks like `useAssetProcessing()`.
+   - **Task:** Break it down into a `<ProjectWizardProvider>` (context) and split the UI into tiny, maintainable step components.
 
 2. **Migrate ZIP Generation to the Client-Side**
-   - In `src/pages/Results.tsx`, clicking "Export ZIP" currently hits the `export-zip` Edge Function.
-   - This poses a huge risk of edge function memory (RAM) exhaustion when combining 30+ high-res images in Node memory limit zones.
-   - **Task:** Refactor `Results.tsx` to use the `jszip` and `file-saver` libraries. Fetch the images from Supabase Storage securely, construct the ZIP entirely in the user's browser, and trigger a local download. Drop the Edge Function entirely.
+   - **Task:** Refactor `Results.tsx` to use `jszip` and `file-saver`. Construct the ZIP entirely in the user's browser to avoid Edge Function RAM limits.
 
-3. **Background Generation Queueing (UX)**
-   - Right now, `Generating.tsx` initiates the generation through a long-polling fetch. If the user refreshes or closes the tab, the UI breaks (even though the Edge Function might finish in the background).
-   - **Task:** Move away from making the user wait on the `fetch` response. Use Supabase Realtime to listen for `project_slides` changes where `status === 'completed'`. Have `Generating.tsx` just pull from the DB subscription rather than holding a pending request.
-
-4. **Iterative Generation Flow (Slide-by-Slide)**
-   - **CRITICAL ARCHITECTURAL CHANGE:** We are moving away from batch-generating all slides at once.
-   - **Task:** Modify the generation pipeline so that it generates exactly **one slide at a time**. After generating Slide 1, it must wait for the user's input/approval (e.g., "Is this okay?"). Once approved, proceed to generate Slide 2, and so on.
-   - Each time a new slide is generated, all previously generated slides *must* be added to the AI context to ensure perfect visual consistency across the entire set.
+3. **Background Generation Lifecycle**
+   - I've overhauled the **Interactive Review UI** in `Generating.tsx` (it now supports clickable slide navigation, feedback inputs, and side-by-side controls).
+   - **Task:** Ensure the backend `generate-screenshots` function continues to support the `target_slide_number` and `user_feedback` parameters accurately for this new iterative flow.
 
 Thanks! The repository is fully committed and ready for you to take over.

@@ -13,9 +13,9 @@ const PRODUCT_NAME_TO_PLAN: Record<string, string> = {
   "ShotApp Pro": "pro",
   "ShotApp Unlimited": "unlimited",
   // Legacy names for backward compatibility
-  "ScreenForge Starter": "starter",
-  "ScreenForge Pro": "pro",
-  "ScreenForge Unlimited": "unlimited",
+  "ShotApp Starter": "starter",
+  "ShotApp Pro": "pro",
+  "ShotApp Unlimited": "unlimited",
 };
 
 const PLAN_CREDITS: Record<string, number> = {

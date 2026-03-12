@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { TranslationsModal } from "@/components/project/TranslationsModal";
 import { canTranslate, canRegenerate, CREDIT_COSTS } from "@/lib/plans";
 import { useToast } from "@/hooks/use-toast";
+import { useBilling } from "@/hooks/useBilling";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
@@ -43,25 +44,12 @@ const Results = () => {
   const userPlan = (profile?.plan || 'free') as any;
   const userCredits = profile?.credits ?? 0;
 
-  const [isOpeningPortal, setIsOpeningPortal] = useState(false);
+  const { handleUpgrade: billingUpgrade, isOpeningPortal } = useBilling();
   const [showWatermarkWarning, setShowWatermarkWarning] = useState(false);
 
   const selectedSlide = slides?.find(s => s.id === selectedSlideId) || slides?.[0];
 
-  const handleUpgrade = async () => {
-    try {
-      setIsOpeningPortal(true);
-      const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { plan: 'starter' },
-      });
-      if (error) throw error;
-      if (data?.url) window.location.href = data.url;
-    } catch (e: any) {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
-    } finally {
-      setIsOpeningPortal(false);
-    }
-  };
+  const handleUpgrade = () => billingUpgrade('starter');
 
   const checkCredits = (cost: number): boolean => {
     if (userCredits < cost) {

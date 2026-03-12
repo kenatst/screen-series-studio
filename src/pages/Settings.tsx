@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useSearchParams } from "react-router-dom";
 import { useBilling } from "@/hooks/useBilling";
 import { motion } from "framer-motion";
-import { Crown, CheckCircle2, Loader2, CreditCard, ExternalLink, RefreshCw, User, Coins, Lock, AlertTriangle } from "lucide-react";
+import { Crown, CheckCircle2, Loader2, CreditCard, ExternalLink, RefreshCw, User, Coins, Lock, AlertTriangle, LogOut } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
@@ -279,6 +279,17 @@ const Settings_Page = () => {
           >
             Delete Account
           </Button>
+
+          <div className="mt-8 pt-6 border-t border-border/50">
+            <Button
+              onClick={() => signOut()}
+              variant="destructive"
+              className="w-full sm:w-auto rounded-xl font-bold bg-zinc-900 hover:bg-zinc-800 text-white"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out from ShotApp
+            </Button>
+          </div>
         </motion.div>
       </div>
 

@@ -2,7 +2,7 @@ import {
   LayoutDashboard, FolderOpen, LayoutGrid,
   Settings, HelpCircle, LogOut,
 } from "lucide-react";
-import appLogo from "@/assets/logo-screenforge.png";
+import appLogo from "@/assets/logo-shotapp.png";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";

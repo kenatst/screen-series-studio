@@ -69,7 +69,7 @@ const Templates = () => {
                   </div>
                 ))}
               </div>
-              <span className="text-sm font-bold text-muted-foreground">+50 premium templates</span>
+              <span className="text-sm font-bold text-muted-foreground">26 premium templates</span>
             </div>
 
             {/* Search Bar in Hero */}
@@ -120,65 +120,66 @@ const Templates = () => {
             ))}
           </div>
 
-        </div>
-        <div className="flex gap-2 flex-wrap mb-10 items-center">
-          <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest mr-2 hidden sm:inline-block">Style:</span>
-          {tones.map(t => (
-            <button
-              key={t}
-              onClick={() => setFilter('tone', t)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold capitalize border transition-all duration-300 ${selectedTone === t ? 'bg-primary/20 text-primary border-primary shadow-glow' : 'bg-secondary/50 text-muted-foreground border-border hover:border-primary/40 hover:text-foreground'
-                }`}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-
-        {/* Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {filtered.map(template => (
-            <div
-              key={template.id}
-              onClick={() => navigate(`/project/new?template=${template.id}`)}
-              className="group rounded-2xl border border-border bg-zinc-900/40 overflow-hidden hover:border-primary/40 hover:shadow-glow transition-all duration-300 cursor-pointer backdrop-blur-sm"
-            >
-              <div className="aspect-[3/4] relative overflow-hidden bg-gradient-to-br from-white/5 to-transparent border-b border-border">
-                {templatePreviews[template.name] ? (
-                  <img src={templatePreviews[template.name]} alt={template.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <span className="text-sm font-bold text-foreground/30">{template.name}</span>
-                  </div>
-                )}
-              </div>
-              <div className="p-4 space-y-3 bg-card/90">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold text-foreground">{template.name}</span>
-                  <Badge className="text-[9px] bg-muted text-muted-foreground border-border capitalize">{template.mood}</Badge>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {template.tags.map(tag => (
-                    <Badge key={tag} className="bg-black/5 text-muted-foreground text-[10px] border-border uppercase tracking-wider">{tag}</Badge>
-                  ))}
-                </div>
-                <p className="text-xs text-muted-foreground font-medium leading-relaxed line-clamp-2">{template.bestFor}</p>
-                <div className="flex items-center justify-between text-[10px] text-foreground/40 pt-2 border-t border-border uppercase tracking-widest font-bold">
-                  <span className="text-primary/80">{template.complexity}</span>
-                  <span>{template.slidesSupported} slides</span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {filtered.length === 0 && (
-          <div className="text-center py-24 text-muted-foreground border border-dashed border-border rounded-2xl bg-card/20">
-            <Search className="h-10 w-10 mx-auto text-primary/40 mb-4" />
-            <p className="text-xl font-bold text-foreground">No templates match your filters.</p>
-            <p className="text-sm mt-2">Try adjusting mood, tone, or category.</p>
+          {/* Style filter — was outside container, now inside */}
+          <div className="flex gap-2 flex-wrap mb-10 items-center">
+            <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest mr-2 hidden sm:inline-block">Style:</span>
+            {tones.map(t => (
+              <button
+                key={t}
+                onClick={() => setFilter('tone', t)}
+                className={`px-4 py-2 rounded-xl text-xs font-bold capitalize border transition-all duration-300 ${selectedTone === t ? 'bg-primary/20 text-primary border-primary shadow-glow' : 'bg-secondary/50 text-muted-foreground border-border hover:border-primary/40 hover:text-foreground'
+                  }`}
+              >
+                {t}
+              </button>
+            ))}
           </div>
-        )}
+
+          {/* Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {filtered.map(template => (
+              <div
+                key={template.id}
+                onClick={() => navigate(`/project/new?template=${template.id}`)}
+                className="group rounded-2xl border border-border bg-zinc-900/40 overflow-hidden hover:border-primary/40 hover:shadow-glow transition-all duration-300 cursor-pointer backdrop-blur-sm"
+              >
+                <div className="aspect-[3/4] relative overflow-hidden bg-gradient-to-br from-white/5 to-transparent border-b border-border">
+                  {templatePreviews[template.name] ? (
+                    <img src={templatePreviews[template.name]} alt={template.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <span className="text-sm font-bold text-foreground/30">{template.name}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="p-4 space-y-3 bg-card/90">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-foreground">{template.name}</span>
+                    <Badge className="text-[9px] bg-muted text-muted-foreground border-border capitalize">{template.mood}</Badge>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {template.tags.map(tag => (
+                      <Badge key={tag} className="bg-black/5 text-muted-foreground text-[10px] border-border uppercase tracking-wider">{tag}</Badge>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground font-medium leading-relaxed line-clamp-2">{template.bestFor}</p>
+                  <div className="flex items-center justify-between text-[10px] text-foreground/40 pt-2 border-t border-border uppercase tracking-widest font-bold">
+                    <span className="text-primary/80">{template.complexity}</span>
+                    <span>{template.slidesSupported} slides</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {filtered.length === 0 && (
+            <div className="text-center py-24 text-muted-foreground border border-dashed border-border rounded-2xl bg-card/20">
+              <Search className="h-10 w-10 mx-auto text-primary/40 mb-4" />
+              <p className="text-xl font-bold text-foreground">No templates match your filters.</p>
+              <p className="text-sm mt-2">Try adjusting mood, tone, or category.</p>
+            </div>
+          )}
+        </div>
       </div>
     </DashboardLayout>
   );

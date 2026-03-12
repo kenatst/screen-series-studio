@@ -2,7 +2,6 @@ import { LandingNav } from "@/components/landing/LandingNav";
 import { HeroSection } from "@/components/landing/HeroSection";
 
 import { WorkflowScrollytelling } from "@/components/landing/WorkflowScrollytelling";
-import { TrustedBy } from "@/components/landing/TrustedBy";
 import { ConsistencyEngine } from "@/components/landing/ConsistencyEngine";
 import { FeatureShowcase } from "@/components/landing/FeatureShowcase";
 import { BatchGenerationGrid } from "@/components/landing/BatchGenerationGrid";
@@ -17,7 +16,6 @@ const Landing = () => {
       <LandingNav />
       <main>
         <HeroSection />
-        <div className="h-24 bg-background w-full"></div>
         <WorkflowScrollytelling />
         <ConsistencyEngine />
         <FeatureShowcase />

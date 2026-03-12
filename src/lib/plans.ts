@@ -70,7 +70,7 @@ export const PLANS: PlanConfig[] = [
     name: 'Starter',
     price: '€49',
     priceValue: 4900,
-    description: 'Parfait pour lancer une application.',
+    description: 'Perfect for launching your first app.',
     features: [
       '1 app workspace',
       '50 credits/month',
@@ -102,7 +102,7 @@ export const PLANS: PlanConfig[] = [
     name: 'Pro',
     price: '€99',
     priceValue: 9900,
-    description: 'Pour les créateurs expédiant plusieurs applications.',
+    description: 'For creators shipping multiple apps.',
     features: [
       '3 app workspaces',
       '200 credits/month',
@@ -134,7 +134,7 @@ export const PLANS: PlanConfig[] = [
     name: 'Unlimited',
     price: '€399',
     priceValue: 39900,
-    description: 'Aucune limite pour les équipes ASO exigeantes.',
+    description: 'No limits for demanding ASO teams.',
     features: [
       'Unlimited workspaces',
       '1000 credits/month',

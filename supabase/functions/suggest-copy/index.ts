@@ -12,6 +12,30 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    const userClient = (await import("https://esm.sh/@supabase/supabase-js@2.98.0")).createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: userData } = await userClient.auth.getUser();
+    if (!userData.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // Optional: Charge credits for suggestions or just verify existence
+    const adminClient = (await import("https://esm.sh/@supabase/supabase-js@2.98.0")).createClient(supabaseUrl, supabaseServiceKey);
+    const { data: profile } = await adminClient.from("profiles").select("credits").eq("id", userData.user.id).single();
+    if ((profile?.credits ?? 0) < 1) {
+      return new Response(JSON.stringify({ error: "Insufficient credits" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     const { type, appName, appDescription, storeUrl, platform, slideCount } = await req.json();
 
     let systemPrompt = "";

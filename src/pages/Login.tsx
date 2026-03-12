@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
 import { Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
-import appLogo from "@/assets/logo-screenforge.png";
+import appLogo from "@/assets/logo-shotapp.png";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
@@ -87,7 +87,7 @@ const Login = () => {
             {isSignUp ? "Create your account" : "Welcome back"}
           </h1>
           <p className="text-muted-foreground font-medium">
-            {isSignUp ? "Start generating premium screenshot sets" : "Sign in to continue forging"}
+            {isSignUp ? "Start generating premium screenshot sets" : "Sign in to your account"}
           </p>
         </div>
 

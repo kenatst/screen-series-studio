@@ -44,7 +44,7 @@ const faqs = [
     },
     {
         q: "What is your refund policy?",
-        a: "We offer a 7-day no-questions-asked refund on your first subscription payment. For subsequent billing cycles, refunds are handled case-by-case. Contact support@screenforge.app within 48 hours of your billing date."
+        a: "We offer a 7-day no-questions-asked refund on your first subscription payment. For subsequent billing cycles, refunds are handled case-by-case. Contact support@shotapp.ai within 48 hours of your billing date."
     }
 ];
 

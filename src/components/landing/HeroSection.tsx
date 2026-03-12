@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Sparkles, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 
 const fadeUp = {
     hidden: { opacity: 0, y: 30 },
@@ -9,6 +10,8 @@ const fadeUp = {
 };
 
 export const HeroSection = () => {
+    const { session } = useAuth();
+
     return (
         <section className="relative min-h-[100vh] pt-32 pb-20 overflow-hidden bg-background flex flex-col items-center">
             {/* Cinematic Lighting Background */}
@@ -47,13 +50,14 @@ export const HeroSection = () => {
                     className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-6"
                     initial="hidden" animate="visible" variants={fadeUp} custom={3}
                 >
-                    <Link to="/project/new" className="w-full sm:w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-full">
+                    <Link to={session ? "/project/new" : "/login?redirect=/project/new"} className="w-full sm:w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-full">
                         <Button size="lg" className="w-full text-base px-10 h-14 bg-white text-black hover:bg-white/90 hover:scale-105 transition-all shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] rounded-full font-bold">
                             Start free trial
                         </Button>
                     </Link>
-                    <Button variant="outline" size="lg" className="w-full sm:w-auto text-base px-10 h-14 border-border bg-black/5 backdrop-blur-md text-foreground hover:bg-white/10 rounded-full font-medium transition-all group">
-                        Watch the workflow <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    <Button variant="outline" size="lg" className="w-full sm:w-auto text-base px-10 h-14 border-border bg-black/5 backdrop-blur-md text-foreground hover:bg-white/10 rounded-full font-medium transition-all group"
+                        onClick={() => document.getElementById('workflow')?.scrollIntoView({ behavior: 'smooth' })}
+                    >                        Watch the workflow <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                     </Button>
                 </motion.div>
             </div>
