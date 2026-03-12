@@ -16,6 +16,7 @@ export interface DemoProject {
 export interface TemplateItem {
   id: string;
   name: string;
+  preview?: string;
   tags: string[];
   bestFor: string;
   complexity: 'simple' | 'medium' | 'complex';
