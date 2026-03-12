@@ -1,10 +1,11 @@
 import {
   LayoutDashboard, FolderOpen, LayoutGrid,
-  Settings, HelpCircle,
+  Settings, HelpCircle, LogOut,
 } from "lucide-react";
 import appLogo from "@/assets/logo-screenforge.png";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
@@ -24,6 +25,7 @@ const bottomItems = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
+  const { signOut } = useAuth();
   const location = useLocation();
   const isActive = (path: string) => location.pathname === path;
 
@@ -75,6 +77,15 @@ export function AppSidebar() {
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={() => signOut()}
+              className="hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-colors"
+            >
+              <LogOut className="mr-3 h-4 w-4" />
+              {!collapsed && <span>Logout</span>}
+            </SidebarMenuButton>
+          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
