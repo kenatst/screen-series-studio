@@ -2,7 +2,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import { Plus, LayoutTemplate, Loader2, Crown, CreditCard, Settings, ArchiveRestore, Archive } from "lucide-react";
+import { Plus, LayoutTemplate, Loader2, Crown, CreditCard, Settings, ArchiveRestore, Archive, Coins, Layers, FolderKanban } from "lucide-react";
 import { motion } from "framer-motion";
 import { useProjects, useProjectSlides, useArchiveProject, useUnarchiveProject } from "@/hooks/useProjects";
 import { useAuth } from "@/hooks/useAuth";
@@ -41,6 +41,7 @@ const Dashboard = () => {
 
   const activeProjects = projects?.filter(p => p.status !== 'archived') || [];
   const archivedProjects = projects?.filter(p => p.status === 'archived') || [];
+  const completedProjects = activeProjects.filter(p => p.status === 'completed').length;
 
   const handleNewProject = () => {
     if (!canCreateProject(profile?.plan || 'free', activeProjects.length)) {
@@ -118,11 +119,48 @@ const Dashboard = () => {
                 Upgrade
               </Button>
             )}
-            <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm rounded-xl px-6" onClick={handleNewProject}>
+            <Button
+              size="lg"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow rounded-xl px-6 font-black hover:scale-105 transition-all duration-300"
+              onClick={handleNewProject}
+            >
               <Plus className="mr-2 h-5 w-5" /> New project
             </Button>
           </div>
         </motion.div>
+
+        {/* Stats Row */}
+        {!isLoading && projects && projects.length > 0 && (
+          <div className="grid grid-cols-3 gap-4 mb-10">
+            <div className="rounded-2xl border border-border bg-card/50 backdrop-blur-sm p-5 flex items-center gap-4">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
+                <FolderKanban className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-2xl font-black text-foreground">{activeProjects.length}</p>
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Active Projects</p>
+              </div>
+            </div>
+            <div className="rounded-2xl border border-border bg-card/50 backdrop-blur-sm p-5 flex items-center gap-4">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
+                <Layers className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-2xl font-black text-foreground">{completedProjects}</p>
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Sets Completed</p>
+              </div>
+            </div>
+            <div className="rounded-2xl border border-primary/20 bg-primary/5 backdrop-blur-sm p-5 flex items-center gap-4">
+              <div className="h-10 w-10 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center flex-shrink-0 shadow-glow">
+                <Coins className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-2xl font-black text-primary">{profile?.credits ?? 0}</p>
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Credits Left</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {isLoading && (
           <div className="flex items-center justify-center py-20">
@@ -277,7 +315,7 @@ const Dashboard = () => {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </DashboardLayout >
   );
 };
 

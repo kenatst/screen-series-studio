@@ -1,10 +1,9 @@
-import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { demoTemplates, templateMoods } from "@/lib/demo-data";
 import { Search } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { templatePreviews } from "@/constants/templates";
 
@@ -13,10 +12,22 @@ const tones = ['All', 'corporate', 'bold', 'premium', 'playful', 'minimalist'];
 
 const Templates = () => {
   const navigate = useNavigate();
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [selectedTone, setSelectedTone] = useState('All');
-  const [selectedMood, setSelectedMood] = useState<string>('All');
-  const [search, setSearch] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const selectedCategory = searchParams.get('category') || 'All';
+  const selectedTone = searchParams.get('tone') || 'All';
+  const selectedMood = searchParams.get('mood') || 'All';
+  const search = searchParams.get('q') || '';
+
+  const setFilter = (key: string, value: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (value === 'All' || value === '') {
+      next.delete(key);
+    } else {
+      next.set(key, value);
+    }
+    setSearchParams(next, { replace: true });
+  };
 
   const filtered = demoTemplates.filter(t => {
     if (selectedCategory !== 'All' && t.category !== selectedCategory) return false;
@@ -25,6 +36,7 @@ const Templates = () => {
     if (search && !t.name.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
+
 
   return (
     <DashboardLayout>
@@ -68,7 +80,7 @@ const Templates = () => {
                 <Input
                   placeholder="Search templates (e.g., Finance, Bold, Dark)..."
                   value={search}
-                  onChange={e => setSearch(e.target.value)}
+                  onChange={e => setFilter('q', e.target.value)}
                   className="pl-12 pr-4 h-14 bg-background/80 border-border/50 text-foreground text-base rounded-xl backdrop-blur-xl shadow-inner focus-visible:ring-primary/30"
                 />
               </div>
@@ -84,7 +96,7 @@ const Templates = () => {
               {categories.map(c => (
                 <button
                   key={c}
-                  onClick={() => setSelectedCategory(c)}
+                  onClick={() => setFilter('category', c)}
                   className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all duration-300 ${selectedCategory === c ? 'bg-primary/20 text-primary border-primary shadow-glow' : 'bg-secondary text-muted-foreground border-border hover:border-primary/40 hover:text-foreground'
                     }`}
                 >
@@ -100,7 +112,7 @@ const Templates = () => {
             {templateMoods.map(m => (
               <button
                 key={m}
-                onClick={() => setSelectedMood(m)}
+                onClick={() => setFilter('mood', m)}
                 className={`px-3 py-1 rounded-lg text-xs capitalize border transition-colors ${selectedMood === m ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border hover:border-primary/30'}`}
               >
                 {m === 'dark' ? '🌙 Dark' : m === 'light' ? '☀️ Light' : m === 'colorful' ? '🌈 Colorful' : m === 'neutral' ? '⚪ Neutral' : '🎨 All'}
@@ -114,7 +126,7 @@ const Templates = () => {
           {tones.map(t => (
             <button
               key={t}
-              onClick={() => setSelectedTone(t)}
+              onClick={() => setFilter('tone', t)}
               className={`px-4 py-2 rounded-xl text-xs font-bold capitalize border transition-all duration-300 ${selectedTone === t ? 'bg-primary/20 text-primary border-primary shadow-glow' : 'bg-secondary/50 text-muted-foreground border-border hover:border-primary/40 hover:text-foreground'
                 }`}
             >

@@ -25,6 +25,26 @@ const faqs = [
     {
         q: "Can I regenerate just one slide?",
         a: "Yes. Our surgical editing feature lets you regenerate a single slide without breaking the visual coherence of the entire batch."
+    },
+    {
+        q: "How does the credit system work?",
+        a: "Each slide generation or regeneration costs 1 credit. Translating a slide costs 1 credit per language. Credits are replenished monthly based on your plan, and unused credits roll over for 30 days."
+    },
+    {
+        q: "How many slides does a typical screenshot set have?",
+        a: "A standard App Store set contains 5–10 screenshots. ShotApp AI generates a complete, cohesive 5–10 slide set in a single session. The Free plan gives you a preview of the first slide; paid plans unlock the full set."
+    },
+    {
+        q: "Which platforms are supported?",
+        a: "We support both Apple App Store (iOS/iPadOS) and Google Play Store (Android). Each platform has specific aspect ratio requirements, and our engine handles them automatically."
+    },
+    {
+        q: "Is there a free trial?",
+        a: "Yes. The Free plan includes 3 credits to try the full generation workflow. No credit card required to start."
+    },
+    {
+        q: "What is your refund policy?",
+        a: "We offer a 7-day no-questions-asked refund on your first subscription payment. For subsequent billing cycles, refunds are handled case-by-case. Contact support@screenforge.app within 48 hours of your billing date."
     }
 ];
 

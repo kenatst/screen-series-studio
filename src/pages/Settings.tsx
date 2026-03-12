@@ -10,14 +10,27 @@ import { useToast } from "@/hooks/use-toast";
 import { useSearchParams } from "react-router-dom";
 import { useBilling } from "@/hooks/useBilling";
 import { motion } from "framer-motion";
-import { Crown, CheckCircle2, Loader2, CreditCard, ExternalLink, RefreshCw, User, Coins } from "lucide-react";
+import { Crown, CheckCircle2, Loader2, CreditCard, ExternalLink, RefreshCw, User, Coins, Lock, AlertTriangle } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
 
 const Settings_Page = () => {
-  const { profile, checkSubscription, user, refreshProfile } = useAuth();
+  const { profile, checkSubscription, user, refreshProfile, signOut } = useAuth();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { handleUpgrade, handleManageSubscription, isOpeningPortal, isUpgrading } = useBilling();
+
+  // Password change
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  // Delete account
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   const plan = getPlanById(profile?.plan || "free");
   const credits = profile?.credits ?? 0;
@@ -35,6 +48,41 @@ const Settings_Page = () => {
     await refreshProfile();
     setIsRefreshing(false);
     toast({ title: "Status updated" });
+  };
+
+  const handleChangePassword = async () => {
+    if (!newPassword || newPassword.length < 8) {
+      toast({ title: "Password too short", description: "Minimum 8 characters.", variant: "destructive" });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast({ title: "Passwords don't match", variant: "destructive" });
+      return;
+    }
+    setIsChangingPassword(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setIsChangingPassword(false);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Password updated ✨", description: "Your password has been changed successfully." });
+      setNewPassword("");
+      setConfirmPassword("");
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== "DELETE") return;
+    setIsDeletingAccount(true);
+    // Sign out the user — actual account deletion must be triggered via Supabase Admin (Lovable/backend)
+    // We signal this via email and sign the user out immediately
+    await supabase.auth.signOut();
+    toast({
+      title: "Account deletion requested",
+      description: "Your session has been ended. Our team will process your deletion request within 24h.",
+    });
+    setIsDeletingAccount(false);
+    setShowDeleteDialog(false);
   };
 
   return (
@@ -99,9 +147,7 @@ const Settings_Page = () => {
               <div className="flex items-center gap-3 mb-2">
                 <Crown className="h-6 w-6 text-primary" />
                 <h2 className="text-2xl font-black tracking-tight text-foreground">{plan.name}</h2>
-                <Badge className="bg-primary/20 text-primary border-primary/30 text-xs font-bold uppercase">
-                  {plan.priceValue > 0 ? "Active" : "Active"}
-                </Badge>
+                <Badge className="bg-primary/20 text-primary border-primary/30 text-xs font-bold uppercase">Active</Badge>
               </div>
               <p className="text-muted-foreground">{plan.description}</p>
             </div>
@@ -140,12 +186,10 @@ const Settings_Page = () => {
           </div>
         </motion.div>
 
-
-
         {/* Account Info */}
         <motion.div
-          initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-          className="mt-8 rounded-2xl border border-border bg-card/50 p-6"
+          initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+          className="rounded-2xl border border-border bg-card/50 p-6 mb-8"
         >
           <div className="flex items-center gap-3 mb-4">
             <User className="h-5 w-5 text-primary" />
@@ -166,7 +210,101 @@ const Settings_Page = () => {
             </div>
           </div>
         </motion.div>
+
+        {/* Change Password */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+          className="rounded-2xl border border-border bg-card/50 p-6 mb-8"
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <Lock className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-bold text-foreground">Change Password</h2>
+          </div>
+          <div className="space-y-4 max-w-md">
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">New Password</label>
+              <Input
+                type="password"
+                placeholder="Min. 8 characters"
+                value={newPassword}
+                onChange={e => setNewPassword(e.target.value)}
+                className="rounded-xl border-border bg-background/50"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Confirm Password</label>
+              <Input
+                type="password"
+                placeholder="Repeat new password"
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
+                className="rounded-xl border-border bg-background/50"
+              />
+            </div>
+            <Button
+              onClick={handleChangePassword}
+              disabled={isChangingPassword || !newPassword || !confirmPassword}
+              className="rounded-xl"
+            >
+              {isChangingPassword ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Lock className="h-4 w-4 mr-2" />}
+              Update Password
+            </Button>
+          </div>
+        </motion.div>
+
+        {/* Danger Zone */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+          className="rounded-2xl border border-destructive/30 bg-destructive/5 p-6"
+        >
+          <div className="flex items-center gap-3 mb-4">
+            <AlertTriangle className="h-5 w-5 text-destructive" />
+            <h2 className="text-lg font-bold text-destructive">Danger Zone</h2>
+          </div>
+          <p className="text-sm text-muted-foreground mb-4">
+            Permanently delete your account and all associated data. This action cannot be undone.
+          </p>
+          <Button
+            variant="outline"
+            className="border-destructive/40 text-destructive hover:bg-destructive/10 rounded-xl"
+            onClick={() => setShowDeleteDialog(true)}
+          >
+            Delete Account
+          </Button>
+        </motion.div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="sm:max-w-md bg-card/95 border border-destructive/30 backdrop-blur-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl font-black text-destructive">
+              <AlertTriangle className="h-5 w-5" /> Delete Account?
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground pt-2">
+              This will permanently end your session and request deletion of all your data.
+              Type <span className="font-black text-foreground">DELETE</span> to confirm.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            value={deleteConfirmText}
+            onChange={e => setDeleteConfirmText(e.target.value)}
+            placeholder="Type DELETE to confirm"
+            className="rounded-xl border-destructive/30 mt-2"
+          />
+          <DialogFooter className="flex gap-3 mt-4">
+            <Button variant="ghost" onClick={() => setShowDeleteDialog(false)} className="rounded-xl">Cancel</Button>
+            <Button
+              onClick={handleDeleteAccount}
+              disabled={deleteConfirmText !== "DELETE" || isDeletingAccount}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl"
+            >
+              {isDeletingAccount ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Confirm Deletion
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };

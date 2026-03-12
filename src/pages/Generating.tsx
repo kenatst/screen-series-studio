@@ -2,10 +2,11 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate, useParams } from "react-router-dom";
-import { Sparkles, CheckCircle2, Loader2, AlertCircle, Clock, StopCircle, ThumbsUp, RefreshCw } from "lucide-react";
+import { Sparkles, CheckCircle2, Loader2, AlertCircle, StopCircle, ThumbsUp, RefreshCw, Download, Coins } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useArchiveProject } from "@/hooks/useProjects";
+import { useAuth } from "@/hooks/useAuth";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -60,6 +61,7 @@ const Generating = () => {
   const { data: dbSlides } = useProjectSlides(projectId);
   const archiveProject = useArchiveProject();
   const { toast } = useToast();
+  const { profile } = useAuth();
 
   const startedRef = useRef(false);
   const redirectedRef = useRef(false);
@@ -470,6 +472,13 @@ const Generating = () => {
           </div>
 
           <div className="flex items-center gap-4">
+            {/* Credits display */}
+            <div className="hidden md:flex items-center gap-1.5 bg-primary/10 border border-primary/20 rounded-xl px-3 py-1.5">
+              <Coins className="h-3.5 w-3.5 text-primary" />
+              <span className="text-sm font-black text-primary">{profile?.credits ?? 0}</span>
+              <span className="text-xs text-muted-foreground font-medium">credits</span>
+            </div>
+
             <div className="hidden md:flex items-center gap-2">
               <span className="text-sm font-bold text-primary">{phases[currentPhase]?.icon}</span>
               <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{phases[currentPhase]?.label}</span>
@@ -652,6 +661,34 @@ const Generating = () => {
           </motion.div>
 
         </div>
+
+        {/* Download Results CTA — shown when all slides are generated */}
+        {!hasMoreSlides && completedCount >= slideCount && completedCount > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="w-full mt-8 p-6 rounded-3xl border-2 border-primary/30 bg-gradient-to-br from-primary/10 via-card/80 to-card/80 backdrop-blur-sm flex flex-col sm:flex-row items-center justify-between gap-4"
+          >
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-2xl bg-primary/20 border border-primary/30 flex items-center justify-center shadow-glow flex-shrink-0">
+                <CheckCircle2 className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <p className="text-lg font-black text-foreground">All {completedCount} slides ready!</p>
+                <p className="text-sm text-muted-foreground">Your screenshot set is complete and ready to download.</p>
+              </div>
+            </div>
+            <Button
+              size="lg"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-black rounded-2xl px-8 shadow-glow flex-shrink-0"
+              onClick={() => navigate(`/project/${projectId}/results`)}
+            >
+              <Download className="mr-2 h-5 w-5" />
+              View &amp; Download Results
+            </Button>
+          </motion.div>
+        )}
 
       </div>
     </DashboardLayout>
