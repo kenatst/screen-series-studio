@@ -125,7 +125,7 @@ serve(async (req) => {
       if (textContent) {
         try {
           const textEmbeddingResponse = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-exp-03-07:embedContent?key=${geminiApiKey}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${geminiApiKey}`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
