@@ -453,10 +453,9 @@ serve(async (req) => {
       });
     }
 
-    // Deduct credits upfront (only when needed)
-    if (totalCost > 0) {
-      await adminClient.from("profiles").update({ credits: currentCredits - totalCost }).eq("id", userId);
-    }
+    // Credits are now deducted AFTER successful generation (see inside the stream loop)
+    // Reserve the credits check but don't deduct yet
+    const reservedCredits = totalCost;
 
     // Fetch reference assets from storage
     const { data: assets } = await userClient.from("assets").select("*").eq("project_id", projectId);
