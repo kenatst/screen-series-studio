@@ -417,6 +417,11 @@ const Generating = () => {
     setIsSubmittingFeedback(true);
     setReviewMode(false);
 
+    toast({
+      title: "Redesigning slide...",
+      description: "Applying your feedback to the creative engine.",
+    });
+
     // Optimistic UI back to generating
     setSlideStatuses((prev) => {
       const next = [...prev];
@@ -551,28 +556,38 @@ const Generating = () => {
                   <h3 className="text-xl font-black mb-1">Slide Ready</h3>
                   <p className="text-sm text-muted-foreground mb-6">Review this slide. Modify it or proceed.</p>
 
-                  <Button onClick={handleApprove} className="w-full h-14 text-lg rounded-2xl font-bold shadow-glow mb-4" size="lg">
-                    <ThumbsUp className="mr-2 h-5 w-5" />
-                    {hasMoreSlides ? "Looks Good - Next Slide" : "Perfect - Finish Set"}
-                  </Button>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">What should we change?</label>
+                      <Textarea
+                        placeholder="e.g., 'Make the headline smaller' or 'Bring back the mascot'"
+                        value={feedback}
+                        onChange={(e) => setFeedback(e.target.value)}
+                        className="resize-none min-h-[100px] border-primary/20 bg-card text-sm placeholder:text-muted-foreground focus-visible:ring-primary shadow-sm rounded-xl p-4"
+                      />
+                    </div>
 
-                  <div className="relative flex items-center py-4">
-                    <div className="flex-grow border-t border-border"></div>
-                    <span className="flex-shrink-0 mx-4 text-xs font-bold text-muted-foreground uppercase tracking-widest">or</span>
-                    <div className="flex-grow border-t border-border"></div>
-                  </div>
+                    <div className="flex gap-3">
+                      <Button
+                        onClick={handleRedesign}
+                        disabled={!feedback.trim() || isSubmittingFeedback}
+                        variant="outline"
+                        className="flex-1 h-14 rounded-2xl text-primary font-bold border-primary/20 hover:bg-primary/10 shadow-sm"
+                      >
+                        {isSubmittingFeedback ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                        Redesign
+                      </Button>
 
-                  <div className="flex flex-col gap-3">
-                    <Textarea
-                      placeholder="What should we change? (e.g., 'Make the headline smaller' or 'Bring back the mascot')"
-                      value={feedback}
-                      onChange={(e) => setFeedback(e.target.value)}
-                      className="resize-none min-h-[90px] border-muted bg-card/50 text-sm placeholder:text-muted-foreground focus-visible:ring-primary/40 rounded-xl"
-                    />
-                    <Button onClick={handleRedesign} disabled={!feedback.trim() || isSubmittingFeedback} variant="outline" className="w-full h-12 rounded-xl text-primary font-bold border-primary/20 hover:bg-primary/10">
-                      {isSubmittingFeedback ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                      Redesign Slide
-                    </Button>
+                      <Button
+                        onClick={handleApprove}
+                        className="flex-1 h-14 rounded-2xl font-bold shadow-glow"
+                        size="lg"
+                        disabled={isSubmittingFeedback}
+                      >
+                        <ThumbsUp className="mr-2 h-5 w-5" />
+                        {hasMoreSlides ? "Looks Good" : "Perfect"}
+                      </Button>
+                    </div>
                   </div>
                 </motion.div>
               )}
@@ -580,28 +595,25 @@ const Generating = () => {
           </motion.div>
 
           {/* RIGHT/BOTTOM: Timeline Thumbnails */}
-          <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1.5} className="w-full xl:w-48 xl:h-full flex xl:flex-col items-center justify-start gap-4 overflow-x-auto xl:overflow-x-visible xl:overflow-y-auto pt-2 pb-4 px-2 custom-scrollbar">
-            {Array.from({ length: slideCount }).map((_, i) => {
+          <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1.5} className="w-full xl:w-56 xl:h-full flex xl:flex-col items-center justify-start gap-4 overflow-x-auto xl:overflow-x-visible xl:overflow-y-auto pt-2 pb-4 px-2 custom-scrollbar">
+            {Array.from({ length: Math.max(slideCount, 1) }).map((_, i) => {
               const status = slideStatuses[i] ?? "pending";
               const image = slideImages[i];
-              const isActive = i === actualIndex;
+              const isActive = (activeSlideNumber === i + 1);
 
               return (
-                <div key={i} className={`group flex-shrink-0 relative w-24 xl:w-full aspect-[9/19.5] rounded-xl border flex flex-col items-center justify-center cursor-pointer transition-all duration-300 overflow-hidden shadow-sm hover:shadow-md ${status === "completed"
+                <div key={i} className={`group flex-shrink-0 relative w-24 xl:w-full aspect-[9/19.5] rounded-xl border-2 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 overflow-hidden shadow-sm hover:shadow-lg hover:scale-[1.02] ${status === "completed"
                   ? "border-primary/50 bg-card/90"
                   : status === "generating"
-                    ? "border-primary/30 bg-primary/5 backdrop-blur-md"
-                    : "border-border bg-card/50 opacity-40 hover:opacity-80"
-                  } ${isActive ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
+                    ? "border-primary animate-pulse bg-primary/5 backdrop-blur-md"
+                    : "border-border bg-card/50 opacity-60 hover:opacity-100"
+                  } ${isActive ? 'ring-4 ring-primary ring-offset-2 ring-offset-background z-10' : ''}`}
                   onClick={() => {
-                    // Only allow switching to completed slides for preview during generation
-                    if (status === "completed" || status === "generating") {
-                      setActiveSlideNumber(i + 1);
-                      // Hide ReviewMode overlay if we peek at previous slides, unless it's the actively reviewing one
-                      if (i !== actualIndex && reviewMode) {
-                        // Optional: We can keep reviewMode true but maybe suppress the modal visually if not on the latest.
-                        // For simplicity, let activeSlideNumber dictate the view. The modal will still show since it depends on centralStatus === "completed"
-                      }
+                    setActiveSlideNumber(i + 1);
+                    // If we navigate to a slide that isn't the "currently generating/ready" one, 
+                    // we might want to toggle reviewMode based on whether THAT slide is completed.
+                    if (status === "completed") {
+                      // Optionally setReviewMode(true) if we want the redesign input to show for any completed slide
                     }
                   }}
                 >
@@ -610,13 +622,26 @@ const Generating = () => {
                   ) : null}
 
                   {status === "generating" ? (
-                    <Loader2 className="h-5 w-5 text-primary animate-spin" />
+                    <div className="flex flex-col items-center gap-2 z-10">
+                      <Loader2 className="h-6 w-6 text-primary animate-spin" />
+                      <span className="text-[8px] font-black uppercase tracking-tighter text-primary">Generating</span>
+                    </div>
                   ) : !image ? (
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase">{i + 1}</span>
+                    <div className="flex flex-col items-center gap-1 z-10">
+                      <span className="text-xl font-black text-muted-foreground/30">{i + 1}</span>
+                      <span className="text-[8px] font-black uppercase tracking-tighter text-muted-foreground/50">{status}</span>
+                    </div>
                   ) : null}
 
-                  {/* Status Indicator */}
-                  <div className="absolute top-1.5 right-1.5 bg-background/80 rounded-full p-0.5 backdrop-blur-sm">
+                  {/* Status Indicator Overlays */}
+                  {status === "completed" && (
+                    <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-primary/90 text-primary-foreground px-1.5 py-0.5 rounded-md backdrop-blur-sm z-20">
+                      <CheckCircle2 className="h-2.5 w-2.5" />
+                      <span className="text-[8px] font-black uppercase">READY</span>
+                    </div>
+                  )}
+
+                  <div className="absolute top-2 right-2 bg-background/80 rounded-full p-0.5 backdrop-blur-sm z-20">
                     {status === "completed" ? <CheckCircle2 className="h-3 w-3 text-primary" /> :
                       status === "generating" ? <div className="h-2 w-2 rounded-full bg-primary animate-ping m-0.5" /> :
                         <div className="h-2 w-2 rounded-full bg-muted-foreground m-0.5" />}
