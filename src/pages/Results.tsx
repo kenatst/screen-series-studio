@@ -49,7 +49,7 @@ const Results = () => {
 
   const selectedSlide = slides?.find(s => s.id === selectedSlideId) || slides?.[0];
 
-  const handleUpgrade = () => billingUpgrade('starter');
+  const handleUpgrade = () => billingUpgrade('starter', `/project/${projectId}/generating`);
 
   const checkCredits = (cost: number): boolean => {
     if (userCredits < cost) {

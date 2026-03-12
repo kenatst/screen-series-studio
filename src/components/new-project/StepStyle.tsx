@@ -1,9 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2, LayoutGrid, Upload } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { CheckCircle2, LayoutGrid, Upload, Lock } from "lucide-react";
 import { templateMoods } from "@/lib/demo-data";
 import { templatePreviews } from "@/constants/templates";
 import { useNewProject } from "@/contexts/NewProjectContext";
+import { useBilling } from "@/hooks/useBilling";
+import { useSearchParams } from "react-router-dom";
 
 export const StepStyle = () => {
   const {
@@ -11,7 +14,35 @@ export const StepStyle = () => {
     templateMoodFilter, setTemplateMoodFilter,
     templateCategoryFilter, setTemplateCategoryFilter,
     filteredTemplates, templateCategories,
+    profile, handleSaveDraft
   } = useNewProject();
+  const { handleUpgrade } = useBilling();
+  const [searchParams] = useSearchParams();
+  const projectId = searchParams.get('project');
+  const isFree = profile?.plan === 'free';
+
+  const onSelectTemplate = async (templateName: string) => {
+    const isPremium = ['Subscription', 'Finance', 'RPG', 'Vault', 'Trainer AI'].some(p => templateName.includes(p));
+    if (isFree && isPremium) {
+      if (window.confirm(`"${templateName}" is a Premium template. Upgrade to unlock all styles? We'll save your draft so you can continue immediately.`)) {
+        await handleSaveDraft();
+        handleUpgrade('starter', `/project/new?project=${projectId}&step=4`);
+      }
+      return;
+    }
+    setSelectedTemplate(templateName);
+  };
+
+  const onSelectReference = async () => {
+    if (isFree) {
+      if (window.confirm("Reference-based generation is a Pro feature. Upgrade to unlock? We'll save your draft so you can continue immediately.")) {
+        await handleSaveDraft();
+        handleUpgrade('starter', `/project/new?project=${projectId}&step=4`);
+      }
+      return;
+    }
+    setSelectedTemplate('reference');
+  };
 
   return (
     <div className="space-y-8 relative z-10">
@@ -22,7 +53,7 @@ export const StepStyle = () => {
 
       <div className="flex gap-2 p-1.5 bg-card/90 border border-border rounded-xl inline-flex mb-2 shadow-inner">
         <Button variant={selectedTemplate !== 'reference' ? 'default' : 'ghost'} className={`rounded-lg font-bold transition-all duration-300 ${selectedTemplate !== 'reference' ? 'bg-primary text-primary-foreground shadow-glow' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`} onClick={() => setSelectedTemplate('')}>Templates</Button>
-        <Button variant={selectedTemplate === 'reference' ? 'default' : 'ghost'} className={`rounded-lg font-bold transition-all duration-300 ${selectedTemplate === 'reference' ? 'bg-primary text-primary-foreground shadow-glow' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`} onClick={() => setSelectedTemplate('reference')}>References</Button>
+        <Button variant={selectedTemplate === 'reference' ? 'default' : 'ghost'} className={`rounded-lg font-bold transition-all duration-300 ${selectedTemplate === 'reference' ? 'bg-primary text-primary-foreground shadow-glow' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`} onClick={onSelectReference}>References</Button>
       </div>
 
       {selectedTemplate !== 'reference' ? (
@@ -46,27 +77,35 @@ export const StepStyle = () => {
             </div>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 max-h-[600px] overflow-y-auto pr-1">
-            {filteredTemplates.map(t => (
-              <button key={t.id} onClick={() => setSelectedTemplate(t.name)} className={`rounded-2xl border-2 overflow-hidden transition-all duration-300 ${selectedTemplate === t.name ? 'border-primary shadow-glow scale-[1.02]' : 'border-border hover:border-primary/40 hover:scale-[1.02] shadow-sm'}`}>
-                <div className="aspect-[3/4] relative overflow-hidden bg-card/90">
-                  {templatePreviews[t.name] ? (
-                    <img src={templatePreviews[t.name]} alt={t.name} className="w-full h-full object-contain" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <LayoutGrid className={`h-8 w-8 ${selectedTemplate === t.name ? 'text-primary' : 'text-foreground/30'}`} />
-                    </div>
-                  )}
-                  {selectedTemplate === t.name && (
-                    <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                      <CheckCircle2 className="h-8 w-8 text-primary drop-shadow-lg" />
-                    </div>
-                  )}
-                </div>
-                <div className="p-3 bg-card/90 border-t border-border">
-                  <span className={`text-xs font-bold tracking-tight ${selectedTemplate === t.name ? 'text-primary' : 'text-muted-foreground'}`}>{t.name}</span>
-                </div>
-              </button>
-            ))}
+            {filteredTemplates.map(t => {
+              const isLocked = isFree && ['Subscription', 'Finance', 'RPG', 'Vault', 'Trainer AI'].some(p => t.name.includes(p));
+              return (
+                <button key={t.id} onClick={() => onSelectTemplate(t.name)} className={`relative rounded-2xl border-2 overflow-hidden transition-all duration-300 ${selectedTemplate === t.name ? 'border-primary shadow-glow scale-[1.02]' : 'border-border hover:border-primary/40 hover:scale-[1.02] shadow-sm'}`}>
+                  <div className="aspect-[3/4] relative overflow-hidden bg-card/90">
+                    {templatePreviews[t.name] ? (
+                      <img src={templatePreviews[t.name]} alt={t.name} className="w-full h-full object-contain" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <LayoutGrid className={`h-8 w-8 ${selectedTemplate === t.name ? 'text-primary' : 'text-foreground/30'}`} />
+                      </div>
+                    )}
+                    {isLocked && (
+                      <div className="absolute top-2 right-2 z-20 bg-primary/20 backdrop-blur-md rounded-lg p-1.5 border border-primary/30">
+                        <Lock className="h-3 w-3 text-primary animate-pulse" />
+                      </div>
+                    )}
+                    {selectedTemplate === t.name && (
+                      <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                        <CheckCircle2 className="h-8 w-8 text-primary drop-shadow-lg" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-3 bg-card/90 border-t border-border">
+                    <span className={`text-xs font-bold tracking-tight ${selectedTemplate === t.name ? 'text-primary' : 'text-muted-foreground'}`}>{t.name}</span>
+                  </div>
+                </button>
+              );
+            })}
           </div>
           {filteredTemplates.length === 0 && (
             <div className="text-center py-12 text-muted-foreground">
@@ -76,9 +115,13 @@ export const StepStyle = () => {
         </div>
       ) : (
         <div className="space-y-6">
-          <div className="border border-dashed border-border bg-card/90 rounded-2xl p-8 text-center hover:border-primary/40 hover:bg-muted/50 transition-all duration-300 cursor-pointer shadow-inner">
-            <Upload className="h-6 w-6 text-foreground/30 mx-auto mb-3" />
-            <p className="text-sm font-bold text-muted-foreground tracking-tight">Upload your reference mockups</p>
+          <div
+            onClick={onSelectReference}
+            className="border border-dashed border-border bg-card/90 rounded-2xl p-8 text-center hover:border-primary/40 hover:bg-muted/50 transition-all duration-300 cursor-pointer shadow-inner group"
+          >
+            <Upload className="h-6 w-6 text-foreground/30 mx-auto mb-3 group-hover:text-primary transition-colors" />
+            <p className="text-sm font-bold text-muted-foreground tracking-tight group-hover:text-foreground">Upload your reference mockups</p>
+            {isFree && <Badge className="mt-2 bg-primary/20 text-primary border-primary/30 rounded-lg">Pro Feature</Badge>}
           </div>
           <div className="space-y-3">
             <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Inspiration notes</label>

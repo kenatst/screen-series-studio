@@ -5,13 +5,14 @@ import { CheckCircle2, X, Info } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Link, useNavigate } from 'react-router-dom';
 import { PLANS } from '@/lib/plans';
+import { useBilling } from '@/hooks/useBilling';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 export const PricingSection = () => {
     const { session, profile } = useAuth();
     const { toast } = useToast();
+    const { handleUpgrade, isUpgrading } = useBilling();
 
     const handleCta = async (planId: string) => {
         if (planId === 'free') {
@@ -22,15 +23,8 @@ export const PricingSection = () => {
             window.location.href = '/login';
             return;
         }
-        try {
-            const { data, error } = await supabase.functions.invoke("create-checkout", {
-                body: { plan: planId },
-            });
-            if (error) throw error;
-            if (data?.url) window.open(data.url, "_blank");
-        } catch (e: any) {
-            toast({ title: "Error", description: e.message, variant: "destructive" });
-        } finally { }
+
+        await handleUpgrade(planId, window.location.pathname);
     };
 
     return (

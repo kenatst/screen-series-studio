@@ -84,7 +84,7 @@ serve(async (req) => {
     const user = data.user;
     if (!user?.email) throw new Error("User not authenticated");
 
-    const { plan } = await req.json();
+    const { plan, redirect_path } = await req.json();
     if (!PLAN_DEFS[plan]) throw new Error(`Invalid plan: ${plan}`);
 
     const stripeKey = Deno.env.get("STRIPE_TEST_SECRET") || "";
@@ -104,13 +104,17 @@ serve(async (req) => {
       customerId = customers.data[0].id;
     }
 
+    const origin = req.headers.get("origin");
+    const successPath = redirect_path || "/dashboard/settings";
+    const successUrl = `${origin}${successPath}${successPath.includes('?') ? '&' : '?'}checkout=success`;
+
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [{ price: priceId, quantity: 1 }],
       mode: "subscription",
-      success_url: `${req.headers.get("origin")}/dashboard/settings?checkout=success`,
-      cancel_url: `${req.headers.get("origin")}/dashboard?checkout=cancel`,
+      success_url: successUrl,
+      cancel_url: `${origin}/dashboard?checkout=cancel`,
       metadata: { user_id: user.id, plan },
     });
 

@@ -4,17 +4,34 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableSlide } from "@/components/project/SortableSlide";
+import { useBilling } from "@/hooks/useBilling";
+import { useAuth } from "@/hooks/useAuth";
 import { useNewProject } from "@/contexts/NewProjectContext";
+import { useSearchParams } from "react-router-dom";
 
 export const StepPlanner = () => {
   const {
     slides, slideCount, isAutoFilling, uploadedScreens,
     consistencyLevel, sensors, handleDragEnd, handleAutoFillSlides,
     handleSlideCountChange, updateSlide, removeSlide, addSlide,
-    getScreenOptions, setConsistencyLevel,
+    getScreenOptions, setConsistencyLevel, maxSlides, handleSaveDraft,
   } = useNewProject();
+  const { handleUpgrade } = useBilling();
+  const [searchParams] = useSearchParams();
+  const projectId = searchParams.get('project');
 
   const screensMapped = uploadedScreens.map(s => ({ id: s.id, file: s.file, preview: s.preview, tag: s.tag }));
+
+  const onSlideCountSelect = async (n: number) => {
+    if (n > maxSlides) {
+      if (window.confirm(`Upgrade to unlock ${n} slides? We'll save your draft so you can pick up exactly where you left off.`)) {
+        await handleSaveDraft();
+        handleUpgrade('starter', `/project/new?project=${projectId}&step=5`);
+      }
+      return;
+    }
+    handleSlideCountChange(n);
+  };
 
   return (
     <div className="space-y-8 relative z-10">
@@ -40,11 +57,24 @@ export const StepPlanner = () => {
             <div className="flex items-center gap-3 bg-card/90 px-3 py-1.5 rounded-xl border border-border shadow-inner">
               <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Slides:</span>
               <div className="flex gap-1">
-                {[3, 5, 7, 10].map(n => (
-                  <button key={n} onClick={() => handleSlideCountChange(n)} className={`h-8 w-8 rounded-lg text-xs font-bold border transition-all duration-300 ${slideCount === n ? 'bg-primary text-primary-foreground border-primary shadow-glow' : 'bg-muted/50 text-muted-foreground border-border hover:border-border hover:text-foreground'}`}>
-                    {n}
-                  </button>
-                ))}
+                {[3, 5, 7, 10].map(n => {
+                  const isLocked = n > maxSlides;
+                  return (
+                    <button
+                      key={n}
+                      onClick={() => onSlideCountSelect(n)}
+                      className={`h-8 w-8 rounded-lg text-xs font-bold border transition-all duration-300 relative ${slideCount === n
+                        ? 'bg-primary text-primary-foreground border-primary shadow-glow'
+                        : isLocked
+                          ? 'bg-muted/30 text-muted-foreground/40 border-border cursor-pointer hover:border-primary/30'
+                          : 'bg-muted/50 text-muted-foreground border-border hover:border-border hover:text-foreground'
+                        }`}
+                    >
+                      {n}
+                      {isLocked && <Lock className="h-2 w-2 absolute -top-1 -right-1 text-primary animate-pulse" />}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>

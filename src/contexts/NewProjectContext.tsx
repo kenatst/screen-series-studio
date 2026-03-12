@@ -153,6 +153,7 @@ interface NewProjectContextType {
   handleSaveDraft: () => Promise<void>;
   handleGenerate: () => Promise<void>;
   getFinalProjectName: () => string;
+  profile: any;
 }
 
 const NewProjectContext = createContext<NewProjectContextType | null>(null);
@@ -247,7 +248,16 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
       setBrandColors(brandKit.colors || []);
       setBrandFont(brandKit.fontFamily || '');
     }
-  }, [editProjectId, existingProject, hydrated]);
+
+    // Restore step if provided in URL
+    const urlStep = searchParams.get('step');
+    if (urlStep) {
+      const stepNum = parseInt(urlStep);
+      if (!isNaN(stepNum) && stepNum >= 1 && stepNum <= 7) {
+        setCurrentStep(stepNum);
+      }
+    }
+  }, [editProjectId, existingProject, hydrated, searchParams]);
 
   // Hydrate slides from DB
   useEffect(() => {
@@ -585,6 +595,7 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
       handleAutoFillSlides, updateSlide, removeSlide, addSlide, getScreenOptions, maxSlides,
       generationMode, setGenerationMode,
       isSaving, lastSavedAt, handleSaveDraft, handleGenerate, getFinalProjectName,
+      profile,
     }}>
       {children}
     </NewProjectContext.Provider>

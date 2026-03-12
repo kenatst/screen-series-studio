@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
-import { useNavigate, useParams } from "react-router-dom";
-import { Sparkles, CheckCircle2, Loader2, AlertCircle, StopCircle, ThumbsUp, RefreshCw, Download, Coins } from "lucide-react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Sparkles, CheckCircle2, Loader2, AlertCircle, StopCircle, ThumbsUp, RefreshCw, Download, Coins, PartyPopper } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useArchiveProject } from "@/hooks/useProjects";
@@ -56,18 +56,20 @@ const statusLabel: Record<SlideUiStatus, string> = {
 
 const Generating = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { projectId } = useParams();
   const { data: project } = useProject(projectId);
   const { data: dbSlides } = useProjectSlides(projectId);
   const archiveProject = useArchiveProject();
   const { toast } = useToast();
-  const { profile } = useAuth();
+  const { profile, refreshProfile, checkSubscription } = useAuth();
 
   const startedRef = useRef(false);
   const redirectedRef = useRef(false);
   const pollIntervalRef = useRef<number | null>(null);
   const requestAbortRef = useRef<AbortController | null>(null);
   const warmupIntervalRef = useRef<number | null>(null);
+  const isReturningFromCheckoutRef = useRef(searchParams.get("checkout") === "success");
 
   const [progress, setProgress] = useState(0);
   const [currentPhase, setCurrentPhase] = useState(0);
@@ -81,6 +83,25 @@ const Generating = () => {
   const [feedback, setFeedback] = useState("");
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   const [hasMoreSlides, setHasMoreSlides] = useState(true);
+
+  // Handle successful checkout return
+  useEffect(() => {
+    if (searchParams.get("checkout") === "success") {
+      toast({
+        title: "Upgrade Successful! 🎉",
+        description: "Your Pro plan is active. Resuming your generation...",
+        duration: 5000,
+      });
+      // Clear the param to avoid re-triggering
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete("checkout");
+      setSearchParams(newParams, { replace: true });
+
+      // Refresh user state immediately
+      checkSubscription();
+      refreshProfile();
+    }
+  }, [searchParams, toast, setSearchParams, checkSubscription, refreshProfile]);
 
   const stopPolling = useCallback(() => {
     if (pollIntervalRef.current) {
@@ -364,8 +385,10 @@ const Generating = () => {
         (slide) => slide.status === "generating" || normalizeStatus(slide.status, slide.image_url) === "completed"
       );
 
+      const isReturningFromCheckout = isReturningFromCheckoutRef.current;
+
       // If all completed, and we haven't touched anything, dump to results
-      if (slidesSnapshot.length > 0 && !hasIncomplete) {
+      if (slidesSnapshot.length > 0 && !hasIncomplete && !isReturningFromCheckout) {
         routeToResults();
         return;
       }
@@ -381,7 +404,9 @@ const Generating = () => {
         setActiveSlideNumber(1);
       }
 
-      await processQueue(session.access_token, currentStatus === "generating" && hasStarted);
+      // Auto-start if we just upgraded, even if it wasn't "generating" before
+      const shouldAutoStart = (currentStatus === "generating" && hasStarted) || isReturningFromCheckout;
+      await processQueue(session.access_token, shouldAutoStart);
     };
 
     const timer = window.setTimeout(bootstrap, 500);
@@ -478,6 +503,20 @@ const Generating = () => {
               <span className="text-sm font-black text-primary">{profile?.credits ?? 0}</span>
               <span className="text-xs text-muted-foreground font-medium">credits</span>
             </div>
+
+            <AnimatePresence>
+              {searchParams.get("checkout") === "success" && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.5, x: 20 }}
+                  animate={{ opacity: 1, scale: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-1.5 shadow-glow shadow-green-500/20"
+                >
+                  <PartyPopper className="h-4 w-4 text-green-500 animate-bounce" />
+                  <span className="text-xs font-black text-green-500 uppercase tracking-wider">Plan Active</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <div className="hidden md:flex items-center gap-2">
               <span className="text-sm font-bold text-primary">{phases[currentPhase]?.icon}</span>
