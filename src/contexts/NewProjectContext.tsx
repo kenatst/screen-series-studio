@@ -106,6 +106,14 @@ interface NewProjectContextType {
   removeScreen: (id: string) => void;
   screenInputRef: React.RefObject<HTMLInputElement | null>;
 
+  // Reference mockups
+  referenceMockups: ReferenceMockup[];
+  handleReferenceUpload: (files: FileList | null) => void;
+  removeReferenceMockup: (id: string) => void;
+  referenceInputRef: React.RefObject<HTMLInputElement | null>;
+  inspirationText: string;
+  setInspirationText: (v: string) => void;
+
   // Brand kit
   brandAssets: BrandAsset[];
   setBrandAssets: React.Dispatch<React.SetStateAction<BrandAsset[]>>;
