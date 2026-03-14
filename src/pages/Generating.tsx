@@ -39,6 +39,12 @@ const fadeUp = {
 };
 
 type SlideUiStatus = "pending" | "generating" | "completed" | "error";
+type SlideSnapshot = { slide_number: number; status: string; image_url: string | null };
+
+const isStoragePath = (value: string | null) => {
+  if (!value) return false;
+  return !value.startsWith("http://") && !value.startsWith("https://");
+};
 
 const normalizeStatus = (status: string, imageUrl: string | null): SlideUiStatus => {
   if (imageUrl) return "completed";
