@@ -641,13 +641,17 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
     if (!user) { toast({ title: "Not authenticated", variant: "destructive" }); return; }
     setIsSaving(true);
     try {
+      console.log("[GENERATE] Starting saveProjectAndSlides...");
+      console.log("[GENERATE] slides count:", slides.length, "user:", user.id);
       const projectId = await saveProjectAndSlides();
+      console.log("[GENERATE] Project saved, id:", projectId);
       // Ensure status is set to generating so the generation page auto-starts
       await updateProject.mutateAsync({ id: projectId, status: 'generating' });
+      console.log("[GENERATE] Status set to generating, navigating...");
       navigate(`/project/${projectId}/generating`);
-    } catch (e) {
-      console.error("Failed to save project", e);
-      toast({ title: "Error", description: "Failed to create project", variant: "destructive" });
+    } catch (e: any) {
+      console.error("[GENERATE] Failed to save project:", e?.message, e?.code, e?.details, e);
+      toast({ title: "Error", description: `Failed to create project: ${e?.message || 'Unknown error'}`, variant: "destructive" });
       setIsSaving(false);
     }
   };
