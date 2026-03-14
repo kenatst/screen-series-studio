@@ -178,9 +178,8 @@ const Generating = () => {
   }, [dbSlides, applyLiveSlides]);
 
   const startPolling = useCallback(() => {
-    if (!projectId || reviewMode) return;
+    if (!projectId || reviewMode || realtimeChannelRef.current) return;
 
-    // Use Supabase Realtime instead of interval polling
     const channel = supabase
       .channel(`slides-${projectId}`)
       .on(
@@ -192,13 +191,24 @@ const Generating = () => {
             .select("slide_number,status,image_url")
             .eq("project_id", projectId)
             .order("slide_number", { ascending: true });
+
           if (data?.length) applyLiveSlides(data);
         }
       )
       .subscribe();
 
-    // Store channel ref for cleanup (reuse pollIntervalRef as sentinel)
-    pollIntervalRef.current = 1;
+    realtimeChannelRef.current = channel;
+
+    // Keep a lightweight fallback refresh in case realtime delivery is delayed
+    pollIntervalRef.current = window.setInterval(async () => {
+      const { data } = await supabase
+        .from("project_slides")
+        .select("slide_number,status,image_url")
+        .eq("project_id", projectId)
+        .order("slide_number", { ascending: true });
+
+      if (data?.length) applyLiveSlides(data);
+    }, 5000);
   }, [projectId, reviewMode, applyLiveSlides]);
 
   const startGenerationStream = useCallback(async (accessToken: string, resume = false, targetSlide?: number, userFeedback?: string): Promise<"done" | "hasMore" | "busy" | { error: string }> => {
