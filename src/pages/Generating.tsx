@@ -595,6 +595,10 @@ const Generating = () => {
 
   const slideCount = slideStatuses.length || 5;
   const completedCount = slideStatuses.filter(s => s === "completed").length;
+  const nextPendingIndex = slideStatuses.findIndex((s) => s === "pending");
+  const nextSlideNumberForCta = nextPendingIndex >= 0
+    ? nextPendingIndex + 1
+    : (reviewSlideNumber ? reviewSlideNumber + 1 : null);
 
   const displaySlideIndex = activeSlideNumber ? activeSlideNumber - 1 : slideStatuses.findIndex(s => s === "generating" || s === "pending");
   const actualIndex = Math.max(0, displaySlideIndex);
