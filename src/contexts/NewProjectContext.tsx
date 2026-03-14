@@ -229,7 +229,7 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
     setSelectedTemplate(existingProject.template_id || '');
     setConsistencyLevel((existingProject.consistency_level as any) || 'balanced');
     setDeviceFormats((existingProject.device_formats as string[]) || ['iphone-6-5', 'iphone-6-9']);
-    setGenerationMode((existingProject.generation_mode as any) || 'full');
+    // generationMode is always 'full'
     setOutputLanguage(existingProject.output_language || 'en');
     const config = existingProject.config as any;
     if (config) {
