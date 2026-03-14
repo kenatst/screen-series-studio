@@ -219,7 +219,8 @@ COPYWRITING RULES FOR RENDERING
 1. You MUST render the exact string provided above.
 2. DO NOT add punctuation if it is missing.
 3. DO NOT change capitalization unless structurally necessary for the design (e.g., ALL CAPS for impact).
-4. DO NOT write "Lorem Ipsum" or any generic placeholder text ANYWHERE on the canvas. 
+4. DO NOT write "Lorem Ipsum" or any generic placeholder text ANYWHERE on the canvas.
+5. NEVER render meta labels such as "Slide 1", "Slide 2", "Review", or any workflow/debug text on the final creative.
 
 OBJECTIVE MAPPING
 The objective of this specific slide is: [ ${slide.objective || "Feature spotlight"} ]. 
@@ -267,8 +268,13 @@ SECTION 4: THE ANTI-HALLUCINATION & INTEGRITY PROTOCOL (CRITICAL)
 
 3. ASPECT RATIO PRESERVATION:
    - When placing the raw screenshot into the device mockup screen, do NOT stretch, squash, or distort it. If the raw screen is too long, crop the bottom naturally within the bounds of the phone frame.
+   - Treat the raw screenshot as the source of truth: preserve layout geometry, icon positions, chart shapes, and UI spacing with maximum fidelity.
 
-4. BRAND CHARACTER / MASCOT LOCK:
+4. TEMPLATE FIDELITY LOCK:
+   - The selected template is a hard layout contract. Reproduce its composition logic (headline zone, device framing, spacing rhythm, mood) and adapt only the app-specific content.
+   - Do not drift into a generic layout. If uncertain, prioritize template composition over creative variation.
+
+5. BRAND CHARACTER / MASCOT LOCK:
    - If a mascot, logo, or distinct brand character is provided in the reference images, you MUST preserve its exact geometry, facial features, proportions, and color. 
    - DO NOT mutate the mascot into a different style.
    - The mascot must look identical across all slides.
@@ -284,7 +290,7 @@ ${templateStyle}
 
 === OUTPUT QA REPORT (MANDATORY) ===
 Return a JSON object in TEXT modality only, with this exact schema:
-{"overall_score": number, "checks": {"headline_exact": boolean, "subheadline_exact": boolean, "no_placeholder": boolean, "ui_preserved": boolean, "contrast_ok": boolean}, "issues": string[]}
+{"overall_score": number, "checks": {"headline_exact": boolean, "subheadline_exact": boolean, "no_placeholder": boolean, "ui_preserved": boolean, "template_fidelity": boolean, "pixel_fidelity": boolean, "contrast_ok": boolean}, "issues": string[]}
 
 ${langDirective}${userDirective}
 
@@ -551,7 +557,7 @@ serve(async (req) => {
       assets = fallbackAssets;
     }
 
-    const referenceImages: { mimeType: string; data: string; tag?: string }[] = [];
+    const referenceImages: { mimeType: string; data: string; tag?: string; assetType: string }[] = [];
     for (const asset of assets.slice(0, 12)) {
       try {
         const { data: fileData } = await adminClient.storage.from("raw-uploads").download(asset.storage_path);
@@ -560,7 +566,7 @@ serve(async (req) => {
         const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
         const ext = asset.storage_path.split(".").pop()?.toLowerCase() || "png";
         const mime = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
-        referenceImages.push({ mimeType: mime, data: base64, tag: asset.tag || undefined });
+        referenceImages.push({ mimeType: mime, data: base64, tag: asset.tag || undefined, assetType: asset.asset_type });
       } catch {
         // skip broken references
       }
@@ -663,18 +669,24 @@ serve(async (req) => {
 
               // Inject template preview image FIRST so the AI sees the target style
               if (templatePreviewImage) {
+                parts[0] = {
+                  text: `${promptText}\n\n=== TEMPLATE REFERENCE IMAGE ===\nThe image immediately following this text is the TEMPLATE you must replicate in terms of layout, composition, spacing rhythm, color scheme, typography style, and overall mood.\n=== END TEMPLATE REFERENCE ===`,
+                };
                 parts.push({
                   inlineData: { mimeType: templatePreviewImage.mimeType, data: templatePreviewImage.data }
                 });
-                parts[0] = {
-                  text: `${promptText}\n\n=== TEMPLATE REFERENCE IMAGE ===\nThe image immediately following this text is the TEMPLATE you must replicate in terms of layout, composition, color scheme, typography style, and overall mood. Study it carefully and produce a slide that follows this exact aesthetic direction while using the user's app content.\n=== END TEMPLATE REFERENCE ===`,
-                };
               }
 
-              // Add the matching raw screen for this slide
-              const matchingRef = referenceImages.find((r) => r.tag === slide.raw_screen_tag);
-              if (matchingRef) {
-                parts.push({ inlineData: { mimeType: matchingRef.mimeType, data: matchingRef.data } });
+              const rawScreenReferences = referenceImages.filter((r) => r.assetType === "raw_screen");
+              const exactRawScreen = rawScreenReferences.find((r) => r.tag === slide.raw_screen_tag);
+              const fallbackRawScreen = rawScreenReferences[Math.min(displayNum - 1, Math.max(rawScreenReferences.length - 1, 0))] || rawScreenReferences[0];
+              const selectedRawScreen = exactRawScreen || fallbackRawScreen;
+
+              if (selectedRawScreen) {
+                parts.push({
+                  text: `=== RAW APP SCREEN (SOURCE OF TRUTH) ===\nUse this image as the exact UI source and preserve its pixel-level structure inside the device screen. Do not redesign internal app UI elements.\n=== END RAW APP SCREEN ===`,
+                });
+                parts.push({ inlineData: { mimeType: selectedRawScreen.mimeType, data: selectedRawScreen.data } });
               }
 
               // Add brand assets (logo, icon, mascot)
@@ -682,8 +694,8 @@ serve(async (req) => {
                 parts.push({ inlineData: { mimeType: img.mimeType, data: img.data } });
               }
 
-              // Add other reference screens (up to 3 extra)
-              for (const img of referenceImages.filter((r) => r.tag !== slide.raw_screen_tag && !["logo", "icon", "mascot"].includes(r.tag || "")).slice(0, 3)) {
+              // Add non-raw reference visuals (up to 2) for atmosphere only
+              for (const img of referenceImages.filter((r) => r.assetType !== "raw_screen" && !["logo", "icon", "mascot"].includes(r.tag || "")).slice(0, 2)) {
                 parts.push({ inlineData: { mimeType: img.mimeType, data: img.data } });
               }
 
@@ -721,6 +733,8 @@ serve(async (req) => {
                 config: {
                   responseModalities: ["TEXT", "IMAGE"],
                   imageConfig: { aspectRatio: "9:16", imageSize: "2K" },
+                  temperature: 0.2,
+                  maxOutputTokens: 8192,
                 } as any,
               });
 

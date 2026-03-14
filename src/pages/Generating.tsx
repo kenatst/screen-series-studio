@@ -595,6 +595,10 @@ const Generating = () => {
 
   const slideCount = slideStatuses.length || 5;
   const completedCount = slideStatuses.filter(s => s === "completed").length;
+  const nextPendingIndex = slideStatuses.findIndex((s) => s === "pending");
+  const nextSlideNumberForCta = nextPendingIndex >= 0
+    ? nextPendingIndex + 1
+    : (reviewSlideNumber ? reviewSlideNumber + 1 : null);
 
   const displaySlideIndex = activeSlideNumber ? activeSlideNumber - 1 : slideStatuses.findIndex(s => s === "generating" || s === "pending");
   const actualIndex = Math.max(0, displaySlideIndex);
@@ -712,11 +716,13 @@ const Generating = () => {
                   <AlertCircle className="h-12 w-12 text-destructive mb-4" />
                 ) : null}
 
-                <span className="text-lg font-black text-foreground tracking-tight">Slide {actualIndex + 1}</span>
-                {!(centralStatus === "completed" && centralImage) && (
-                  <Badge className="mt-2 text-xs uppercase tracking-widest font-bold shadow-sm">
-                    {isDispatching && centralStatus === "pending" ? "initializing" : statusLabel[centralStatus]}
-                  </Badge>
+                {!centralImage && (
+                  <>
+                    <span className="text-lg font-black text-foreground tracking-tight">Slide {actualIndex + 1}</span>
+                    <Badge className="mt-2 text-xs uppercase tracking-widest font-bold shadow-sm">
+                      {isDispatching && centralStatus === "pending" ? "initializing" : statusLabel[centralStatus]}
+                    </Badge>
+                  </>
                 )}
               </div>
             </div>
@@ -728,41 +734,42 @@ const Generating = () => {
                   initial={{ opacity: 0, scale: 0.95, y: 30 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                  className="fixed inset-x-4 bottom-4 z-[100] sm:max-w-[360px] sm:mx-auto md:absolute md:inset-auto md:right-4 md:bottom-4 md:w-[340px] md:mx-0 bg-background/95 backdrop-blur-xl border-border border-2 shadow-2xl rounded-3xl p-5"
+                  className="fixed inset-x-4 bottom-4 z-[100] sm:max-w-[320px] sm:mx-auto xl:absolute xl:inset-auto xl:left-[-340px] xl:top-1/2 xl:-translate-y-1/2 xl:w-[300px] xl:mx-0 bg-background/95 backdrop-blur-xl border-border border-2 shadow-2xl rounded-2xl p-4"
                 >
-                  <h3 className="text-lg font-black mb-0.5">Review Slide</h3>
-                  <p className="text-xs text-muted-foreground mb-5">Modify this slide or continue.</p>
+                  <h3 className="text-base font-black mb-0.5">Review Slide</h3>
+                  <p className="text-xs text-muted-foreground mb-3">Modify this slide or continue.</p>
 
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">What should we change?</label>
                       <Textarea
-                        placeholder="e.g., 'Make the headline smaller' or 'Bring back the mascot'"
+                        placeholder="e.g., 'Make the headline smaller'"
                         value={feedback}
                         onChange={(e) => setFeedback(e.target.value)}
-                        className="resize-none min-h-[100px] border-primary/20 bg-card text-sm placeholder:text-muted-foreground focus-visible:ring-primary shadow-sm rounded-xl p-4"
+                        className="resize-none min-h-[84px] border-primary/20 bg-card text-sm placeholder:text-muted-foreground focus-visible:ring-primary shadow-sm rounded-xl p-3"
                       />
                     </div>
 
-                    <div className="flex gap-3">
+                    <div className="flex gap-2.5">
                       <Button
                         onClick={handleRedesign}
                         disabled={!feedback.trim() || isSubmittingFeedback}
                         variant="outline"
-                        className="flex-1 h-14 rounded-2xl text-primary font-bold border-primary/20 hover:bg-primary/10 shadow-sm"
+                        className="flex-1 h-11 rounded-xl text-primary font-bold border-primary/20 hover:bg-primary/10 shadow-sm text-xs"
                       >
-                        {isSubmittingFeedback ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                        {isSubmittingFeedback ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="mr-1.5 h-3.5 w-3.5" />}
                         Redesign
                       </Button>
 
                       <Button
                         onClick={handleApprove}
-                        className="flex-1 h-14 rounded-2xl font-bold shadow-glow"
-                        size="lg"
+                        className="flex-1 h-11 rounded-xl font-bold shadow-glow text-xs leading-tight"
                         disabled={isSubmittingFeedback}
                       >
-                        <ThumbsUp className="mr-2 h-5 w-5" />
-                        {hasMoreSlides ? "Looks Good" : "Perfect"}
+                        <ThumbsUp className="mr-1.5 h-3.5 w-3.5" />
+                        {hasMoreSlides
+                          ? `Looks Good, Continue with Slide ${nextSlideNumberForCta ?? "next"}`
+                          : "Looks Good"}
                       </Button>
                     </div>
                   </div>
@@ -811,12 +818,6 @@ const Generating = () => {
                   ) : null}
 
                   {/* Status Indicator Overlays */}
-                  {status === "completed" && (
-                    <div className="absolute top-2 left-2 flex items-center justify-center bg-primary/90 text-primary-foreground p-1 rounded-full backdrop-blur-sm z-20">
-                      <CheckCircle2 className="h-2.5 w-2.5" />
-                    </div>
-                  )}
-
                   <div className="absolute top-2 right-2 bg-background/80 rounded-full p-0.5 backdrop-blur-sm z-20">
                     {status === "completed" ? <CheckCircle2 className="h-3 w-3 text-primary" /> :
                       status === "generating" ? <div className="h-2 w-2 rounded-full bg-primary animate-ping m-0.5" /> :
