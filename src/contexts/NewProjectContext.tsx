@@ -319,7 +319,7 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
               const blob = await res.blob();
               const file = new File([blob], asset.filename || 'asset.png', { type: blob.type });
               const preview = URL.createObjectURL(file);
-              if (asset.asset_type === 'screen') {
+              if (asset.asset_type === 'screen' || asset.asset_type === 'raw_screen') {
                 newScreens.push({ id: `db-${asset.id}`, file, preview, tag: asset.tag || 'home' });
               } else if (asset.asset_type === 'reference') {
                 newReferences.push({ id: `db-ref-${asset.id}`, file, preview });
