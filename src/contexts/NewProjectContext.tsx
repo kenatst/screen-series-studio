@@ -258,6 +258,7 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
       setTopBenefits(Array.isArray(config.topBenefits) ? config.topBenefits.join('\n') : '');
       setAppCategory(config.appCategory || '');
       setTargetAudience(config.targetAudience || '');
+      setInspirationText(config.inspirationText || '');
     }
     const brandKit = existingProject.brand_kit as any;
     if (brandKit) {
