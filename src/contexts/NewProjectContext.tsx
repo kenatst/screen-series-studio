@@ -564,7 +564,19 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
     generation_mode: generationMode,
     status: 'draft' as const,
     brand_kit: { colors: brandColors, fontFamily: brandFont } as any,
-    config: { primaryGoal, tone: selectedTone, shortDescription, valueProposition, keyFeatures: keyFeatures.split('\n').filter(Boolean), topBenefits: topBenefits.split('\n').filter(Boolean), outputLanguage, appCategory, targetAudience } as any,
+    config: {
+      primaryGoal,
+      tone: selectedTone,
+      shortDescription,
+      valueProposition,
+      keyFeatures: keyFeatures.split('\n').filter(Boolean),
+      topBenefits: topBenefits.split('\n').filter(Boolean),
+      outputLanguage,
+      appCategory,
+      targetAudience,
+      inspirationText,
+      visualPreferences,
+    } as any,
     output_language: outputLanguage,
   });
 
