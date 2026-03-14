@@ -392,7 +392,6 @@ const Generating = () => {
     const result = await startGenerationStream(accessToken, initialResume, targetSlide, userFeedback);
 
     if (result === "busy") {
-      startPolling();
       return;
     }
 
@@ -402,9 +401,10 @@ const Generating = () => {
       return;
     }
 
-    // Whether "done" or "hasMore", we stop polling and rely on active user review
-    stopPolling();
-  }, [startGenerationStream, startPolling, stopPolling, toast]);
+    if (result === "done") {
+      stopPolling();
+    }
+  }, [startGenerationStream, stopPolling, toast]);
 
   useEffect(() => {
     if (!projectId || startedRef.current) return;
