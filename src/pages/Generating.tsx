@@ -110,11 +110,12 @@ const Generating = () => {
       window.clearInterval(pollIntervalRef.current);
       pollIntervalRef.current = null;
     }
-    // Also unsubscribe realtime channel
-    if (projectId) {
-      supabase.removeChannel(supabase.channel(`slides-${projectId}`));
+
+    if (realtimeChannelRef.current) {
+      supabase.removeChannel(realtimeChannelRef.current);
+      realtimeChannelRef.current = null;
     }
-  }, [projectId]);
+  }, []);
 
   const handleStopAndArchive = async () => {
     if (!projectId) return;
