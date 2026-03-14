@@ -1,15 +1,23 @@
-import { useState, useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, LayoutGrid, Upload, Lock, Sparkles, Loader2, Brain } from "lucide-react";
+import { CheckCircle2, LayoutGrid, Upload, Lock, Loader2, Brain, Trash2 } from "lucide-react";
 import { templateMoods } from "@/lib/demo-data";
 import { templatePreviews } from "@/constants/templates";
 import { useNewProject } from "@/contexts/NewProjectContext";
 import { useBilling } from "@/hooks/useBilling";
 import { useSearchParams } from "react-router-dom";
-import { useTemplateRecommendations, type TemplateMatch } from "@/hooks/useTemplateRecommendations";
+import { useTemplateRecommendations } from "@/hooks/useTemplateRecommendations";
 import { motion, AnimatePresence } from "framer-motion";
+
+const toDataUrl = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.readAsDataURL(file);
+  });
 
 export const StepStyle = () => {
   const {
@@ -18,45 +26,77 @@ export const StepStyle = () => {
     templateCategoryFilter, setTemplateCategoryFilter,
     filteredTemplates, templateCategories,
     profile, handleSaveDraft,
-    uploadedScreens, brandAssets, appName, appDescription
+    uploadedScreens, brandAssets, appName, appDescription,
+    referenceMockups, handleReferenceUpload, removeReferenceMockup, referenceInputRef,
+    inspirationText, setInspirationText,
+    selectedTone, appCategory, targetAudience, primaryGoal,
   } = useNewProject();
+
   const { handleUpgrade } = useBilling();
   const [searchParams] = useSearchParams();
-  const projectId = searchParams.get('project');
-  const isFree = profile?.plan === 'free';
+  const projectId = searchParams.get("project");
+  const isFree = profile?.plan === "free";
 
   const { recommendations, isLoading: isLoadingRecs, fetchRecommendations } = useTemplateRecommendations();
-  const [hasFetchedRecs, setHasFetchedRecs] = useState(false);
+  const lastFingerprintRef = useRef<string>("");
 
-  // Auto-trigger recommendations when step loads
   useEffect(() => {
-    if (hasFetchedRecs) return;
-    setHasFetchedRecs(true);
+    const run = async () => {
+      const primaryImages = [...uploadedScreens.map((s) => s.file), ...referenceMockups.map((r) => r.file)].slice(0, 3);
+      const logoFile = brandAssets.find((a) => a.type === "logo")?.file;
+      const hasAnyInput = Boolean(primaryImages.length || logoFile || inspirationText?.trim() || appDescription?.trim() || appName?.trim());
+      if (!hasAnyInput) return;
 
-    // Collect screenshot URLs (from uploaded screens previews)
-    const screenshotUrls = uploadedScreens
-      .filter(s => s.preview)
-      .slice(0, 3)
-      .map(s => s.preview);
+      const fingerprint = JSON.stringify({
+        images: primaryImages.map((f) => `${f.name}-${f.size}-${f.lastModified}`),
+        logo: logoFile ? `${logoFile.name}-${logoFile.size}-${logoFile.lastModified}` : "",
+        inspirationText,
+        appName,
+        appDescription,
+        selectedTone,
+        appCategory,
+        targetAudience,
+        primaryGoal,
+      });
 
-    // Collect logo URL
-    const logoAsset = brandAssets.find(a => a.type === 'logo');
-    const logoUrl = logoAsset?.preview || undefined;
+      if (lastFingerprintRef.current === fingerprint) return;
+      lastFingerprintRef.current = fingerprint;
 
-    fetchRecommendations({
-      screenshotUrls: screenshotUrls.length > 0 ? screenshotUrls : undefined,
-      logoUrl,
-      appName: appName || undefined,
-      appDescription: appDescription || undefined,
-    });
-  }, [hasFetchedRecs, uploadedScreens, brandAssets, appName, appDescription, fetchRecommendations]);
+      const screenshotUrls = await Promise.all(primaryImages.map((f) => toDataUrl(f)));
+      const logoUrl = logoFile ? await toDataUrl(logoFile) : undefined;
+
+      await fetchRecommendations({
+        screenshotUrls: screenshotUrls.length > 0 ? screenshotUrls : undefined,
+        logoUrl,
+        inspirationText: inspirationText?.trim() || undefined,
+        appName: appName || undefined,
+        appDescription: appDescription || undefined,
+        contextText: `Tone: ${selectedTone || ""}. Category: ${appCategory || ""}. Audience: ${targetAudience || ""}. Goal: ${primaryGoal || ""}. Selected template: ${selectedTemplate || "none"}.`,
+      });
+    };
+
+    run().catch(() => undefined);
+  }, [
+    uploadedScreens,
+    referenceMockups,
+    brandAssets,
+    inspirationText,
+    appName,
+    appDescription,
+    selectedTone,
+    appCategory,
+    targetAudience,
+    primaryGoal,
+    selectedTemplate,
+    fetchRecommendations,
+  ]);
 
   const onSelectTemplate = async (templateName: string) => {
-    const isPremium = ['Subscription', 'Finance', 'RPG', 'Vault', 'Trainer AI'].some(p => templateName.includes(p));
+    const isPremium = ["Subscription", "Finance", "RPG", "Vault", "Trainer AI"].some((p) => templateName.includes(p));
     if (isFree && isPremium) {
       if (window.confirm(`"${templateName}" is a Premium template. Upgrade to unlock all styles? We'll save your draft so you can continue immediately.`)) {
         await handleSaveDraft();
-        handleUpgrade('starter', `/project/new?project=${projectId}&step=4`);
+        handleUpgrade("starter", `/project/new?project=${projectId}&step=4`);
       }
       return;
     }
@@ -67,14 +107,22 @@ export const StepStyle = () => {
     if (isFree) {
       if (window.confirm("Reference-based generation is a Pro feature. Upgrade to unlock? We'll save your draft so you can continue immediately.")) {
         await handleSaveDraft();
-        handleUpgrade('starter', `/project/new?project=${projectId}&step=4`);
+        handleUpgrade("starter", `/project/new?project=${projectId}&step=4`);
       }
       return;
     }
-    setSelectedTemplate('reference');
+    setSelectedTemplate("reference");
   };
 
-  const recommendedNames = recommendations?.matches?.map(m => m.template_name) || [];
+  const handleReferenceDrop = async (files: FileList | null) => {
+    if (isFree) {
+      await onSelectReference();
+      return;
+    }
+    handleReferenceUpload(files);
+  };
+
+  const recommendedNames = recommendations?.matches?.map((m) => m.template_name) || [];
 
   return (
     <div className="space-y-8 relative z-10">
@@ -84,13 +132,12 @@ export const StepStyle = () => {
       </div>
 
       <div className="flex gap-2 p-1.5 bg-card/90 border border-border rounded-xl inline-flex mb-2 shadow-inner">
-        <Button variant={selectedTemplate !== 'reference' ? 'default' : 'ghost'} className={`rounded-lg font-bold transition-all duration-300 ${selectedTemplate !== 'reference' ? 'bg-primary text-primary-foreground shadow-glow' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`} onClick={() => setSelectedTemplate('')}>Templates</Button>
-        <Button variant={selectedTemplate === 'reference' ? 'default' : 'ghost'} className={`rounded-lg font-bold transition-all duration-300 ${selectedTemplate === 'reference' ? 'bg-primary text-primary-foreground shadow-glow' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`} onClick={onSelectReference}>References</Button>
+        <Button variant={selectedTemplate !== "reference" ? "default" : "ghost"} className={`rounded-lg font-bold transition-all duration-300 ${selectedTemplate !== "reference" ? "bg-primary text-primary-foreground shadow-glow" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`} onClick={() => setSelectedTemplate("")}>Templates</Button>
+        <Button variant={selectedTemplate === "reference" ? "default" : "ghost"} className={`rounded-lg font-bold transition-all duration-300 ${selectedTemplate === "reference" ? "bg-primary text-primary-foreground shadow-glow" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`} onClick={onSelectReference}>References</Button>
       </div>
 
-      {selectedTemplate !== 'reference' ? (
+      {selectedTemplate !== "reference" ? (
         <div className="space-y-4">
-          {/* AI Recommendations Section */}
           <AnimatePresence>
             {(isLoadingRecs || (recommendations && recommendations.matches.length > 0)) && (
               <motion.div
@@ -102,23 +149,20 @@ export const StepStyle = () => {
                 <div className="flex items-center gap-2 mb-3">
                   <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-lg border border-primary/20">
                     <Brain className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-bold text-primary">✨ Recommended for {appName || 'your app'}</span>
+                    <span className="text-sm font-bold text-primary">✨ Recommended for {appName || "your app"}</span>
                   </div>
                   {isLoadingRecs && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
                 </div>
 
                 {recommendations?.copilot_summary && (
-                  <p className="text-sm text-muted-foreground mb-3 pl-1 italic">
-                    {recommendations.copilot_summary}
-                  </p>
+                  <p className="text-sm text-muted-foreground mb-3 pl-1 italic">{recommendations.copilot_summary}</p>
                 )}
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                   {recommendations?.matches.map((match, idx) => {
-                    const template = filteredTemplates.find(t => t.name === match.template_name) ||
-                      { id: `rec-${idx}`, name: match.template_name };
+                    const template = filteredTemplates.find((t) => t.name === match.template_name) || { id: `rec-${idx}`, name: match.template_name };
                     const similarityPercent = Math.round(match.similarity * 100);
-                    const isLocked = isFree && ['Subscription', 'Finance', 'RPG', 'Vault', 'Trainer AI'].some(p => match.template_name.includes(p));
+                    const isLocked = isFree && ["Subscription", "Finance", "RPG", "Vault", "Trainer AI"].some((p) => match.template_name.includes(p));
 
                     return (
                       <motion.button
@@ -128,8 +172,8 @@ export const StepStyle = () => {
                         transition={{ delay: idx * 0.08 }}
                         onClick={() => onSelectTemplate(match.template_name)}
                         className={`relative rounded-2xl border-2 overflow-hidden transition-all duration-300 ${selectedTemplate === match.template_name
-                          ? 'border-primary shadow-glow scale-[1.02]'
-                          : 'border-primary/30 hover:border-primary/60 hover:scale-[1.02] shadow-sm'
+                          ? "border-primary shadow-glow scale-[1.02]"
+                          : "border-primary/30 hover:border-primary/60 hover:scale-[1.02] shadow-sm"
                           }`}
                       >
                         <div className="aspect-[3/4] relative overflow-hidden bg-card/90">
@@ -140,7 +184,6 @@ export const StepStyle = () => {
                               <LayoutGrid className="h-8 w-8 text-foreground/30" />
                             </div>
                           )}
-                          {/* Similarity badge */}
                           <div className="absolute top-2 left-2 z-20 bg-primary/90 backdrop-blur-md rounded-lg px-2 py-0.5 border border-primary/50">
                             <span className="text-[10px] font-bold text-primary-foreground">{similarityPercent}% match</span>
                           </div>
@@ -156,7 +199,7 @@ export const StepStyle = () => {
                           )}
                         </div>
                         <div className="p-3 bg-card/90 border-t border-border">
-                          <span className={`text-xs font-bold tracking-tight ${selectedTemplate === match.template_name ? 'text-primary' : 'text-muted-foreground'}`}>
+                          <span className={`text-xs font-bold tracking-tight ${selectedTemplate === match.template_name ? "text-primary" : "text-muted-foreground"}`}>
                             {match.template_name}
                           </span>
                         </div>
@@ -171,33 +214,34 @@ export const StepStyle = () => {
           <div className="flex flex-wrap gap-4">
             <div className="flex gap-1.5 items-center">
               <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mr-1">Mood:</span>
-              {templateMoods.map(m => (
-                <button key={m} onClick={() => setTemplateMoodFilter(m)} className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize border transition-all ${templateMoodFilter === m ? 'bg-primary text-primary-foreground border-primary' : 'bg-card/90 text-muted-foreground border-border hover:border-primary/30'}`}>
-                  {m === 'All' ? '🎨 All' : m === 'dark' ? '🌙 Dark' : m === 'light' ? '☀️ Light' : m === 'colorful' ? '🌈 Colorful' : '⚪ Neutral'}
+              {templateMoods.map((m) => (
+                <button key={m} onClick={() => setTemplateMoodFilter(m)} className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize border transition-all ${templateMoodFilter === m ? "bg-primary text-primary-foreground border-primary" : "bg-card/90 text-muted-foreground border-border hover:border-primary/30"}`}>
+                  {m === "All" ? "🎨 All" : m === "dark" ? "🌙 Dark" : m === "light" ? "☀️ Light" : m === "colorful" ? "🌈 Colorful" : "⚪ Neutral"}
                 </button>
               ))}
             </div>
             <div className="flex gap-1.5 items-center">
               <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mr-1">Category:</span>
-              {templateCategories.map(c => (
-                <button key={c} onClick={() => setTemplateCategoryFilter(c)} className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${templateCategoryFilter === c ? 'bg-primary text-primary-foreground border-primary' : 'bg-card/90 text-muted-foreground border-border hover:border-primary/30'}`}>
+              {templateCategories.map((c) => (
+                <button key={c} onClick={() => setTemplateCategoryFilter(c)} className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${templateCategoryFilter === c ? "bg-primary text-primary-foreground border-primary" : "bg-card/90 text-muted-foreground border-border hover:border-primary/30"}`}>
                   {c}
                 </button>
               ))}
             </div>
           </div>
+
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 max-h-[600px] overflow-y-auto pr-1">
-            {filteredTemplates.map(t => {
-              const isLocked = isFree && ['Subscription', 'Finance', 'RPG', 'Vault', 'Trainer AI'].some(p => t.name.includes(p));
+            {filteredTemplates.map((t) => {
+              const isLocked = isFree && ["Subscription", "Finance", "RPG", "Vault", "Trainer AI"].some((p) => t.name.includes(p));
               const isRecommended = recommendedNames.includes(t.name);
               return (
-                <button key={t.id} onClick={() => onSelectTemplate(t.name)} className={`relative rounded-2xl border-2 overflow-hidden transition-all duration-300 ${selectedTemplate === t.name ? 'border-primary shadow-glow scale-[1.02]' : isRecommended ? 'border-primary/20 hover:border-primary/40 hover:scale-[1.02] shadow-sm' : 'border-border hover:border-primary/40 hover:scale-[1.02] shadow-sm'}`}>
+                <button key={t.id} onClick={() => onSelectTemplate(t.name)} className={`relative rounded-2xl border-2 overflow-hidden transition-all duration-300 ${selectedTemplate === t.name ? "border-primary shadow-glow scale-[1.02]" : isRecommended ? "border-primary/20 hover:border-primary/40 hover:scale-[1.02] shadow-sm" : "border-border hover:border-primary/40 hover:scale-[1.02] shadow-sm"}`}>
                   <div className="aspect-[3/4] relative overflow-hidden bg-card/90">
                     {templatePreviews[t.name] ? (
                       <img src={templatePreviews[t.name]} alt={t.name} className="w-full h-full object-contain" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <LayoutGrid className={`h-8 w-8 ${selectedTemplate === t.name ? 'text-primary' : 'text-foreground/30'}`} />
+                        <LayoutGrid className={`h-8 w-8 ${selectedTemplate === t.name ? "text-primary" : "text-foreground/30"}`} />
                       </div>
                     )}
                     {isLocked && (
@@ -212,12 +256,13 @@ export const StepStyle = () => {
                     )}
                   </div>
                   <div className="p-3 bg-card/90 border-t border-border">
-                    <span className={`text-xs font-bold tracking-tight ${selectedTemplate === t.name ? 'text-primary' : 'text-muted-foreground'}`}>{t.name}</span>
+                    <span className={`text-xs font-bold tracking-tight ${selectedTemplate === t.name ? "text-primary" : "text-muted-foreground"}`}>{t.name}</span>
                   </div>
                 </button>
               );
             })}
           </div>
+
           {filteredTemplates.length === 0 && (
             <div className="text-center py-12 text-muted-foreground">
               <p className="text-sm font-medium">No templates match your filters.</p>
@@ -226,17 +271,73 @@ export const StepStyle = () => {
         </div>
       ) : (
         <div className="space-y-6">
+          <input
+            ref={referenceInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => handleReferenceDrop(e.target.files)}
+          />
+
           <div
-            onClick={onSelectReference}
+            onClick={() => {
+              if (isFree) {
+                void onSelectReference();
+                return;
+              }
+              referenceInputRef.current?.click();
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              void handleReferenceDrop(e.dataTransfer.files);
+            }}
             className="border border-dashed border-border bg-card/90 rounded-2xl p-8 text-center hover:border-primary/40 hover:bg-muted/50 transition-all duration-300 cursor-pointer shadow-inner group"
           >
             <Upload className="h-6 w-6 text-foreground/30 mx-auto mb-3 group-hover:text-primary transition-colors" />
             <p className="text-sm font-bold text-muted-foreground tracking-tight group-hover:text-foreground">Upload your reference mockups</p>
+            <p className="text-xs text-foreground/50 mt-1">PNG/JPG/WEBP • multiple files supported</p>
             {isFree && <Badge className="mt-2 bg-primary/20 text-primary border-primary/30 rounded-lg">Pro Feature</Badge>}
           </div>
+
+          {referenceMockups.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Reference mockups</h3>
+                <span className="text-xs font-bold text-muted-foreground bg-muted/50 px-3 py-1 rounded-md border border-border">{referenceMockups.length} files</span>
+              </div>
+              <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+                {referenceMockups.map((ref) => (
+                  <div key={ref.id} className="relative rounded-xl overflow-hidden border border-border bg-card/90 group">
+                    <img src={ref.preview} alt="Reference mockup" className="w-full aspect-[9/16] object-cover" />
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="destructive"
+                      onClick={() => removeReferenceMockup(ref.id)}
+                      className="absolute top-2 right-2 h-7 w-7 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="space-y-3">
             <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Inspiration notes</label>
-            <Textarea placeholder="e.g. Use this as inspiration for composition and intensity, but keep my branding and app content." className="bg-muted/50 border-border text-foreground placeholder:text-foreground/30 shadow-inner min-h-[120px] focus-visible:ring-primary transition-all rounded-xl p-4" />
+            <Textarea
+              value={inspirationText}
+              onChange={(e) => setInspirationText(e.target.value)}
+              placeholder="e.g. Keep this cinematic rhythm, but preserve my app UI exactly and avoid tilted device mockups."
+              className="bg-muted/50 border-border text-foreground placeholder:text-foreground/30 shadow-inner min-h-[120px] focus-visible:ring-primary transition-all rounded-xl p-4"
+            />
           </div>
         </div>
       )}
