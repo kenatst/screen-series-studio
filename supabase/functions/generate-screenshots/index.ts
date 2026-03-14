@@ -268,8 +268,13 @@ SECTION 4: THE ANTI-HALLUCINATION & INTEGRITY PROTOCOL (CRITICAL)
 
 3. ASPECT RATIO PRESERVATION:
    - When placing the raw screenshot into the device mockup screen, do NOT stretch, squash, or distort it. If the raw screen is too long, crop the bottom naturally within the bounds of the phone frame.
+   - Treat the raw screenshot as the source of truth: preserve layout geometry, icon positions, chart shapes, and UI spacing with maximum fidelity.
 
-4. BRAND CHARACTER / MASCOT LOCK:
+4. TEMPLATE FIDELITY LOCK:
+   - The selected template is a hard layout contract. Reproduce its composition logic (headline zone, device framing, spacing rhythm, mood) and adapt only the app-specific content.
+   - Do not drift into a generic layout. If uncertain, prioritize template composition over creative variation.
+
+5. BRAND CHARACTER / MASCOT LOCK:
    - If a mascot, logo, or distinct brand character is provided in the reference images, you MUST preserve its exact geometry, facial features, proportions, and color. 
    - DO NOT mutate the mascot into a different style.
    - The mascot must look identical across all slides.
