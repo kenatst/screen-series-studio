@@ -555,9 +555,11 @@ const Generating = () => {
               Consistency Engine
             </h2>
             <p className="text-sm text-muted-foreground font-medium mt-1">
-              {completedCount > 0 && completedCount < slideCount
-                ? `${completedCount} of ${slideCount} slides ready`
-                : "Crafting your premium store assets..."}
+              {isDispatching
+                ? "Connecting to the rendering engine..."
+                : completedCount > 0 && completedCount < slideCount
+                  ? `${completedCount} of ${slideCount} slides ready`
+                  : "Crafting your premium store assets..."}
             </p>
           </div>
 
