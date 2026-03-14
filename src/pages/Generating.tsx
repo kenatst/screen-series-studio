@@ -716,11 +716,13 @@ const Generating = () => {
                   <AlertCircle className="h-12 w-12 text-destructive mb-4" />
                 ) : null}
 
-                <span className="text-lg font-black text-foreground tracking-tight">Slide {actualIndex + 1}</span>
-                {!(centralStatus === "completed" && centralImage) && (
-                  <Badge className="mt-2 text-xs uppercase tracking-widest font-bold shadow-sm">
-                    {isDispatching && centralStatus === "pending" ? "initializing" : statusLabel[centralStatus]}
-                  </Badge>
+                {!centralImage && (
+                  <>
+                    <span className="text-lg font-black text-foreground tracking-tight">Slide {actualIndex + 1}</span>
+                    <Badge className="mt-2 text-xs uppercase tracking-widest font-bold shadow-sm">
+                      {isDispatching && centralStatus === "pending" ? "initializing" : statusLabel[centralStatus]}
+                    </Badge>
+                  </>
                 )}
               </div>
             </div>
