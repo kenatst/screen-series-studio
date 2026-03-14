@@ -15,10 +15,6 @@ const PRODUCT_NAME_TO_PLAN: Record<string, "starter" | "pro" | "unlimited"> = {
   "ShotApp Starter": "starter",
   "ShotApp Pro": "pro",
   "ShotApp Unlimited": "unlimited",
-  // Legacy names for backward compatibility
-  "ShotApp Starter": "starter",
-  "ShotApp Pro": "pro",
-  "ShotApp Unlimited": "unlimited",
 };
 
 const PLAN_CREDITS: Record<string, number> = {
