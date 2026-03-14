@@ -598,13 +598,17 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
     const payload = buildProjectPayload();
     let projectId: string;
     if (savedProjectId) {
+      console.log("[SAVE] Updating existing project:", savedProjectId);
       await updateProject.mutateAsync({ id: savedProjectId, ...payload });
       projectId = savedProjectId;
     } else {
+      console.log("[SAVE] Creating new project with payload:", JSON.stringify(payload).slice(0, 200));
       const project = await createProject.mutateAsync(payload);
       projectId = project.id;
       setSavedProjectId(projectId);
+      console.log("[SAVE] Created project:", projectId);
     }
+    console.log("[SAVE] Saving", slides.length, "slides for project:", projectId);
     await saveSlides.mutateAsync({
       projectId,
       slides: slides.map((s, i) => ({
@@ -618,7 +622,9 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
         status: 'pending',
       })),
     });
+    console.log("[SAVE] Slides saved, uploading assets...");
     if (user) await uploadAssetsToStorage(projectId, user.id);
+    console.log("[SAVE] Assets uploaded");
     return projectId;
   };
 
@@ -641,13 +647,17 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
     if (!user) { toast({ title: "Not authenticated", variant: "destructive" }); return; }
     setIsSaving(true);
     try {
+      console.log("[GENERATE] Starting saveProjectAndSlides...");
+      console.log("[GENERATE] slides count:", slides.length, "user:", user.id);
       const projectId = await saveProjectAndSlides();
+      console.log("[GENERATE] Project saved, id:", projectId);
       // Ensure status is set to generating so the generation page auto-starts
       await updateProject.mutateAsync({ id: projectId, status: 'generating' });
+      console.log("[GENERATE] Status set to generating, navigating...");
       navigate(`/project/${projectId}/generating`);
-    } catch (e) {
-      console.error("Failed to save project", e);
-      toast({ title: "Error", description: "Failed to create project", variant: "destructive" });
+    } catch (e: any) {
+      console.error("[GENERATE] Failed to save project:", e?.message, e?.code, e?.details, e);
+      toast({ title: "Error", description: `Failed to create project: ${e?.message || 'Unknown error'}`, variant: "destructive" });
       setIsSaving(false);
     }
   };
