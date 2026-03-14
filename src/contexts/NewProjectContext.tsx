@@ -309,6 +309,7 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
         if (error) throw error;
         if (!assets || assets.length === 0) { setAssetsHydrated(true); return; }
         const newScreens: UploadedScreen[] = [];
+        const newReferences: ReferenceMockup[] = [];
         const newBrandAssets: BrandAsset[] = [];
         const promises = assets.map(async (asset) => {
           const { data } = await supabase.storage.from('raw-uploads').createSignedUrl(asset.storage_path, 3600);
@@ -320,6 +321,8 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
               const preview = URL.createObjectURL(file);
               if (asset.asset_type === 'screen') {
                 newScreens.push({ id: `db-${asset.id}`, file, preview, tag: asset.tag || 'home' });
+              } else if (asset.asset_type === 'reference') {
+                newReferences.push({ id: `db-ref-${asset.id}`, file, preview });
               } else if (['logo', 'icon', 'mascot'].includes(asset.asset_type)) {
                 newBrandAssets.push({ type: asset.asset_type as 'logo' | 'icon' | 'mascot', file, preview });
               }
@@ -328,6 +331,7 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
         });
         await Promise.all(promises);
         if (newScreens.length > 0) setUploadedScreens(newScreens);
+        if (newReferences.length > 0) setReferenceMockups(newReferences);
         if (newBrandAssets.length > 0) setBrandAssets(newBrandAssets);
       } catch (e) { console.error("Failed to hydrate assets", e); }
       finally { setAssetsHydrated(true); }
