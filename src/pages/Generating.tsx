@@ -39,9 +39,15 @@ const fadeUp = {
 };
 
 type SlideUiStatus = "pending" | "generating" | "completed" | "error";
+type SlideSnapshot = { slide_number: number; status: string; image_url: string | null };
+
+const isStoragePath = (value: string | null) => {
+  if (!value) return false;
+  return !value.startsWith("http://") && !value.startsWith("https://");
+};
 
 const normalizeStatus = (status: string, imageUrl: string | null): SlideUiStatus => {
-  if (imageUrl) return "completed";
+  if (imageUrl || status === "completed") return "completed";
   if (status === "generating") return "generating";
   if (status === "error") return "error";
   return "pending";
@@ -71,6 +77,7 @@ const Generating = () => {
   const warmupIntervalRef = useRef<number | null>(null);
   const realtimeChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const isReturningFromCheckoutRef = useRef(searchParams.get("checkout") === "success");
+  const signedUrlCacheRef = useRef<Record<string, string>>({});
 
   const [progress, setProgress] = useState(0);
   const [currentPhase, setCurrentPhase] = useState(0);
@@ -136,7 +143,36 @@ const Generating = () => {
     setTimeout(() => navigate(`/project/${projectId}/results`), 800);
   }, [navigate, projectId]);
 
-  const applyLiveSlides = useCallback((slides: Array<{ slide_number: number; status: string; image_url: string | null }>) => {
+  const resolveSlideImageUrl = useCallback(async (imageUrl: string | null) => {
+    if (!imageUrl) return null;
+    if (!isStoragePath(imageUrl)) return imageUrl;
+
+    const cached = signedUrlCacheRef.current[imageUrl];
+    if (cached) return cached;
+
+    const { data } = await supabase.storage
+      .from("generated-outputs")
+      .createSignedUrl(imageUrl, 60 * 60 * 2);
+
+    const signedUrl = data?.signedUrl || null;
+    if (signedUrl) {
+      signedUrlCacheRef.current[imageUrl] = signedUrl;
+      return signedUrl;
+    }
+
+    return null;
+  }, []);
+
+  const hydrateSlidesForUi = useCallback(async (slides: SlideSnapshot[]) => {
+    return Promise.all(
+      slides.map(async (slide) => ({
+        ...slide,
+        image_url: await resolveSlideImageUrl(slide.image_url),
+      }))
+    );
+  }, [resolveSlideImageUrl]);
+
+  const applyLiveSlides = useCallback((slides: SlideSnapshot[]) => {
     if (!slides.length) return;
 
     const ordered = [...slides].sort((a, b) => a.slide_number - b.slide_number);
@@ -161,21 +197,30 @@ const Generating = () => {
       );
       setProgress((prev) => Math.max(prev, nextProgress));
 
-      if (completedCount === 0 && !hasGenerating) setCurrentPhase(Math.min(currentPhase, 2));
-      else if (hasGenerating) setCurrentPhase(4);
-      else if (completedCount > 0 && completedCount < total) setCurrentPhase(5);
+      setCurrentPhase((prev) => {
+        if (completedCount === 0 && !hasGenerating) return Math.min(prev, 2);
+        if (hasGenerating) return 4;
+        if (completedCount > 0 && completedCount < total) return 5;
+        return prev;
+      });
     }
-  }, [currentPhase]);
+  }, []);
 
   // Sync DB Slides initially
   useEffect(() => {
     if (!dbSlides?.length || startedRef.current) return; // Only sync on first load to prevent overwriting optimistic state
-    applyLiveSlides(dbSlides.map((slide) => ({
-      slide_number: slide.slide_number,
-      status: slide.status,
-      image_url: slide.image_url,
-    })));
-  }, [dbSlides, applyLiveSlides]);
+
+    void (async () => {
+      const hydratedSlides = await hydrateSlidesForUi(
+        dbSlides.map((slide) => ({
+          slide_number: slide.slide_number,
+          status: slide.status,
+          image_url: slide.image_url,
+        }))
+      );
+      applyLiveSlides(hydratedSlides);
+    })();
+  }, [dbSlides, applyLiveSlides, hydrateSlidesForUi]);
 
   const startPolling = useCallback(() => {
     if (!projectId || reviewMode || realtimeChannelRef.current) return;
@@ -192,7 +237,10 @@ const Generating = () => {
             .eq("project_id", projectId)
             .order("slide_number", { ascending: true });
 
-          if (data?.length) applyLiveSlides(data);
+          if (data?.length) {
+            const hydratedSlides = await hydrateSlidesForUi(data as SlideSnapshot[]);
+            applyLiveSlides(hydratedSlides);
+          }
         }
       )
       .subscribe();
@@ -207,9 +255,12 @@ const Generating = () => {
         .eq("project_id", projectId)
         .order("slide_number", { ascending: true });
 
-      if (data?.length) applyLiveSlides(data);
+      if (data?.length) {
+        const hydratedSlides = await hydrateSlidesForUi(data as SlideSnapshot[]);
+        applyLiveSlides(hydratedSlides);
+      }
     }, 5000);
-  }, [projectId, reviewMode, applyLiveSlides]);
+  }, [projectId, reviewMode, applyLiveSlides, hydrateSlidesForUi]);
 
   const startGenerationStream = useCallback(async (accessToken: string, resume = false, targetSlide?: number, userFeedback?: string): Promise<"done" | "hasMore" | "busy" | { error: string }> => {
     setIsDispatching(true);
@@ -384,7 +435,9 @@ const Generating = () => {
     } catch (e: any) {
       setIsDispatching(false);
       if (e.name === "AbortError") return "busy";
-      return { error: "Request failed or aborted." };
+      console.error("[Generating] request failed", e);
+      const message = typeof e?.message === "string" ? e.message : "Network/CORS error";
+      return { error: `Request failed: ${message}` };
     }
   }, [projectId]);
 
@@ -434,18 +487,16 @@ const Generating = () => {
         .eq("project_id", projectId)
         .order("slide_number", { ascending: true });
 
-      const slidesSnapshot = latestSlides ?? [];
+      const slidesSnapshot = (latestSlides ?? []) as SlideSnapshot[];
+      const hydratedSlidesSnapshot = await hydrateSlidesForUi(slidesSnapshot);
 
-      if (slidesSnapshot.length > 0) {
-        applyLiveSlides(slidesSnapshot);
+      if (hydratedSlidesSnapshot.length > 0) {
+        applyLiveSlides(hydratedSlidesSnapshot);
       }
 
-      const hasIncomplete = slidesSnapshot.length > 0
-        ? slidesSnapshot.some((slide) => normalizeStatus(slide.status, slide.image_url) !== "completed")
+      const hasIncomplete = hydratedSlidesSnapshot.length > 0
+        ? hydratedSlidesSnapshot.some((slide) => normalizeStatus(slide.status, slide.image_url) !== "completed")
         : true;
-      const hasStarted = slidesSnapshot.some(
-        (slide) => slide.status === "generating" || normalizeStatus(slide.status, slide.image_url) === "completed"
-      );
 
       const isReturningFromCheckout = isReturningFromCheckoutRef.current;
 
@@ -482,7 +533,7 @@ const Generating = () => {
       stopPolling();
       requestAbortRef.current?.abort();
     };
-  }, [navigate, projectId, applyLiveSlides, processQueue, routeToResults, startPolling, stopPolling]);
+  }, [navigate, projectId, applyLiveSlides, hydrateSlidesForUi, processQueue, routeToResults, startPolling, stopPolling]);
 
   const handleApprove = async () => {
     setReviewMode(false);
