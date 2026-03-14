@@ -74,7 +74,7 @@ serve(async (req) => {
       });
     }
 
-    const { screenshot_urls, logo_url, user_inspiration_text, app_name, app_description } = await req.json();
+    const { screenshot_urls, logo_url, user_inspiration_text, app_name, app_description, context_text } = await req.json();
 
     // Build multimodal parts for a single embedding call
     // gemini-embedding-2-preview supports text + images in the same request
