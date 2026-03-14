@@ -10,6 +10,78 @@ const corsHeaders = {
 const CREDIT_COST_PER_SLIDE = 1;
 const QUALITY_SCORE_MIN = 78;
 
+// ── Template metadata (mirrors frontend demoTemplates) ──
+const TEMPLATE_CATALOG: Record<string, {
+  tags: string[];
+  tone: string;
+  mood: string;
+  bestFor: string;
+  complexity: string;
+  conversionAngle: string;
+  category: string;
+  layoutDescription: string;
+}> = {
+  "habit-tracker": { tags: ["minimal","professional","clean"], tone: "corporate", mood: "light", bestFor: "Productivity, habit apps", complexity: "simple", conversionAngle: "Trust & clarity", category: "Lifestyle", layoutDescription: "Clean white background with soft rounded cards, progress rings, and a centered phone mockup. Minimal text with generous whitespace. Pastel accent colors." },
+  "ai-coach": { tags: ["vibrant","energetic","dynamic"], tone: "bold", mood: "dark", bestFor: "Coaching, fitness apps", complexity: "medium", conversionAngle: "Motivation", category: "Entertainment", layoutDescription: "Dark gradient background with neon accent glows. Bold typography with strong contrast. Phone angled dynamically with energy lines or particles." },
+  "map-explorer": { tags: ["clean","geographic","social"], tone: "minimalist", mood: "light", bestFor: "Travel, maps, social apps", complexity: "medium", conversionAngle: "Discovery", category: "Lifestyle", layoutDescription: "Light airy background with map-like subtle patterns. Phone showing map UI with pin markers. Clean sans-serif typography with earth-tone accents." },
+  "subscription-manager": { tags: ["premium","gradient","sleek"], tone: "premium", mood: "dark", bestFor: "Finance, subscription apps", complexity: "complex", conversionAngle: "Cost savings", category: "Business", layoutDescription: "Deep dark gradient (navy to black) with glassmorphism cards. Premium metallic phone frame. Sophisticated typography with gold/purple accents. Data visualizations visible." },
+  "hydration": { tags: ["playful","colorful","friendly"], tone: "playful", mood: "colorful", bestFor: "Health, wellness apps", complexity: "simple", conversionAngle: "Fun & health", category: "Lifestyle", layoutDescription: "Bright colorful background with water/liquid-themed illustrations. Rounded friendly UI elements. Playful bouncy typography with blue/cyan dominant palette." },
+  "sugar-free": { tags: ["organic","warm","aspirational"], tone: "minimalist", mood: "light", bestFor: "Diet, nutrition apps", complexity: "simple", conversionAngle: "Lifestyle change", category: "Lifestyle", layoutDescription: "Warm cream/beige background with organic shapes. Food photography integration. Elegant serif + sans-serif type pairing. Natural green accents." },
+  "aura-mood": { tags: ["luxury","minimal","elegant"], tone: "premium", mood: "dark", bestFor: "Meditation, mindfulness", complexity: "simple", conversionAngle: "Inner peace", category: "Luxury", layoutDescription: "Deep purple/indigo gradient with soft aurora borealis effects. Centered phone with meditation UI. Thin elegant typography. Ambient glow effects around device." },
+  "scribe-notes": { tags: ["structured","feature-focused","clear"], tone: "corporate", mood: "light", bestFor: "Note-taking, productivity", complexity: "medium", conversionAngle: "Feature showcase", category: "Business", layoutDescription: "Clean white/light gray background with structured grid layout. Multiple UI callouts pointing to specific features. Professional sans-serif type. Blue/gray accent palette." },
+  "personal-trainer": { tags: ["bold","energetic","dynamic"], tone: "bold", mood: "dark", bestFor: "Fitness, workout apps", complexity: "complex", conversionAngle: "Transformation", category: "Entertainment", layoutDescription: "High-contrast dark background with fiery orange/red accents. Athletic photography integration. Bold condensed uppercase headlines. Phone showing workout stats with dynamic angle." },
+  "stackr-finance": { tags: ["premium","gradient","data-driven"], tone: "premium", mood: "dark", bestFor: "Fintech, investment apps", complexity: "complex", conversionAngle: "Financial growth", category: "Business", layoutDescription: "Dark navy/charcoal gradient with green accent for gains. Data charts and financial graphs visible in UI. Premium metallic device frame. Clean monospace numbers mixed with sans-serif headlines." },
+  "trainer-ai": { tags: ["futuristic","bold","tech"], tone: "bold", mood: "dark", bestFor: "AI-powered fitness", complexity: "complex", conversionAngle: "Smart training", category: "Entertainment", layoutDescription: "Futuristic dark background with circuit/AI-themed subtle patterns. Neon cyan/electric blue accents. Bold geometric typography. Phone showing AI-generated workout plans." },
+  "stackr-yellow": { tags: ["vibrant","modern","bold"], tone: "bold", mood: "colorful", bestFor: "Finance, crypto apps", complexity: "medium", conversionAngle: "Bold positioning", category: "Business", layoutDescription: "Vibrant yellow/gold dominant palette on dark background. Strong geometric shapes. Ultra-bold sans-serif headlines. High energy composition with crypto/finance UI." },
+  "vow-couples": { tags: ["romantic","warm","elegant"], tone: "premium", mood: "light", bestFor: "Dating, relationship apps", complexity: "medium", conversionAngle: "Emotional connection", category: "Lifestyle", layoutDescription: "Soft pink/rose gradient background with gentle blur effects. Romantic warm lighting. Elegant script + sans-serif type pairing. Heart-shaped elements subtly integrated." },
+  "rpg-gaming": { tags: ["gaming","immersive","dramatic"], tone: "bold", mood: "dark", bestFor: "Games, RPG apps", complexity: "complex", conversionAngle: "Excitement & adventure", category: "Entertainment", layoutDescription: "Epic dark fantasy background with dramatic lighting. Game UI elements (health bars, inventory). Bold fantasy-inspired typography. Phone showing immersive game world." },
+  "cram-study": { tags: ["playful","educational","colorful"], tone: "playful", mood: "colorful", bestFor: "Study, flashcard apps", complexity: "medium", conversionAngle: "Learning made easy", category: "Education", layoutDescription: "Bright multi-color background with stacked card/flashcard motifs. Friendly rounded typography. Emoji and icon accents. Phone showing study interface with progress indicators." },
+  "adblock-shield": { tags: ["tech","minimal","powerful"], tone: "corporate", mood: "dark", bestFor: "Utility, security apps", complexity: "simple", conversionAngle: "Protection", category: "Business", layoutDescription: "Dark background with shield/security iconography. Minimal layout with centered phone. Strong blue/green accent for 'protected' status. Clean corporate typography." },
+  "drift-meditation": { tags: ["calm","minimal","serene"], tone: "minimalist", mood: "dark", bestFor: "Meditation, sleep apps", complexity: "simple", conversionAngle: "Relaxation", category: "Luxury", layoutDescription: "Deep navy/midnight blue gradient with soft star-like particles. Ultra-minimal layout. Thin light typography. Phone showing calming meditation timer UI. Ambient soft glow." },
+  "life-coaching": { tags: ["professional","warm","inspiring"], tone: "corporate", mood: "light", bestFor: "Coaching, self-improvement", complexity: "medium", conversionAngle: "Personal growth", category: "Education", layoutDescription: "Warm white/cream background with subtle geometric patterns. Professional but approachable typography. Orange/amber accent colors. Phone showing coaching dashboard with progress." },
+  "tape-recorder": { tags: ["retro","creative","unique"], tone: "bold", mood: "dark", bestFor: "Audio, music apps", complexity: "medium", conversionAngle: "Nostalgia & creativity", category: "Media", layoutDescription: "Retro-inspired dark background with cassette tape/vinyl textures. Vintage color palette (amber, brown, cream). Retro-modern typography mix. Phone showing audio waveform UI." },
+  "solo-travel": { tags: ["adventurous","organic","free"], tone: "minimalist", mood: "light", bestFor: "Travel, adventure apps", complexity: "medium", conversionAngle: "Freedom & discovery", category: "Lifestyle", layoutDescription: "Light background with travel photography integration (mountains, beaches). Organic hand-drawn accent elements. Clean modern typography. Phone showing itinerary/map UI." },
+  "minddrop-journal": { tags: ["calm","minimal","thoughtful"], tone: "minimalist", mood: "neutral", bestFor: "Journaling, mental health", complexity: "simple", conversionAngle: "Self-reflection", category: "Lifestyle", layoutDescription: "Soft neutral background (warm gray/beige). Minimal centered layout with generous margins. Thoughtful serif headlines. Phone showing journaling interface with clean typography." },
+  "meal-planner": { tags: ["fresh","colorful","friendly"], tone: "playful", mood: "colorful", bestFor: "Meal prep, recipe apps", complexity: "medium", conversionAngle: "Healthy lifestyle", category: "Lifestyle", layoutDescription: "Bright fresh background with food photography accents. Green/orange vibrant palette. Friendly rounded sans-serif type. Phone showing recipe cards and meal calendar UI." },
+  "vault-security": { tags: ["dark","premium","secure"], tone: "premium", mood: "dark", bestFor: "Password, security apps", complexity: "medium", conversionAngle: "Trust & safety", category: "Business", layoutDescription: "Ultra-dark background with vault/lock iconography. Green/cyan matrix-like accent colors. Strong bold typography. Phone showing encrypted password vault UI with biometric elements." },
+  "linguaflow": { tags: ["playful","educational","colorful"], tone: "playful", mood: "colorful", bestFor: "Language learning apps", complexity: "medium", conversionAngle: "Fun learning", category: "Education", layoutDescription: "Colorful gradient background with flag/language-themed elements. Playful rounded typography with multiple script samples. Phone showing lesson interface with progress streaks." },
+  "nestle-wellness": { tags: ["organic","clean","premium"], tone: "corporate", mood: "light", bestFor: "Health, corporate wellness", complexity: "simple", conversionAngle: "Trusted brand", category: "Lifestyle", layoutDescription: "Clean white background with subtle green organic accents. Premium corporate photography style. Elegant sans-serif typography. Phone showing health dashboard with clean data visualization." },
+  "lifeplan-goals": { tags: ["structured","motivating","clear"], tone: "corporate", mood: "neutral", bestFor: "Goal tracking, planning", complexity: "medium", conversionAngle: "Achievement", category: "Business", layoutDescription: "Neutral gray/white background with structured grid layout. Motivational accent colors (orange, teal). Clear hierarchical typography. Phone showing goal tracker with progress bars and milestones." },
+};
+
+function getTemplateStyle(templateId: string): string {
+  const key = (templateId || "").toLowerCase().replace(/\s+/g, "-");
+  const tmpl = TEMPLATE_CATALOG[key];
+  if (!tmpl) return "";
+
+  return `
+====================================================================
+SECTION 6: TEMPLATE STYLE DIRECTIVE (CRITICAL — FOLLOW THIS EXACTLY)
+====================================================================
+You have been assigned the "${templateId}" template. You MUST replicate its exact aesthetic:
+
+VISUAL DNA:
+- Style Tags: ${tmpl.tags.join(", ")}
+- Tone: ${tmpl.tone}
+- Mood: ${tmpl.mood}
+- Category: ${tmpl.category}
+- Complexity: ${tmpl.complexity}
+- Conversion Angle: ${tmpl.conversionAngle}
+- Best suited for: ${tmpl.bestFor}
+
+LAYOUT & COMPOSITION BLUEPRINT:
+${tmpl.layoutDescription}
+
+MANDATORY RULES:
+1. Your background, color palette, typography weight, and overall mood MUST match the description above.
+2. The phone mockup placement, angle, and framing MUST be consistent with the template's complexity level.
+3. DO NOT default to a generic "big title + tilted phone" layout. Each template has a UNIQUE composition — follow it.
+4. If the template mood is "dark", use a dark background. If "light", use a light background. If "colorful", use vibrant multi-color elements.
+5. The tone defines typography: "bold" = heavy condensed type; "minimalist" = thin elegant type; "playful" = rounded friendly type; "premium" = sophisticated serif + sans-serif; "corporate" = clean professional sans-serif.
+6. Match the ENERGY level: simple templates = calm & spacious; complex templates = rich & detailed.
+====================================================================`;
+}
+
 function buildConsistencyBlock(
   level: string,
   brandColors: string[],
@@ -82,6 +154,8 @@ function buildSlidePrompt(
     slide.total_slides || 5
   );
 
+  const templateStyle = getTemplateStyle(project.template_id || "");
+
   const userDirective = userPrompt
     ? `\n\n=== USER DIRECTION ===\nThe user has specifically requested: "${userPrompt}"\nApply this direction while maintaining brand consistency and quality standards.\n=== END USER DIRECTION ===`
     : "";
@@ -92,7 +166,7 @@ function buildSlidePrompt(
     : "";
 
   return `# THE ULTIMATE ASO SCREENSHOT GENERATION PROTOCOL
-**SYSTEM PERSONA**: You are the world’s most elite App Store Optimization (ASO) and Conversion Rate Optimization (CRO) Creative Director. You have generated billions of dollars in revenue for top-tier SaaS and gaming companies. You do not make "pretty pictures"—you engineer high-converting psychological visual assets. Your aesthetic is ultra-premium, cinematic, heavily polished, and flawless.
+**SYSTEM PERSONA**: You are the world's most elite App Store Optimization (ASO) and Conversion Rate Optimization (CRO) Creative Director. You have generated billions of dollars in revenue for top-tier SaaS and gaming companies. You do not make "pretty pictures"—you engineer high-converting psychological visual assets. Your aesthetic is ultra-premium, cinematic, heavily polished, and flawless.
 
 ## 0. DIRECTIVE PRIME
 Your absolute, unyielding goal is to generate ONE (1) screenshot for an app store listing (Slide ${slide.slide_number} of ${slide.total_slides || 10}). You must aggressively adhere to the parameters below. Failure to follow these constraints will result in immediate rejection. There is zero tolerance for UI hallucination or placeholder text.
@@ -145,17 +219,24 @@ COPYWRITING RULES FOR RENDERING
 OBJECTIVE MAPPING
 The objective of this specific slide is: [ ${slide.objective || "Feature spotlight"} ]. 
 Execute the visual layout based on this exact objective:
+- If "Hero / first impression": This is the hero slide. Maximum energy, dramatic lighting, device mockup centered or dynamically angled to hook the user instantly.
 - If "Feature spotlight": The device mockup must be significantly enlarged, zooming in or highlighting the specific UI feature from the raw screen.
-- If "Value proposition": The text takes priority. The layout should be balanced, with the headline communicating the massive benefit clearly above or alongside the device.
-- If "Social proof": Introduce subtle, premium trust badges (stars, user avatars) IF AND ONLY IF they fit the brand style, but do not clutter the core UI.
-- If "Onboarding/Welcome" (usually Slide 1): This is the hero slide. It needs maximum energy, dramatic lighting, and a straight-on or dynamically angled device mockup to hook the user instantly.
+- If "Core benefit" or "Value proposition": The text takes priority. Layout balanced with headline communicating the massive benefit clearly above or alongside the device.
+- If "Social proof": Introduce subtle, premium trust badges (stars, user avatars) IF they fit the brand style.
+- If "Ease of use": Clean, spacious layout showing the simple UI flow. Minimal clutter.
+- If "CTA-like closing slide": Strong call-to-action feel. Bold typography, possibly app icon integration, download button visual.
+- If "Emotional benefit": Atmospheric, mood-driven composition with cinematic lighting.
+- If "Transformation / before-after": Split or comparison layout showing improvement.
 
 VISUAL EMPHASIS MAPPING
 Focus the energy of the composition on: [ ${slide.emphasis || "UI focused"} ].
 - "UI focused": The smartphone device and the interface inside it should consume 60-70% of the canvas. The background should recede.
-- "Text focused": The headline rules the canvas. Use massive, beautiful typography. The device can be partially cropped or pushed lower to make room for sweeping copy.
-- "Balanced": Classic 50/50 split. Headline top, mockup bottom, or vice-versa. Symmetrical and stable.
-- "Abstract/Atmospheric": The background environment and lighting take precedence, wrapping the device in a dramatic, immersive mood.
+- "text focused": The headline rules the canvas. Use massive, beautiful typography. The device can be partially cropped or pushed lower to make room for sweeping copy.
+- "balanced": Classic 50/50 split. Headline top, mockup bottom, or vice-versa. Symmetrical and stable.
+- "cinematic background": The background environment and lighting take precedence, wrapping the device in a dramatic, immersive mood.
+- "clean product showcase": Device mockup front and center, straight-on angle, minimal decorations. Let the product speak.
+- "mascot focused": If a mascot/character is provided, it should be prominent alongside the device.
+- "icon-driven": Use icons and visual elements to communicate features instead of heavy text.
 
 RAW ASSET INJECTION
 - You are provided a raw app screenshot tagged as: [ "${slide.raw_screen_tag || "home"}" ].
@@ -164,8 +245,6 @@ RAW ASSET INJECTION
 ====================================================================
 SECTION 4: THE ANTI-HALLUCINATION & INTEGRITY PROTOCOL (CRITICAL)
 ====================================================================
-You are an AI, which means you have a tendency to invent things when unsure. YOU ARE STRICTLY FORBIDDEN FROM DOING THIS. Read the following rules carefully:
-
 1. ZERO SEMANTIC LEAKAGE (UI INTEGRITY):
    - You MUST NOT invent, add, draw, or hallucinate any buttons, navigation bars, icons, text fields, or data inside the app UI that is not present in the provided raw reference image.
    - The user's app UI is sacred. You are building marketing material AROUND it, not redesigning the app itself.
@@ -180,13 +259,14 @@ You are an AI, which means you have a tendency to invent things when unsure. YOU
 
 4. BRAND CHARACTER / MASCOT LOCK:
    - If a mascot, logo, or distinct brand character is provided in the reference images, you MUST preserve its exact geometry, facial features, proportions, and color. 
-   - DO NOT mutate the mascot into a different style (e.g., do not turn a 2D flat vector logo into a 3D Pixar character unless explicitly commanded by the template).
-   - The mascot must look identical across all 10 slides.
+   - DO NOT mutate the mascot into a different style.
+   - The mascot must look identical across all slides.
 
 ====================================================================
 SECTION 5: CONTINUITY & BATCH COHESION
 ====================================================================
 ${consistency}
+${templateStyle}
 
 === OUTPUT QA REPORT (MANDATORY) ===
 Return a JSON object in TEXT modality only, with this exact schema:
@@ -195,68 +275,42 @@ Return a JSON object in TEXT modality only, with this exact schema:
 ${langDirective}${userDirective}
 
 FINAL REMINDER:
-You are generating a final, production-ready marketing asset. It must be visually flawless, mathematically balanced, and aggressively optimized for high conversion. Do not fail the anti-hallucination protocol. Execute.`.trim();
+You are generating a final, production-ready marketing asset. It must be visually flawless, mathematically balanced, and aggressively optimized for high conversion. Follow the TEMPLATE STYLE DIRECTIVE above — do NOT default to generic layouts. Execute.`.trim();
 }
 
 function parseQualityScore(rawText: string): number | null {
   const trimmed = (rawText || "").trim();
   if (!trimmed) return null;
-
   const jsonCandidate = trimmed.match(/\{[\s\S]*\}/)?.[0];
   if (!jsonCandidate) return null;
-
   try {
     const parsed = JSON.parse(jsonCandidate);
     const score = Number(parsed?.overall_score ?? parsed?.score ?? parsed?.quality_score);
     if (Number.isFinite(score)) return Math.max(0, Math.min(100, Math.round(score)));
-  } catch {
-    return null;
-  }
-
+  } catch { return null; }
   return null;
 }
 
 function hasPlaceholderLeak(slide: any, rawText: string): boolean {
   const low = (rawText || "").toLowerCase();
   if (!low) return false;
-
-  const forbidden = [
-    "lorem ipsum",
-    "your headline",
-    "placeholder",
-    "insert text",
-    "sample text",
-    "headline here",
-  ];
-
-  const requiredHeadline = (slide?.headline || "").trim().toLowerCase();
-  if (requiredHeadline && low.includes("headline_mismatch")) return true;
-
+  const forbidden = ["lorem ipsum", "your headline", "placeholder", "insert text", "sample text", "headline here"];
   return forbidden.some((token) => low.includes(token));
 }
 
-// Simple in-memory rate limiting map for the lifetime of this Edge Function isolate
 const IPs = new Map<string, number[]>();
-
 function isRateLimited(ip: string): boolean {
   const now = Date.now();
-  const windowMs = 60000; // 1 minute
-  const maxRequests = 15; // Max slides generated per minute per IP
-
+  const windowMs = 60000;
+  const maxRequests = 15;
   let requests = IPs.get(ip) || [];
   requests = requests.filter(time => now - time < windowMs);
-
-  if (requests.length >= maxRequests) {
-    IPs.set(ip, requests);
-    return true; // Limited
-  }
-
+  if (requests.length >= maxRequests) { IPs.set(ip, requests); return true; }
   requests.push(now);
   IPs.set(ip, requests);
   return false;
 }
 
-// In-memory idempotency map
 const idempotencyCache = new Set<string>();
 
 serve(async (req) => {
@@ -268,17 +322,14 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // IP Rate Limiting
     const clientIp = req.headers.get("cf-connecting-ip") || req.headers.get("x-forwarded-for") || "unknown";
     if (clientIp !== "unknown" && isRateLimited(clientIp)) {
       return new Response(JSON.stringify({ error: "Too many generation requests. Please wait a minute." }), {
-        status: 429,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -288,10 +339,8 @@ serve(async (req) => {
 
     const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
     if (!geminiApiKey || geminiApiKey.trim() === "") {
-      console.error("CRITICAL ERROR: GEMINI_API_KEY is not configured.");
-      return new Response(JSON.stringify({ error: "Configuration Error: AI Engine API Key is missing. Please contact support." }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return new Response(JSON.stringify({ error: "Configuration Error: AI Engine API Key is missing." }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -301,8 +350,7 @@ serve(async (req) => {
     const { data: userData, error: userError } = await userClient.auth.getUser();
     if (userError || !userData.user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
     const userId = userData.user.id;
@@ -336,38 +384,32 @@ serve(async (req) => {
     if (idempotencyKey) {
       if (idempotencyCache.has(idempotencyKey)) {
         return new Response(JSON.stringify({ error: "Duplicate request detected in progress" }), {
-          status: 409,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       idempotencyCache.add(idempotencyKey);
-      setTimeout(() => idempotencyCache.delete(idempotencyKey!), 60000); // clear after 1 min
+      setTimeout(() => idempotencyCache.delete(idempotencyKey!), 60000);
     }
 
     if (!projectId) {
       return new Response(JSON.stringify({ error: "project_id required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Fetch project (verify ownership)
     const { data: project, error: projError } = await userClient.from("projects").select("*").eq("id", projectId).single();
     if (projError || !project) {
       return new Response(JSON.stringify({ error: "Project not found" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Fetch slides
     const { data: allSlides, error: slidesError } = await userClient.from("project_slides").select("*").eq("project_id", projectId).order("slide_number", { ascending: true });
     if (slidesError || !allSlides || allSlides.length === 0) {
       return new Response(JSON.stringify({ error: "No slides found" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -375,22 +417,19 @@ serve(async (req) => {
       const activeGenerating = allSlides.some((s: any) => s.status === "generating" && !s.image_url);
       if (activeGenerating) {
         return new Response(JSON.stringify({ error: "Generation already in progress" }), {
-          status: 409,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
     }
 
-    // Determine which slide to generate
-    const genMode = singleSlideId ? "single" : (project.generation_mode || "full");
+    // Determine which slide to generate — always "full" mode (one at a time, interactive)
     let candidateSlides = allSlides;
 
     if (singleSlideId) {
       const singleSlide = allSlides.find((s: any) => s.id === singleSlideId);
       if (!singleSlide) {
         return new Response(JSON.stringify({ error: "Slide not found" }), {
-          status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       candidateSlides = [singleSlide];
@@ -398,15 +437,10 @@ serve(async (req) => {
       const targetSlide = allSlides.find((s: any) => s.slide_number === targetSlideNumber);
       if (!targetSlide) {
         return new Response(JSON.stringify({ error: "Target slide not found" }), {
-          status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       candidateSlides = [targetSlide];
-    } else if (genMode === "first-3") {
-      candidateSlides = allSlides.slice(0, 3);
-    } else if (genMode === "creative-direction" && allSlides.length > 0) {
-      candidateSlides = [allSlides[0], allSlides[0], allSlides[0]];
     }
 
     let slidesToGenerate = (singleSlideId || targetSlideNumber || forceRegenerate)
@@ -418,23 +452,20 @@ serve(async (req) => {
       if (generatingIds.length > 0) {
         await adminClient.from("project_slides").update({ status: "pending" }).in("id", generatingIds);
       }
-
       slidesToGenerate = candidateSlides.filter((slide: any) => !(slide.status === "completed" && slide.image_url));
     }
 
     // Process ONLY ONE slide per invocation for the interactive workflow
     if (slidesToGenerate.length === 0) {
       return new Response(JSON.stringify({ error: "No slides to generate" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Sort just to be safe and take the first one
     slidesToGenerate.sort((a: any, b: any) => a.slide_number - b.slide_number);
     const invocationSlides = [slidesToGenerate[0]];
 
-    // Check credits only for this invocation batch
+    // Check credits
     const { data: profileData } = await adminClient.from("profiles").select("credits, plan").eq("id", userId).single();
     const currentCredits = profileData?.credits ?? 0;
 
@@ -448,14 +479,9 @@ serve(async (req) => {
 
     if (currentCredits < totalCost) {
       return new Response(JSON.stringify({ error: `Insufficient credits. This action requires ${totalCost} credit(s), but you have ${currentCredits}.` }), {
-        status: 402,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    // Credits are now deducted AFTER successful generation (see inside the stream loop)
-    // Reserve the credits check but don't deduct yet
-    const reservedCredits = totalCost;
 
     // Fetch reference assets from storage
     const { data: assets } = await userClient.from("assets").select("*").eq("project_id", projectId);
@@ -470,6 +496,26 @@ serve(async (req) => {
             const ext = asset.storage_path.split(".").pop()?.toLowerCase() || "png";
             const mime = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
             referenceImages.push({ mimeType: mime, data: base64, tag: asset.tag || undefined });
+          }
+        } catch { /* skip */ }
+      }
+    }
+
+    // Try to fetch template preview image from the public templates bucket
+    let templatePreviewImage: { mimeType: string; data: string } | null = null;
+    const templateKey = (project.template_id || "").toLowerCase().replace(/\s+/g, "-");
+    if (templateKey) {
+      // Try common naming patterns
+      const possibleNames = [`${templateKey}.png`, `${templateKey}.jpg`, `${templateKey}.jpeg`, `${templateKey}.webp`];
+      for (const name of possibleNames) {
+        try {
+          const { data: tmplData } = await adminClient.storage.from("templates").download(name);
+          if (tmplData) {
+            const ab = await tmplData.arrayBuffer();
+            const b64 = btoa(String.fromCharCode(...new Uint8Array(ab)));
+            const ext = name.split(".").pop() || "png";
+            templatePreviewImage = { mimeType: ext === "jpg" ? "image/jpeg" : `image/${ext}`, data: b64 };
+            break;
           }
         } catch { /* skip */ }
       }
@@ -498,7 +544,7 @@ serve(async (req) => {
           : allSlides.filter((s: any) => s.status === "completed" && s.image_url)
         )
           .sort((a: any, b: any) => a.slide_number - b.slide_number)
-          .slice(-9); // Grab ALL previous slides in a 10-slide series
+          .slice(-9);
 
         for (const contextSlide of contextSlides) {
           try {
@@ -508,39 +554,25 @@ serve(async (req) => {
             const ab = await contextData.arrayBuffer();
             const b64 = btoa(String.fromCharCode(...new Uint8Array(ab)));
             previousSlideImages.push({ mimeType: "image/png", data: b64 });
-          } catch {
-            // ignore context download failures
-          }
+          } catch { /* ignore */ }
         }
 
         if (invocationSlides.length === 0) {
-          if (!singleSlideId) {
-            const { data: remainingSlides } = await adminClient
-              .from("project_slides")
-              .select("status,image_url")
-              .eq("project_id", projectId);
-
-            const pendingOrGenerating = (remainingSlides || []).filter(
-              (s: any) => !s.image_url && (s.status === "pending" || s.status === "generating")
-            );
-
-            const hasMore = pendingOrGenerating.length > 0;
-            await adminClient
-              .from("projects")
-              .update({ status: hasMore ? "generating" : "completed" })
-              .eq("id", projectId);
-
-            sendEvent("all-done", { projectId, hasMore, remaining: pendingOrGenerating.length });
-          } else {
-            sendEvent("all-done", { projectId, hasMore: false, remaining: 0 });
-          }
+          const { data: remainingSlides } = await adminClient
+            .from("project_slides").select("status,image_url").eq("project_id", projectId);
+          const pendingOrGenerating = (remainingSlides || []).filter(
+            (s: any) => !s.image_url && (s.status === "pending" || s.status === "generating")
+          );
+          const hasMore = pendingOrGenerating.length > 0;
+          await adminClient.from("projects").update({ status: hasMore ? "generating" : "completed" }).eq("id", projectId);
+          sendEvent("all-done", { projectId, hasMore, remaining: pendingOrGenerating.length });
           controller.close();
           return;
         }
 
         for (let i = 0; i < invocationSlides.length; i++) {
           const slide = invocationSlides[i];
-          const displayNum = genMode === "creative-direction" ? i + 1 : slide.slide_number;
+          const displayNum = slide.slide_number;
 
           sendEvent("slide-start", { slideNumber: displayNum, total: allSlides.length });
           const slideStartMs = Date.now();
@@ -555,9 +587,7 @@ serve(async (req) => {
               userPrompt
             );
 
-            let variantPrompt = genMode === "creative-direction"
-              ? `${prompt}\n\nMETA: Provide a creative variant for this specific art direction generation with a unique aesthetic spin, while continuing to strictly respect the brand core and core UI elements.`
-              : prompt;
+            let variantPrompt = prompt;
 
             if (userFeedback) {
               variantPrompt += `\n\n=== USER REDESIGN INSTRUCTION ===\nYou MUST incorporate the following feedback exactly: "${userFeedback}"`;
@@ -566,30 +596,48 @@ serve(async (req) => {
             const buildContents = (promptText: string) => {
               const parts: any[] = [{ text: promptText }];
 
+              // Inject template preview image FIRST so the AI sees the target style
+              if (templatePreviewImage) {
+                parts.push({
+                  inlineData: { mimeType: templatePreviewImage.mimeType, data: templatePreviewImage.data }
+                });
+                parts[0] = {
+                  text: `${promptText}\n\n=== TEMPLATE REFERENCE IMAGE ===\nThe image immediately following this text is the TEMPLATE you must replicate in terms of layout, composition, color scheme, typography style, and overall mood. Study it carefully and produce a slide that follows this exact aesthetic direction while using the user's app content.\n=== END TEMPLATE REFERENCE ===`,
+                };
+              }
+
+              // Add the matching raw screen for this slide
               const matchingRef = referenceImages.find((r) => r.tag === slide.raw_screen_tag);
               if (matchingRef) {
                 parts.push({ inlineData: { mimeType: matchingRef.mimeType, data: matchingRef.data } });
               }
 
+              // Add brand assets (logo, icon, mascot)
               for (const img of referenceImages.filter((r) => ["logo", "icon", "mascot"].includes(r.tag || ""))) {
                 parts.push({ inlineData: { mimeType: img.mimeType, data: img.data } });
               }
 
+              // Add other reference screens (up to 3 extra)
               for (const img of referenceImages.filter((r) => r.tag !== slide.raw_screen_tag && !["logo", "icon", "mascot"].includes(r.tag || "")).slice(0, 3)) {
                 parts.push({ inlineData: { mimeType: img.mimeType, data: img.data } });
               }
 
+              // Add previously generated slides for continuity
               if (previousSlideImages.length > 0) {
-                // To avoid sending massive payloads overflowing Gemini limit (usually high, but be safe)
                 const recentSlides = previousSlideImages.slice(-9);
                 for (const prevImg of recentSlides) {
                   parts.push({ inlineData: { mimeType: prevImg.mimeType, data: prevImg.data } });
                 }
-                parts[0] = {
-                  text: `${promptText}\n\n=== CRITICAL CONTINUITY CONTEXT ===\nThe following ${recentSlides.length} image(s) represent the EXACT master aesthetic of the previous slide(s) in this specific marketing set. You MUST maintain ABSOLUTE, pixel-perfect visual continuity with them. Specifically: The lighting model, the gradient logic, the 3D phone device angle/style, the exact character modeling (if a mascot is present), and the specific background rendering approach must look identical, as if designed by the exact same human artist in a single Figma file. DO NOT DEVIATE.\n=== END CONTEXT ===`,
-                };
+                // Prepend continuity context to the main text part
+                const mainTextIndex = parts.findIndex(p => p.text);
+                if (mainTextIndex >= 0) {
+                  parts[mainTextIndex] = {
+                    text: `${parts[mainTextIndex].text}\n\n=== CRITICAL CONTINUITY CONTEXT ===\nThe following ${recentSlides.length} image(s) represent the EXACT master aesthetic of the previous slide(s) in this specific marketing set. You MUST maintain ABSOLUTE, pixel-perfect visual continuity with them. Specifically: The lighting model, the gradient logic, the 3D phone device angle/style, the exact character modeling (if a mascot is present), and the specific background rendering approach must look identical, as if designed by the exact same human artist in a single Figma file. DO NOT DEVIATE.\n=== END CONTEXT ===`,
+                  };
+                }
               }
 
+              // Limit total images to 14 max
               let imgCount = 0;
               for (let j = parts.length - 1; j >= 0; j--) {
                 if ((parts[j] as any).inlineData) {
@@ -639,8 +687,7 @@ serve(async (req) => {
             const storagePath = `${userId}/${projectId}/slide-${displayNum}.png`;
             const imageBytes = Uint8Array.from(atob(attempt.imageBase64), (c) => c.charCodeAt(0));
             await adminClient.storage.from("generated-outputs").upload(storagePath, imageBytes, {
-              contentType: "image/png",
-              upsert: true,
+              contentType: "image/png", upsert: true,
             });
 
             // Deduct credit AFTER successful generation
@@ -649,26 +696,18 @@ serve(async (req) => {
               await adminClient.from("profiles").update({ credits: Math.max(0, freshProfile.credits - CREDIT_COST_PER_SLIDE) }).eq("id", userId);
             }
 
-            // Store the storage path (not a signed URL) so it never expires
             const generationMs = Date.now() - slideStartMs;
             await adminClient.from("project_slides").update({
-              status: "completed",
-              image_url: storagePath,
-              quality_score: attempt.qualityScore,
-              generation_ms: generationMs,
-              last_error: null,
+              status: "completed", image_url: storagePath, quality_score: attempt.qualityScore,
+              generation_ms: generationMs, last_error: null,
             }).eq("id", slide.id);
 
-            // Send a fresh signed URL to the client for immediate display
             const { data: signedData } = await adminClient.storage.from("generated-outputs").createSignedUrl(storagePath, 60 * 60 * 2);
             const displayUrl = signedData?.signedUrl || "";
 
             sendEvent("slide-done", {
-              slideNumber: displayNum,
-              imageUrl: displayUrl,
-              storagePath,
-              text: attempt.text,
-              qualityScore: attempt.qualityScore,
+              slideNumber: displayNum, imageUrl: displayUrl, storagePath,
+              text: attempt.text, qualityScore: attempt.qualityScore,
             });
           } catch (error: any) {
             console.error(`Error generating slide ${displayNum}:`, error);
@@ -679,9 +718,7 @@ serve(async (req) => {
 
         // Determine if there are more slides pending
         const { data: remainingSlides } = await adminClient
-          .from("project_slides")
-          .select("status,image_url")
-          .eq("project_id", projectId);
+          .from("project_slides").select("status,image_url").eq("project_id", projectId);
 
         const pendingOrGenerating = (remainingSlides || []).filter(
           (s: any) => !s.image_url && (s.status === "pending" || s.status === "generating")
@@ -690,10 +727,7 @@ serve(async (req) => {
         const hasMore = pendingOrGenerating.length > 0;
 
         if (!singleSlideId && !hasMore) {
-          await adminClient
-            .from("projects")
-            .update({ status: "completed" })
-            .eq("id", projectId);
+          await adminClient.from("projects").update({ status: "completed" }).eq("id", projectId);
         }
 
         sendEvent("all-done", { projectId, hasMore, remaining: pendingOrGenerating.length });
@@ -712,8 +746,7 @@ serve(async (req) => {
   } catch (error: any) {
     console.error("generate-screenshots error:", error);
     return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
