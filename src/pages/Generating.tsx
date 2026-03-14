@@ -212,6 +212,8 @@ const Generating = () => {
   }, [projectId, reviewMode, applyLiveSlides]);
 
   const startGenerationStream = useCallback(async (accessToken: string, resume = false, targetSlide?: number, userFeedback?: string): Promise<"done" | "hasMore" | "busy" | { error: string }> => {
+    setIsDispatching(true);
+
     try {
       if (!projectId) return { error: "No project ID" };
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -226,118 +228,165 @@ const Generating = () => {
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${accessToken}`,
+          "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
-        body: JSON.stringify({ project_id: projectId, resume, target_slide_number: targetSlide, user_feedback: userFeedback, idempotency_key: crypto.randomUUID() }),
+        body: JSON.stringify({
+          project_id: projectId,
+          resume,
+          target_slide_number: targetSlide,
+          user_feedback: userFeedback,
+          idempotency_key: crypto.randomUUID(),
+        }),
         signal: requestAbortRef.current.signal,
       });
 
-      if (response.status === 409) return "busy";
-      if (response.status === 402) return { error: "Insufficient credits. Please upgrade your plan." };
+      if (response.status === 409) {
+        setIsDispatching(false);
+        return "busy";
+      }
+      if (response.status === 402) {
+        setIsDispatching(false);
+        return { error: "Insufficient credits. Please upgrade your plan." };
+      }
+      if (response.status === 401 || response.status === 403) {
+        setIsDispatching(false);
+        return { error: "Authentication issue. Please reconnect and retry generation." };
+      }
       if (!response.ok || !response.body) {
         try {
           const errData = await response.json();
+          setIsDispatching(false);
           return { error: errData.error || `Server error (${response.status})` };
         } catch {
+          setIsDispatching(false);
           return { error: `Server error (${response.status})` };
         }
       }
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      let buffer = "";
+      let textBuffer = "";
       let localHasMore = false;
+      let currentEvent = "";
+      let currentData = "";
+      let hasReceivedEvent = false;
+
+      const handleEvent = (eventType: string, eventDataRaw: string) => {
+        if (!eventType || !eventDataRaw) return;
+
+        if (!hasReceivedEvent) {
+          hasReceivedEvent = true;
+          setIsDispatching(false);
+        }
+
+        let data: any = {};
+        try {
+          data = JSON.parse(eventDataRaw);
+        } catch {
+          return;
+        }
+
+        if (eventType === "slide-start") {
+          const num = data.slideNumber || 1;
+          const index = Math.max(0, num - 1);
+          setCurrentPhase(4);
+          setActiveSlideNumber(num);
+          setReviewMode(false);
+
+          setSlideStatuses((prev) => {
+            const length = Math.max(prev.length, index + 1, data.total || 0);
+            const next = Array.from({ length }, (_, i) => prev[i] ?? "pending") as SlideUiStatus[];
+            next[index] = "generating";
+            return next;
+          });
+        }
+
+        if (eventType === "slide-done") {
+          const num = data.slideNumber || 1;
+          const index = Math.max(0, num - 1);
+          setActiveSlideNumber(num);
+
+          setSlideStatuses((prev) => {
+            const length = Math.max(prev.length, index + 1);
+            const next = Array.from({ length }, (_, i) => prev[i] ?? "pending") as SlideUiStatus[];
+            next[index] = "completed";
+            return next;
+          });
+          setSlideImages((prev) => {
+            const length = Math.max(prev.length, index + 1);
+            const next = Array.from({ length }, (_, i) => prev[i] ?? null);
+            next[index] = data.imageUrl || next[index];
+            return next;
+          });
+        }
+
+        if (eventType === "slide-error") {
+          const index = Math.max(0, (data.slideNumber || 1) - 1);
+          setSlideStatuses((prev) => {
+            const length = Math.max(prev.length, index + 1);
+            const next = Array.from({ length }, (_, i) => prev[i] ?? "pending") as SlideUiStatus[];
+            next[index] = "error";
+            return next;
+          });
+        }
+
+        if (eventType === "all-done") {
+          localHasMore = Boolean(data.hasMore);
+          setHasMoreSlides(localHasMore);
+          setReviewMode(true);
+
+          if (!localHasMore) {
+            setCurrentPhase(6);
+            setProgress(100);
+          }
+        }
+      };
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        buffer += decoder.decode(value, { stream: true });
+
+        textBuffer += decoder.decode(value, { stream: true });
 
         let newlineIndex: number;
-        while ((newlineIndex = buffer.indexOf("\n\n")) !== -1) {
-          const chunk = buffer.slice(0, newlineIndex);
-          buffer = buffer.slice(newlineIndex + 2);
+        while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
+          let line = textBuffer.slice(0, newlineIndex);
+          textBuffer = textBuffer.slice(newlineIndex + 1);
 
-          const lines = chunk.split("\n");
-          let eventType = "";
-          let eventData = "";
+          if (line.endsWith("\r")) line = line.slice(0, -1);
 
-          for (const line of lines) {
-            if (line.startsWith("event: ")) eventType = line.slice(7);
-            else if (line.startsWith("data: ")) eventData = line.slice(6);
+          if (line.trim() === "") {
+            handleEvent(currentEvent, currentData);
+            currentEvent = "";
+            currentData = "";
+            continue;
           }
 
-          if (!eventType || !eventData) continue;
+          if (line.startsWith("event:")) {
+            currentEvent = line.slice(6).trim();
+            continue;
+          }
 
-          try {
-            const data = JSON.parse(eventData);
-
-            if (eventType === "slide-start") {
-              const num = data.slideNumber || 1;
-              const index = Math.max(0, num - 1);
-              setCurrentPhase(4);
-              setActiveSlideNumber(num);
-              setReviewMode(false);
-
-              setSlideStatuses((prev) => {
-                const length = Math.max(prev.length, index + 1, data.total || 0);
-                const next = Array.from({ length }, (_, i) => prev[i] ?? "pending") as SlideUiStatus[];
-                next[index] = "generating";
-                return next;
-              });
-            }
-
-            if (eventType === "slide-done") {
-              const num = data.slideNumber || 1;
-              const index = Math.max(0, num - 1);
-              setActiveSlideNumber(num);
-
-              setSlideStatuses((prev) => {
-                const length = Math.max(prev.length, index + 1);
-                const next = Array.from({ length }, (_, i) => prev[i] ?? "pending") as SlideUiStatus[];
-                next[index] = "completed";
-                return next;
-              });
-              setSlideImages((prev) => {
-                const length = Math.max(prev.length, index + 1);
-                const next = Array.from({ length }, (_, i) => prev[i] ?? null);
-                next[index] = data.imageUrl || next[index];
-                return next;
-              });
-            }
-
-            if (eventType === "slide-error") {
-              const index = Math.max(0, (data.slideNumber || 1) - 1);
-              setSlideStatuses((prev) => {
-                const length = Math.max(prev.length, index + 1);
-                const next = Array.from({ length }, (_, i) => prev[i] ?? "pending") as SlideUiStatus[];
-                next[index] = "error";
-                return next;
-              });
-            }
-
-            if (eventType === "all-done") {
-              localHasMore = Boolean(data.hasMore);
-              setHasMoreSlides(localHasMore);
-              setReviewMode(true); // Trigger review pause
-              stopPolling();
-
-              if (!localHasMore) {
-                setCurrentPhase(6);
-                setProgress(100);
-              }
-            }
-          } catch {
-            // Ignore malformed SSE events
+          if (line.startsWith("data:")) {
+            const payloadLine = line.slice(5).trimStart();
+            currentData = currentData ? `${currentData}\n${payloadLine}` : payloadLine;
           }
         }
       }
 
+      // Final flush in case stream ends without an empty line
+      if (currentEvent && currentData) {
+        handleEvent(currentEvent, currentData);
+      }
+
+      setIsDispatching(false);
       return localHasMore ? "hasMore" : "done";
     } catch (e: any) {
-      if (e.name === 'AbortError') return "busy";
+      setIsDispatching(false);
+      if (e.name === "AbortError") return "busy";
       return { error: "Request failed or aborted." };
     }
-  }, [projectId, stopPolling]);
+  }, [projectId]);
 
   const processQueue = useCallback(async (accessToken: string, initialResume: boolean, targetSlide?: number, userFeedback?: string) => {
     const result = await startGenerationStream(accessToken, initialResume, targetSlide, userFeedback);
