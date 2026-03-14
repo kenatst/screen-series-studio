@@ -143,9 +143,8 @@ interface NewProjectContextType {
   getScreenOptions: () => string[];
   maxSlides: number;
 
-  // Review
+  // Review (generation mode is always 'full')
   generationMode: string;
-  setGenerationMode: (v: 'full' | 'creative-direction' | 'first-3') => void;
 
   // Save
   isSaving: boolean;
