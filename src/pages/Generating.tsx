@@ -237,7 +237,10 @@ const Generating = () => {
             .eq("project_id", projectId)
             .order("slide_number", { ascending: true });
 
-          if (data?.length) applyLiveSlides(data);
+          if (data?.length) {
+            const hydratedSlides = await hydrateSlidesForUi(data as SlideSnapshot[]);
+            applyLiveSlides(hydratedSlides);
+          }
         }
       )
       .subscribe();
@@ -252,9 +255,12 @@ const Generating = () => {
         .eq("project_id", projectId)
         .order("slide_number", { ascending: true });
 
-      if (data?.length) applyLiveSlides(data);
+      if (data?.length) {
+        const hydratedSlides = await hydrateSlidesForUi(data as SlideSnapshot[]);
+        applyLiveSlides(hydratedSlides);
+      }
     }, 5000);
-  }, [projectId, reviewMode, applyLiveSlides]);
+  }, [projectId, reviewMode, applyLiveSlides, hydrateSlidesForUi]);
 
   const startGenerationStream = useCallback(async (accessToken: string, resume = false, targetSlide?: number, userFeedback?: string): Promise<"done" | "hasMore" | "busy" | { error: string }> => {
     setIsDispatching(true);
