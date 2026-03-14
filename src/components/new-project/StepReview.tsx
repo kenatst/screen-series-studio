@@ -6,7 +6,7 @@ export const StepReview = () => {
   const {
     appName, platform, selectedTone, selectedTemplate, deviceFormats,
     slideCount, uploadedScreens, brandAssets, consistencyLevel,
-    outputLanguage, slides, generationMode, setGenerationMode,
+    outputLanguage, slides,
     isSaving, handleSaveDraft, handleGenerate,
   } = useNewProject();
 
