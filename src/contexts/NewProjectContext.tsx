@@ -421,6 +421,29 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const handleReferenceUpload = useCallback((files: FileList | null) => {
+    if (!files) return;
+    const newRefs: ReferenceMockup[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (!file.type.startsWith('image/')) continue;
+      newRefs.push({
+        id: `ref-${Date.now()}-${i}`,
+        file,
+        preview: URL.createObjectURL(file),
+      });
+    }
+    setReferenceMockups(prev => [...prev, ...newRefs]);
+  }, []);
+
+  const removeReferenceMockup = (id: string) => {
+    setReferenceMockups(prev => {
+      const ref = prev.find(r => r.id === id);
+      if (ref) URL.revokeObjectURL(ref.preview);
+      return prev.filter(r => r.id !== id);
+    });
+  };
+
   const handleBrandUpload = (type: 'logo' | 'icon' | 'mascot', files: FileList | null) => {
     if (!files || !files[0]) return;
     const file = files[0];
