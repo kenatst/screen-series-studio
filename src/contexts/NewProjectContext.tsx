@@ -195,7 +195,7 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
   const [topBenefits, setTopBenefits] = useState('');
   const [deviceFormats, setDeviceFormats] = useState<string[]>(['iphone-6-5', 'iphone-6-9']);
   const [isSaving, setIsSaving] = useState(false);
-  const [generationMode, setGenerationMode] = useState<'full' | 'creative-direction' | 'first-3'>('full');
+  const [generationMode] = useState<'full'>('full');
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
   const [savedProjectId, setSavedProjectId] = useState<string | null>(editProjectId);
