@@ -733,6 +733,8 @@ serve(async (req) => {
                 config: {
                   responseModalities: ["TEXT", "IMAGE"],
                   imageConfig: { aspectRatio: "9:16", imageSize: "2K" },
+                  temperature: 0.2,
+                  maxOutputTokens: 8192,
                 } as any,
               });
 
