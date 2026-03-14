@@ -357,6 +357,7 @@ const Generating = () => {
           const num = data.slideNumber || 1;
           const index = Math.max(0, num - 1);
           setActiveSlideNumber(num);
+          setReviewSlideNumber(num);
 
           setSlideStatuses((prev) => {
             const length = Math.max(prev.length, index + 1);
