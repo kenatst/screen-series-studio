@@ -130,24 +130,24 @@ export function useSaveSlides() {
 
   return useMutation({
     mutationFn: async ({ projectId, slides }: { projectId: string; slides: Omit<ProjectSlideInsert, "project_id">[] }) => {
-      // Upsert slides using id as the primary key conflict resolution
-      const { data, error } = await supabase
+      // First, delete ALL existing slides for this project to ensure a clean state
+      // This prevents issues where changing slide count (e.g. 5 to 3) leaves orphaned or duplicate slides
+      const { error: deleteError } = await supabase
         .from("project_slides")
-        .upsert(
-          slides.map(s => ({ ...s, project_id: projectId })),
-          { onConflict: "id", ignoreDuplicates: false }
+        .delete()
+        .eq("project_id", projectId);
+
+      if (deleteError) throw deleteError;
+
+      // Now insert the new slide set
+      const { data, error: insertError } = await supabase
+        .from("project_slides")
+        .insert(
+          slides.map(s => ({ ...s, project_id: projectId }))
         )
         .select();
 
-      if (error) throw error;
-
-      // Delete slides with higher numbers that are no longer in the set
-      const maxNumber = slides.length;
-      await supabase
-        .from("project_slides")
-        .delete()
-        .eq("project_id", projectId)
-        .gt("slide_number", maxNumber);
+      if (insertError) throw insertError;
 
       return data as ProjectSlide[];
     },

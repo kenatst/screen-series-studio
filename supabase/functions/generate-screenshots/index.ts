@@ -21,32 +21,32 @@ const TEMPLATE_CATALOG: Record<string, {
   category: string;
   layoutDescription: string;
 }> = {
-  "habit-tracker": { tags: ["minimal","professional","clean"], tone: "corporate", mood: "light", bestFor: "Productivity, habit apps", complexity: "simple", conversionAngle: "Trust & clarity", category: "Lifestyle", layoutDescription: "Clean white background with soft rounded cards, progress rings, and a centered phone mockup. Minimal text with generous whitespace. Pastel accent colors." },
-  "ai-coach": { tags: ["vibrant","energetic","dynamic"], tone: "bold", mood: "dark", bestFor: "Coaching, fitness apps", complexity: "medium", conversionAngle: "Motivation", category: "Entertainment", layoutDescription: "Dark gradient background with neon accent glows. Bold typography with strong contrast. Phone angled dynamically with energy lines or particles." },
-  "map-explorer": { tags: ["clean","geographic","social"], tone: "minimalist", mood: "light", bestFor: "Travel, maps, social apps", complexity: "medium", conversionAngle: "Discovery", category: "Lifestyle", layoutDescription: "Light airy background with map-like subtle patterns. Phone showing map UI with pin markers. Clean sans-serif typography with earth-tone accents." },
-  "subscription-manager": { tags: ["premium","gradient","sleek"], tone: "premium", mood: "dark", bestFor: "Finance, subscription apps", complexity: "complex", conversionAngle: "Cost savings", category: "Business", layoutDescription: "Deep dark gradient (navy to black) with glassmorphism cards. Premium metallic phone frame. Sophisticated typography with gold/purple accents. Data visualizations visible." },
-  "hydration": { tags: ["playful","colorful","friendly"], tone: "playful", mood: "colorful", bestFor: "Health, wellness apps", complexity: "simple", conversionAngle: "Fun & health", category: "Lifestyle", layoutDescription: "Bright colorful background with water/liquid-themed illustrations. Rounded friendly UI elements. Playful bouncy typography with blue/cyan dominant palette." },
-  "sugar-free": { tags: ["organic","warm","aspirational"], tone: "minimalist", mood: "light", bestFor: "Diet, nutrition apps", complexity: "simple", conversionAngle: "Lifestyle change", category: "Lifestyle", layoutDescription: "Warm cream/beige background with organic shapes. Food photography integration. Elegant serif + sans-serif type pairing. Natural green accents." },
-  "aura-mood": { tags: ["luxury","minimal","elegant"], tone: "premium", mood: "dark", bestFor: "Meditation, mindfulness", complexity: "simple", conversionAngle: "Inner peace", category: "Luxury", layoutDescription: "Deep purple/indigo gradient with soft aurora borealis effects. Centered phone with meditation UI. Thin elegant typography. Ambient glow effects around device." },
-  "scribe-notes": { tags: ["structured","feature-focused","clear"], tone: "corporate", mood: "light", bestFor: "Note-taking, productivity", complexity: "medium", conversionAngle: "Feature showcase", category: "Business", layoutDescription: "Clean white/light gray background with structured grid layout. Multiple UI callouts pointing to specific features. Professional sans-serif type. Blue/gray accent palette." },
-  "personal-trainer": { tags: ["bold","energetic","dynamic"], tone: "bold", mood: "dark", bestFor: "Fitness, workout apps", complexity: "complex", conversionAngle: "Transformation", category: "Entertainment", layoutDescription: "High-contrast dark background with fiery orange/red accents. Athletic photography integration. Bold condensed uppercase headlines. Phone showing workout stats with dynamic angle." },
-  "stackr-finance": { tags: ["premium","gradient","data-driven"], tone: "premium", mood: "dark", bestFor: "Fintech, investment apps", complexity: "complex", conversionAngle: "Financial growth", category: "Business", layoutDescription: "Dark navy/charcoal gradient with green accent for gains. Data charts and financial graphs visible in UI. Premium metallic device frame. Clean monospace numbers mixed with sans-serif headlines." },
-  "trainer-ai": { tags: ["futuristic","bold","tech"], tone: "bold", mood: "dark", bestFor: "AI-powered fitness", complexity: "complex", conversionAngle: "Smart training", category: "Entertainment", layoutDescription: "Futuristic dark background with circuit/AI-themed subtle patterns. Neon cyan/electric blue accents. Bold geometric typography. Phone showing AI-generated workout plans." },
-  "stackr-yellow": { tags: ["vibrant","modern","bold"], tone: "bold", mood: "colorful", bestFor: "Finance, crypto apps", complexity: "medium", conversionAngle: "Bold positioning", category: "Business", layoutDescription: "Vibrant yellow/gold dominant palette on dark background. Strong geometric shapes. Ultra-bold sans-serif headlines. High energy composition with crypto/finance UI." },
-  "vow-couples": { tags: ["romantic","warm","elegant"], tone: "premium", mood: "light", bestFor: "Dating, relationship apps", complexity: "medium", conversionAngle: "Emotional connection", category: "Lifestyle", layoutDescription: "Soft pink/rose gradient background with gentle blur effects. Romantic warm lighting. Elegant script + sans-serif type pairing. Heart-shaped elements subtly integrated." },
-  "rpg-gaming": { tags: ["gaming","immersive","dramatic"], tone: "bold", mood: "dark", bestFor: "Games, RPG apps", complexity: "complex", conversionAngle: "Excitement & adventure", category: "Entertainment", layoutDescription: "Epic dark fantasy background with dramatic lighting. Game UI elements (health bars, inventory). Bold fantasy-inspired typography. Phone showing immersive game world." },
-  "cram-study": { tags: ["playful","educational","colorful"], tone: "playful", mood: "colorful", bestFor: "Study, flashcard apps", complexity: "medium", conversionAngle: "Learning made easy", category: "Education", layoutDescription: "Bright multi-color background with stacked card/flashcard motifs. Friendly rounded typography. Emoji and icon accents. Phone showing study interface with progress indicators." },
-  "adblock-shield": { tags: ["tech","minimal","powerful"], tone: "corporate", mood: "dark", bestFor: "Utility, security apps", complexity: "simple", conversionAngle: "Protection", category: "Business", layoutDescription: "Dark background with shield/security iconography. Minimal layout with centered phone. Strong blue/green accent for 'protected' status. Clean corporate typography." },
-  "drift-meditation": { tags: ["calm","minimal","serene"], tone: "minimalist", mood: "dark", bestFor: "Meditation, sleep apps", complexity: "simple", conversionAngle: "Relaxation", category: "Luxury", layoutDescription: "Deep navy/midnight blue gradient with soft star-like particles. Ultra-minimal layout. Thin light typography. Phone showing calming meditation timer UI. Ambient soft glow." },
-  "life-coaching": { tags: ["professional","warm","inspiring"], tone: "corporate", mood: "light", bestFor: "Coaching, self-improvement", complexity: "medium", conversionAngle: "Personal growth", category: "Education", layoutDescription: "Warm white/cream background with subtle geometric patterns. Professional but approachable typography. Orange/amber accent colors. Phone showing coaching dashboard with progress." },
-  "tape-recorder": { tags: ["retro","creative","unique"], tone: "bold", mood: "dark", bestFor: "Audio, music apps", complexity: "medium", conversionAngle: "Nostalgia & creativity", category: "Media", layoutDescription: "Retro-inspired dark background with cassette tape/vinyl textures. Vintage color palette (amber, brown, cream). Retro-modern typography mix. Phone showing audio waveform UI." },
-  "solo-travel": { tags: ["adventurous","organic","free"], tone: "minimalist", mood: "light", bestFor: "Travel, adventure apps", complexity: "medium", conversionAngle: "Freedom & discovery", category: "Lifestyle", layoutDescription: "Light background with travel photography integration (mountains, beaches). Organic hand-drawn accent elements. Clean modern typography. Phone showing itinerary/map UI." },
-  "minddrop-journal": { tags: ["calm","minimal","thoughtful"], tone: "minimalist", mood: "neutral", bestFor: "Journaling, mental health", complexity: "simple", conversionAngle: "Self-reflection", category: "Lifestyle", layoutDescription: "Soft neutral background (warm gray/beige). Minimal centered layout with generous margins. Thoughtful serif headlines. Phone showing journaling interface with clean typography." },
-  "meal-planner": { tags: ["fresh","colorful","friendly"], tone: "playful", mood: "colorful", bestFor: "Meal prep, recipe apps", complexity: "medium", conversionAngle: "Healthy lifestyle", category: "Lifestyle", layoutDescription: "Bright fresh background with food photography accents. Green/orange vibrant palette. Friendly rounded sans-serif type. Phone showing recipe cards and meal calendar UI." },
-  "vault-security": { tags: ["dark","premium","secure"], tone: "premium", mood: "dark", bestFor: "Password, security apps", complexity: "medium", conversionAngle: "Trust & safety", category: "Business", layoutDescription: "Ultra-dark background with vault/lock iconography. Green/cyan matrix-like accent colors. Strong bold typography. Phone showing encrypted password vault UI with biometric elements." },
-  "linguaflow": { tags: ["playful","educational","colorful"], tone: "playful", mood: "colorful", bestFor: "Language learning apps", complexity: "medium", conversionAngle: "Fun learning", category: "Education", layoutDescription: "Colorful gradient background with flag/language-themed elements. Playful rounded typography with multiple script samples. Phone showing lesson interface with progress streaks." },
-  "nestle-wellness": { tags: ["organic","clean","premium"], tone: "corporate", mood: "light", bestFor: "Health, corporate wellness", complexity: "simple", conversionAngle: "Trusted brand", category: "Lifestyle", layoutDescription: "Clean white background with subtle green organic accents. Premium corporate photography style. Elegant sans-serif typography. Phone showing health dashboard with clean data visualization." },
-  "lifeplan-goals": { tags: ["structured","motivating","clear"], tone: "corporate", mood: "neutral", bestFor: "Goal tracking, planning", complexity: "medium", conversionAngle: "Achievement", category: "Business", layoutDescription: "Neutral gray/white background with structured grid layout. Motivational accent colors (orange, teal). Clear hierarchical typography. Phone showing goal tracker with progress bars and milestones." },
+  "habit-tracker": { tags: ["minimal", "professional", "clean"], tone: "corporate", mood: "light", bestFor: "Productivity, habit apps", complexity: "simple", conversionAngle: "Trust & clarity", category: "Lifestyle", layoutDescription: "Clean white background with soft rounded cards, progress rings, and a centered phone mockup. Minimal text with generous whitespace. Pastel accent colors." },
+  "ai-coach": { tags: ["vibrant", "energetic", "dynamic"], tone: "bold", mood: "dark", bestFor: "Coaching, fitness apps", complexity: "medium", conversionAngle: "Motivation", category: "Entertainment", layoutDescription: "Dark gradient background with neon accent glows. Bold typography with strong contrast. Phone angled dynamically with energy lines or particles." },
+  "map-explorer": { tags: ["clean", "geographic", "social"], tone: "minimalist", mood: "light", bestFor: "Travel, maps, social apps", complexity: "medium", conversionAngle: "Discovery", category: "Lifestyle", layoutDescription: "Light airy background with map-like subtle patterns. Phone showing map UI with pin markers. Clean sans-serif typography with earth-tone accents." },
+  "subscription-manager": { tags: ["premium", "gradient", "sleek"], tone: "premium", mood: "dark", bestFor: "Finance, subscription apps", complexity: "complex", conversionAngle: "Cost savings", category: "Business", layoutDescription: "Deep dark gradient (navy to black) with glassmorphism cards. Premium metallic phone frame. Sophisticated typography with gold/purple accents. Data visualizations visible." },
+  "hydration": { tags: ["playful", "colorful", "friendly"], tone: "playful", mood: "colorful", bestFor: "Health, wellness apps", complexity: "simple", conversionAngle: "Fun & health", category: "Lifestyle", layoutDescription: "Bright colorful background with water/liquid-themed illustrations. Rounded friendly UI elements. Playful bouncy typography with blue/cyan dominant palette." },
+  "sugar-free": { tags: ["organic", "warm", "aspirational"], tone: "minimalist", mood: "light", bestFor: "Diet, nutrition apps", complexity: "simple", conversionAngle: "Lifestyle change", category: "Lifestyle", layoutDescription: "Warm cream/beige background with organic shapes. Food photography integration. Elegant serif + sans-serif type pairing. Natural green accents." },
+  "aura-mood": { tags: ["luxury", "minimal", "elegant"], tone: "premium", mood: "dark", bestFor: "Meditation, mindfulness", complexity: "simple", conversionAngle: "Inner peace", category: "Luxury", layoutDescription: "Deep purple/indigo gradient with soft aurora borealis effects. Centered phone with meditation UI. Thin elegant typography. Ambient glow effects around device." },
+  "scribe-notes": { tags: ["structured", "feature-focused", "clear"], tone: "corporate", mood: "light", bestFor: "Note-taking, productivity", complexity: "medium", conversionAngle: "Feature showcase", category: "Business", layoutDescription: "Clean white/light gray background with structured grid layout. Multiple UI callouts pointing to specific features. Professional sans-serif type. Blue/gray accent palette." },
+  "personal-trainer": { tags: ["bold", "energetic", "dynamic"], tone: "bold", mood: "dark", bestFor: "Fitness, workout apps", complexity: "complex", conversionAngle: "Transformation", category: "Entertainment", layoutDescription: "High-contrast dark background with fiery orange/red accents. Athletic photography integration. Bold condensed uppercase headlines. Phone showing workout stats with dynamic angle." },
+  "stackr-finance": { tags: ["premium", "gradient", "data-driven"], tone: "premium", mood: "dark", bestFor: "Fintech, investment apps", complexity: "complex", conversionAngle: "Financial growth", category: "Business", layoutDescription: "Dark navy/charcoal gradient with green accent for gains. Data charts and financial graphs visible in UI. Premium metallic device frame. Clean monospace numbers mixed with sans-serif headlines." },
+  "trainer-ai": { tags: ["futuristic", "bold", "tech"], tone: "bold", mood: "dark", bestFor: "AI-powered fitness", complexity: "complex", conversionAngle: "Smart training", category: "Entertainment", layoutDescription: "Futuristic dark background with circuit/AI-themed subtle patterns. Neon cyan/electric blue accents. Bold geometric typography. Phone showing AI-generated workout plans." },
+  "stackr-yellow": { tags: ["vibrant", "modern", "bold"], tone: "bold", mood: "colorful", bestFor: "Finance, crypto apps", complexity: "medium", conversionAngle: "Bold positioning", category: "Business", layoutDescription: "Vibrant yellow/gold dominant palette on dark background. Strong geometric shapes. Ultra-bold sans-serif headlines. High energy composition with crypto/finance UI." },
+  "vow-couples": { tags: ["romantic", "warm", "elegant"], tone: "premium", mood: "light", bestFor: "Dating, relationship apps", complexity: "medium", conversionAngle: "Emotional connection", category: "Lifestyle", layoutDescription: "Soft pink/rose gradient background with gentle blur effects. Romantic warm lighting. Elegant script + sans-serif type pairing. Heart-shaped elements subtly integrated." },
+  "rpg-gaming": { tags: ["gaming", "immersive", "dramatic"], tone: "bold", mood: "dark", bestFor: "Games, RPG apps", complexity: "complex", conversionAngle: "Excitement & adventure", category: "Entertainment", layoutDescription: "Epic dark fantasy background with dramatic lighting. Game UI elements (health bars, inventory). Bold fantasy-inspired typography. Phone showing immersive game world." },
+  "cram-study": { tags: ["playful", "educational", "colorful"], tone: "playful", mood: "colorful", bestFor: "Study, flashcard apps", complexity: "medium", conversionAngle: "Learning made easy", category: "Education", layoutDescription: "Bright multi-color background with stacked card/flashcard motifs. Friendly rounded typography. Emoji and icon accents. Phone showing study interface with progress indicators." },
+  "adblock-shield": { tags: ["tech", "minimal", "powerful"], tone: "corporate", mood: "dark", bestFor: "Utility, security apps", complexity: "simple", conversionAngle: "Protection", category: "Business", layoutDescription: "Dark background with shield/security iconography. Minimal layout with centered phone. Strong blue/green accent for 'protected' status. Clean corporate typography." },
+  "drift-meditation": { tags: ["calm", "minimal", "serene"], tone: "minimalist", mood: "dark", bestFor: "Meditation, sleep apps", complexity: "simple", conversionAngle: "Relaxation", category: "Luxury", layoutDescription: "Deep navy/midnight blue gradient with soft star-like particles. Ultra-minimal layout. Thin light typography. Phone showing calming meditation timer UI. Ambient soft glow." },
+  "life-coaching": { tags: ["professional", "warm", "inspiring"], tone: "corporate", mood: "light", bestFor: "Coaching, self-improvement", complexity: "medium", conversionAngle: "Personal growth", category: "Education", layoutDescription: "Warm white/cream background with subtle geometric patterns. Professional but approachable typography. Orange/amber accent colors. Phone showing coaching dashboard with progress." },
+  "tape-recorder": { tags: ["retro", "creative", "unique"], tone: "bold", mood: "dark", bestFor: "Audio, music apps", complexity: "medium", conversionAngle: "Nostalgia & creativity", category: "Media", layoutDescription: "Retro-inspired dark background with cassette tape/vinyl textures. Vintage color palette (amber, brown, cream). Retro-modern typography mix. Phone showing audio waveform UI." },
+  "solo-travel": { tags: ["adventurous", "organic", "free"], tone: "minimalist", mood: "light", bestFor: "Travel, adventure apps", complexity: "medium", conversionAngle: "Freedom & discovery", category: "Lifestyle", layoutDescription: "Light background with travel photography integration (mountains, beaches). Organic hand-drawn accent elements. Clean modern typography. Phone showing itinerary/map UI." },
+  "minddrop-journal": { tags: ["calm", "minimal", "thoughtful"], tone: "minimalist", mood: "neutral", bestFor: "Journaling, mental health", complexity: "simple", conversionAngle: "Self-reflection", category: "Lifestyle", layoutDescription: "Soft neutral background (warm gray/beige). Minimal centered layout with generous margins. Thoughtful serif headlines. Phone showing journaling interface with clean typography." },
+  "meal-planner": { tags: ["fresh", "colorful", "friendly"], tone: "playful", mood: "colorful", bestFor: "Meal prep, recipe apps", complexity: "medium", conversionAngle: "Healthy lifestyle", category: "Lifestyle", layoutDescription: "Bright fresh background with food photography accents. Green/orange vibrant palette. Friendly rounded sans-serif type. Phone showing recipe cards and meal calendar UI." },
+  "vault-security": { tags: ["dark", "premium", "secure"], tone: "premium", mood: "dark", bestFor: "Password, security apps", complexity: "medium", conversionAngle: "Trust & safety", category: "Business", layoutDescription: "Ultra-dark background with vault/lock iconography. Green/cyan matrix-like accent colors. Strong bold typography. Phone showing encrypted password vault UI with biometric elements." },
+  "linguaflow": { tags: ["playful", "educational", "colorful"], tone: "playful", mood: "colorful", bestFor: "Language learning apps", complexity: "medium", conversionAngle: "Fun learning", category: "Education", layoutDescription: "Colorful gradient background with flag/language-themed elements. Playful rounded typography with multiple script samples. Phone showing lesson interface with progress streaks." },
+  "nestle-wellness": { tags: ["organic", "clean", "premium"], tone: "corporate", mood: "light", bestFor: "Health, corporate wellness", complexity: "simple", conversionAngle: "Trusted brand", category: "Lifestyle", layoutDescription: "Clean white background with subtle green organic accents. Premium corporate photography style. Elegant sans-serif typography. Phone showing health dashboard with clean data visualization." },
+  "lifeplan-goals": { tags: ["structured", "motivating", "clear"], tone: "corporate", mood: "neutral", bestFor: "Goal tracking, planning", complexity: "medium", conversionAngle: "Achievement", category: "Business", layoutDescription: "Neutral gray/white background with structured grid layout. Motivational accent colors (orange, teal). Clear hierarchical typography. Phone showing goal tracker with progress bars and milestones." },
 };
 
 function getTemplateStyle(templateId: string): string {
@@ -98,25 +98,22 @@ function buildConsistencyBlock(
 
   let directive = "";
   if (level === "strict") {
-    directive = `STRICT CONSISTENCY MODE:
-- Every slide MUST use the exact same background style, gradient direction, and color scheme.
-- Phone mockup placement, size, and shadow style must be identical across slides.
-- Text positioning (headline at top, subheadline below) must follow the same grid.
-- Badge/label styling must be uniform.
-- The overall feel should be as if all slides were designed in a single Figma frame.`;
+    directive = `STRICT CONSISTENCY MODE (MAXIMUM UNIFORMITY):
+- This is a unified set. Every single slide MUST use the EXACT SAME background: same color hex, same gradient angle, same texture.
+- The 3D smartphone mockup MUST be the same model, same color, and same position/angle in every slide.
+- Typography MUST be identical in font-family, weight, and position across all slides.
+- The overall composition should feel like a single continuous canvas divided into slides. Zero variation in style allowed.`;
   } else if (level === "balanced") {
-    directive = `BALANCED CONSISTENCY MODE:
-- Maintain the same color palette and typography across all slides.
-- Background style should be cohesive but can have subtle variations (e.g., gradient shifts).
-- Phone mockup style should be consistent (same device frame, shadow).
-- Layout can vary slightly to match each slide's objective.
-- The set should feel unified but not monotonous.`;
+    directive = `BALANCED CONSISTENCY MODE (COHESIVE VARIATION):
+- Maintain a strictly unified color palette and typography system.
+- Background style should be fundamentally the same but can have subtle variations in lighting or secondary abstract elements to match the slide objective.
+- The smartphone mockup style (model/frame) must be consistent, but the angle can vary slightly (e.g., straight-on for hero, tilted for feature).
+- Overall look: A professional, branded collection.`;
   } else {
-    directive = `EXPLORATORY MODE:
-- Colors and typography should remain loosely related but each slide can explore different layouts.
-- The brand identity should be recognizable but creative freedom is encouraged.
-- Different background treatments are acceptable.
-- The set should feel like a creative collection from the same brand.`;
+    directive = `EXPLORATORY MODE (CREATIVE FREEDOM):
+- Use the brand colors and typography as the core anchor.
+- Each slide is encouraged to explore unique layouts and background treatments while remaining recognizable as part of the same brand.
+- Dynamic angles, varying depths of field, and expressive compositions are allowed.`;
   }
 
   return `--- CONSISTENCY ENGINE ---
@@ -176,7 +173,13 @@ SECTION 1: TARGET PRODUCT & PLATFORM OVERVIEW
 ====================================================================
 APP IDENTITY
 - App Name: "${project.app_name || project.name}"
-- Core Value Proposition / Description: "${project.app_description || ""}"
+- Category: "${(project.config as any)?.appCategory || "Not specified"}"
+- Target Audience: "${(project.config as any)?.targetAudience || "Not specified"}"
+- Core Value Proposition: "${(project.config as any)?.valueProposition || ""}"
+- Description (Long): "${project.app_description || ""}"
+- Description (Short): "${(project.config as any)?.shortDescription || ""}"
+- Key Features: ${(project.config as any)?.keyFeatures?.join(", ") || "Automatic detection from UI"}
+- Top Benefits: ${(project.config as any)?.topBenefits?.join(", ") || "Automatic detection from visual benefit"}
 - Target Platform: ${platformLabel} 
 - Primary Business Goal: ${(project.config as any)?.primaryGoal || "Maximize install velocity and convey undeniable premium value."}
 
@@ -219,14 +222,20 @@ COPYWRITING RULES FOR RENDERING
 OBJECTIVE MAPPING
 The objective of this specific slide is: [ ${slide.objective || "Feature spotlight"} ]. 
 Execute the visual layout based on this exact objective:
-- If "Hero / first impression": This is the hero slide. Maximum energy, dramatic lighting, device mockup centered or dynamically angled to hook the user instantly.
-- If "Feature spotlight": The device mockup must be significantly enlarged, zooming in or highlighting the specific UI feature from the raw screen.
-- If "Core benefit" or "Value proposition": The text takes priority. Layout balanced with headline communicating the massive benefit clearly above or alongside the device.
-- If "Social proof": Introduce subtle, premium trust badges (stars, user avatars) IF they fit the brand style.
-- If "Ease of use": Clean, spacious layout showing the simple UI flow. Minimal clutter.
-- If "CTA-like closing slide": Strong call-to-action feel. Bold typography, possibly app icon integration, download button visual.
-- If "Emotional benefit": Atmospheric, mood-driven composition with cinematic lighting.
-- If "Transformation / before-after": Split or comparison layout showing improvement.
+- If "Hero / first impression": This is the hero slide. Maximum energy, dramatic lighting, device mockup centered or dynamically angled (e.g., 15-degree tilt) to hook the user instantly.
+- If "Core benefit": Highlight the single most important value. The layout should be balanced with the headline clearly communicating the benefit.
+- If "Feature spotlight": Focus on one specific UI capability. The device mockup must be significantly enlarged, zooming in on that feature.
+- If "Social proof": Introduce subtle, premium trust badges (stars, user avatars, "Used by 1M+" labels) if they fit the brand style.
+- If "Ease of use": Clean, spacious layout showing the simple UI flow. Minimal clutter, focus on intuitive navigation.
+- If "Transformation / before-after": Split or comparison layout showing the "before" (pain point) vs "after" (solution with app).
+- If "Emotional benefit": Atmospheric, mood-driven composition with cinematic lighting and soft focus backgrounds.
+- If "Productivity gain": Focus on speed and efficiency visuals. Numbers or checkboxes can be highlighted.
+- If "Learning outcome": Educational feel. Clear, structured information presentation.
+- If "Trust / credibility": Solid, secure feel. Use lock icons or security-related visual metaphors.
+- If "Premium feel": Ultra-minimal, high-end aesthetic. Large margins, elegant typography, luxury materials in backdrop.
+- If "Gamification": Energetic, fun elements like coins, sparks, or progress bars with glow effects.
+- If "CTA-like closing slide": Strong call-to-action. Bold typography, app icon integration, and a clear visual cue to download.
+- If "Value proposition": Direct and authoritative. The text takes priority over the mockup.
 
 VISUAL EMPHASIS MAPPING
 Focus the energy of the composition on: [ ${slide.emphasis || "UI focused"} ].
@@ -263,9 +272,12 @@ SECTION 4: THE ANTI-HALLUCINATION & INTEGRITY PROTOCOL (CRITICAL)
    - The mascot must look identical across all slides.
 
 ====================================================================
-SECTION 5: CONTINUITY & BATCH COHESION
+SECTION 5: CONTINUITY & BATCH COHESION (THE CONSISTENCY ENGINE)
 ====================================================================
 ${consistency}
+
+CRITICAL EXECUTION RULE:
+If the user chose "STRICT", you MUST NOT change the background or phone frame between slides. If you are generating slide 2, it should look like a visual twin of slide 1 with only the screen content and text changing. Failure to maintain this will result in a 0 quality score.
 ${templateStyle}
 
 === OUTPUT QA REPORT (MANDATORY) ===

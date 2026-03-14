@@ -628,6 +628,8 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
     setIsSaving(true);
     try {
       const projectId = await saveProjectAndSlides();
+      // Ensure status is set to generating so the generation page auto-starts
+      await updateProject.mutateAsync({ id: projectId, status: 'generating' });
       navigate(`/project/${projectId}/generating`);
     } catch (e) {
       console.error("Failed to save project", e);
