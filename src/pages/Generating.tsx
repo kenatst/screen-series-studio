@@ -559,29 +559,34 @@ const Generating = () => {
 
   const handleRedesign = async () => {
     if (!feedback.trim()) return;
+
+    const targetSlide = reviewSlideNumber ?? activeSlideNumber ?? 1;
+
     setIsSubmittingFeedback(true);
     setReviewMode(false);
+    setActiveSlideNumber(targetSlide);
+    setReviewSlideNumber(targetSlide);
 
     toast({
       title: "Redesigning slide...",
       description: "Applying your feedback to the creative engine.",
     });
 
-    // Optimistic UI back to generating
+    // Optimistic UI back to generating on the exact reviewed slide
     setSlideStatuses((prev) => {
       const next = [...prev];
-      if (activeSlideNumber) next[activeSlideNumber - 1] = "generating";
+      next[targetSlide - 1] = "generating";
       return next;
     });
     setSlideImages((prev) => {
       const next = [...prev];
-      if (activeSlideNumber) next[activeSlideNumber - 1] = null;
+      next[targetSlide - 1] = null;
       return next;
     });
 
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
-      await processQueue(session.access_token, false, activeSlideNumber || undefined, feedback);
+      await processQueue(session.access_token, false, targetSlide, feedback);
     }
 
     setIsSubmittingFeedback(false);
