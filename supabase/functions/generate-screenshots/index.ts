@@ -497,21 +497,72 @@ serve(async (req) => {
       });
     }
 
-    // Fetch reference assets from storage
-    const { data: assets } = await userClient.from("assets").select("*").eq("project_id", projectId);
+    // Fetch reference assets from storage (DB rows first, then storage-folder fallback)
+    const { data: dbAssets } = await userClient.from("assets").select("storage_path, asset_type, tag").eq("project_id", projectId);
+
+    let assets = (dbAssets || []) as Array<{ storage_path: string; asset_type: string; tag: string | null }>;
+
+    if (assets.length === 0) {
+      const slideTags = Array.from(new Set(allSlides.map((s: any) => s.raw_screen_tag).filter(Boolean)));
+
+      const [screenList, referenceList, brandList] = await Promise.all([
+        adminClient.storage.from("raw-uploads").list(`${userId}/${projectId}/screens`, { limit: 20, sortBy: { column: "name", order: "asc" } }),
+        adminClient.storage.from("raw-uploads").list(`${userId}/${projectId}/references`, { limit: 10, sortBy: { column: "name", order: "asc" } }),
+        adminClient.storage.from("raw-uploads").list(`${userId}/${projectId}/brand`, { limit: 10, sortBy: { column: "name", order: "asc" } }),
+      ]);
+
+      const fallbackAssets: Array<{ storage_path: string; asset_type: string; tag: string | null }> = [];
+
+      for (const [idx, file] of (screenList.data || []).entries()) {
+        if (!file?.name) continue;
+        fallbackAssets.push({
+          storage_path: `${userId}/${projectId}/screens/${file.name}`,
+          asset_type: "raw_screen",
+          tag: slideTags[idx] || `screen-${idx + 1}`,
+        });
+      }
+
+      for (const file of referenceList.data || []) {
+        if (!file?.name) continue;
+        fallbackAssets.push({
+          storage_path: `${userId}/${projectId}/references/${file.name}`,
+          asset_type: "reference",
+          tag: "reference",
+        });
+      }
+
+      for (const file of brandList.data || []) {
+        if (!file?.name) continue;
+        const inferredType = file.name.startsWith("logo-")
+          ? "logo"
+          : file.name.startsWith("icon-")
+            ? "icon"
+            : file.name.startsWith("mascot-")
+              ? "mascot"
+              : "reference";
+
+        fallbackAssets.push({
+          storage_path: `${userId}/${projectId}/brand/${file.name}`,
+          asset_type: inferredType,
+          tag: inferredType,
+        });
+      }
+
+      assets = fallbackAssets;
+    }
+
     const referenceImages: { mimeType: string; data: string; tag?: string }[] = [];
-    if (assets) {
-      for (const asset of assets.slice(0, 8)) {
-        try {
-          const { data: fileData } = await adminClient.storage.from("raw-uploads").download(asset.storage_path);
-          if (fileData) {
-            const arrayBuffer = await fileData.arrayBuffer();
-            const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-            const ext = asset.storage_path.split(".").pop()?.toLowerCase() || "png";
-            const mime = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
-            referenceImages.push({ mimeType: mime, data: base64, tag: asset.tag || undefined });
-          }
-        } catch { /* skip */ }
+    for (const asset of assets.slice(0, 12)) {
+      try {
+        const { data: fileData } = await adminClient.storage.from("raw-uploads").download(asset.storage_path);
+        if (!fileData) continue;
+        const arrayBuffer = await fileData.arrayBuffer();
+        const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+        const ext = asset.storage_path.split(".").pop()?.toLowerCase() || "png";
+        const mime = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
+        referenceImages.push({ mimeType: mime, data: base64, tag: asset.tag || undefined });
+      } catch {
+        // skip broken references
       }
     }
 
