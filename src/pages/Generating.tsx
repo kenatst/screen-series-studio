@@ -818,12 +818,6 @@ const Generating = () => {
                   ) : null}
 
                   {/* Status Indicator Overlays */}
-                  {status === "completed" && (
-                    <div className="absolute top-2 left-2 flex items-center justify-center bg-primary/90 text-primary-foreground p-1 rounded-full backdrop-blur-sm z-20">
-                      <CheckCircle2 className="h-2.5 w-2.5" />
-                    </div>
-                  )}
-
                   <div className="absolute top-2 right-2 bg-background/80 rounded-full p-0.5 backdrop-blur-sm z-20">
                     {status === "completed" ? <CheckCircle2 className="h-3 w-3 text-primary" /> :
                       status === "generating" ? <div className="h-2 w-2 rounded-full bg-primary animate-ping m-0.5" /> :
