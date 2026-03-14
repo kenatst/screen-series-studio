@@ -9,6 +9,44 @@ const corsHeaders = {
 const GEMINI_EMBED_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-2-preview:embedContent";
 const EMBED_DIM = 768;
 
+function parseEmbeddingToArray(value: unknown): number[] | null {
+  if (!value) return null;
+
+  if (Array.isArray(value)) {
+    const arr = value.map((v) => Number(v));
+    return arr.every((v) => Number.isFinite(v)) ? arr : null;
+  }
+
+  if (typeof value === "string") {
+    try {
+      const normalized = value.trim().replace(/^\[/, "").replace(/\]$/, "");
+      if (!normalized) return null;
+      const arr = normalized.split(",").map((v) => Number(v.trim()));
+      return arr.every((v) => Number.isFinite(v)) ? arr : null;
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+}
+
+function cosineSimilarity(a: number[], b: number[]): number {
+  if (a.length !== b.length || a.length === 0) return 0;
+  let dot = 0;
+  let normA = 0;
+  let normB = 0;
+  for (let i = 0; i < a.length; i++) {
+    const av = a[i];
+    const bv = b[i];
+    dot += av * bv;
+    normA += av * av;
+    normB += bv * bv;
+  }
+  if (normA === 0 || normB === 0) return 0;
+  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -36,7 +74,7 @@ serve(async (req) => {
       });
     }
 
-    const { screenshot_urls, logo_url, user_inspiration_text, app_name, app_description } = await req.json();
+    const { screenshot_urls, logo_url, user_inspiration_text, app_name, app_description, context_text } = await req.json();
 
     // Build multimodal parts for a single embedding call
     // gemini-embedding-2-preview supports text + images in the same request
@@ -48,6 +86,7 @@ serve(async (req) => {
       app_name ? `App: ${app_name}` : "",
       app_description ? `Description: ${app_description}` : "",
       user_inspiration_text ? `Style inspiration: ${user_inspiration_text}` : "",
+      context_text ? `Additional context: ${context_text}` : "",
     ].filter(Boolean).join(". ");
 
     if (textContent) {
@@ -134,15 +173,30 @@ serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const adminClient = createClient(supabaseUrl, serviceKey);
 
-    const { data: matches, error: matchError } = await adminClient.rpc("match_templates", {
-      query_embedding: JSON.stringify(projectVector),
-      match_limit: 5,
-      similarity_threshold: 0.1,
-    });
+    const { data: templateRows, error: templateError } = await adminClient
+      .from("template_embeddings")
+      .select("template_name, visual_summary, metadata, embedding");
 
-    if (matchError) {
-      console.error("match_templates RPC error:", matchError);
+    if (templateError) {
+      console.error("template_embeddings query error:", templateError);
     }
+
+    const matches = (templateRows || [])
+      .map((row: any) => {
+        const templateVector = parseEmbeddingToArray(row.embedding);
+        if (!templateVector || templateVector.length !== EMBED_DIM) return null;
+        const similarity = cosineSimilarity(projectVector, templateVector);
+        return {
+          template_name: row.template_name,
+          visual_summary: row.visual_summary,
+          metadata: row.metadata,
+          similarity,
+        };
+      })
+      .filter(Boolean)
+      .filter((row: any) => row.similarity > 0.1)
+      .sort((a: any, b: any) => b.similarity - a.similarity)
+      .slice(0, 5);
 
     // Generate explainability summary for the top match using Lovable AI
     let copilotSummary = "";

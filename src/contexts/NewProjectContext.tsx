@@ -20,6 +20,12 @@ export interface BrandAsset {
   preview: string;
 }
 
+export interface ReferenceMockup {
+  id: string;
+  file: File;
+  preview: string;
+}
+
 /** Extract dominant colors from an image via canvas sampling */
 function extractColorsFromImage(imgSrc: string): Promise<string[]> {
   return new Promise((resolve) => {
@@ -99,6 +105,14 @@ interface NewProjectContextType {
   handleScreenUpload: (files: FileList | null) => void;
   removeScreen: (id: string) => void;
   screenInputRef: React.RefObject<HTMLInputElement | null>;
+
+  // Reference mockups
+  referenceMockups: ReferenceMockup[];
+  handleReferenceUpload: (files: FileList | null) => void;
+  removeReferenceMockup: (id: string) => void;
+  referenceInputRef: React.RefObject<HTMLInputElement | null>;
+  inspirationText: string;
+  setInspirationText: (v: string) => void;
 
   // Brand kit
   brandAssets: BrandAsset[];
@@ -205,6 +219,8 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
   const [templateMoodFilter, setTemplateMoodFilter] = useState<string>('All');
   const [templateCategoryFilter, setTemplateCategoryFilter] = useState<string>('All');
   const [uploadedScreens, setUploadedScreens] = useState<UploadedScreen[]>([]);
+  const [referenceMockups, setReferenceMockups] = useState<ReferenceMockup[]>([]);
+  const [inspirationText, setInspirationText] = useState('');
   const [brandAssets, setBrandAssets] = useState<BrandAsset[]>([]);
   const [brandColors, setBrandColors] = useState<string[]>([]);
   const [brandFont, setBrandFont] = useState('');
@@ -212,6 +228,7 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
   const [visualPreferences, setVisualPreferences] = useState<string[]>([]);
 
   const screenInputRef = useRef<HTMLInputElement | null>(null);
+  const referenceInputRef = useRef<HTMLInputElement | null>(null);
   const brandInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   // Fetch existing project data for draft hydration
@@ -241,6 +258,7 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
       setTopBenefits(Array.isArray(config.topBenefits) ? config.topBenefits.join('\n') : '');
       setAppCategory(config.appCategory || '');
       setTargetAudience(config.targetAudience || '');
+      setInspirationText(config.inspirationText || '');
     }
     const brandKit = existingProject.brand_kit as any;
     if (brandKit) {
@@ -291,6 +309,7 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
         if (error) throw error;
         if (!assets || assets.length === 0) { setAssetsHydrated(true); return; }
         const newScreens: UploadedScreen[] = [];
+        const newReferences: ReferenceMockup[] = [];
         const newBrandAssets: BrandAsset[] = [];
         const promises = assets.map(async (asset) => {
           const { data } = await supabase.storage.from('raw-uploads').createSignedUrl(asset.storage_path, 3600);
@@ -302,6 +321,8 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
               const preview = URL.createObjectURL(file);
               if (asset.asset_type === 'screen') {
                 newScreens.push({ id: `db-${asset.id}`, file, preview, tag: asset.tag || 'home' });
+              } else if (asset.asset_type === 'reference') {
+                newReferences.push({ id: `db-ref-${asset.id}`, file, preview });
               } else if (['logo', 'icon', 'mascot'].includes(asset.asset_type)) {
                 newBrandAssets.push({ type: asset.asset_type as 'logo' | 'icon' | 'mascot', file, preview });
               }
@@ -310,6 +331,7 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
         });
         await Promise.all(promises);
         if (newScreens.length > 0) setUploadedScreens(newScreens);
+        if (newReferences.length > 0) setReferenceMockups(newReferences);
         if (newBrandAssets.length > 0) setBrandAssets(newBrandAssets);
       } catch (e) { console.error("Failed to hydrate assets", e); }
       finally { setAssetsHydrated(true); }
@@ -399,6 +421,29 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const handleReferenceUpload = useCallback((files: FileList | null) => {
+    if (!files) return;
+    const newRefs: ReferenceMockup[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (!file.type.startsWith('image/')) continue;
+      newRefs.push({
+        id: `ref-${Date.now()}-${i}`,
+        file,
+        preview: URL.createObjectURL(file),
+      });
+    }
+    setReferenceMockups(prev => [...prev, ...newRefs]);
+  }, []);
+
+  const removeReferenceMockup = (id: string) => {
+    setReferenceMockups(prev => {
+      const ref = prev.find(r => r.id === id);
+      if (ref) URL.revokeObjectURL(ref.preview);
+      return prev.filter(r => r.id !== id);
+    });
+  };
+
   const handleBrandUpload = (type: 'logo' | 'icon' | 'mascot', files: FileList | null) => {
     if (!files || !files[0]) return;
     const file = files[0];
@@ -484,16 +529,25 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
 
   const uploadAssetsToStorage = async (projectId: string, userId: string) => {
     const assets: { storage_path: string; asset_type: string; tag: string; filename: string }[] = [];
+
     for (const screen of uploadedScreens) {
       const path = `${userId}/${projectId}/screens/${screen.id}-${screen.file.name}`;
       const { error } = await supabase.storage.from('raw-uploads').upload(path, screen.file, { upsert: true });
       if (!error) assets.push({ storage_path: path, asset_type: 'screen', tag: screen.tag, filename: screen.file.name });
     }
+
+    for (const ref of referenceMockups) {
+      const path = `${userId}/${projectId}/references/${ref.id}-${ref.file.name}`;
+      const { error } = await supabase.storage.from('raw-uploads').upload(path, ref.file, { upsert: true });
+      if (!error) assets.push({ storage_path: path, asset_type: 'reference', tag: 'reference', filename: ref.file.name });
+    }
+
     for (const asset of brandAssets) {
       const path = `${userId}/${projectId}/brand/${asset.type}-${asset.file.name}`;
       const { error } = await supabase.storage.from('raw-uploads').upload(path, asset.file, { upsert: true });
       if (!error) assets.push({ storage_path: path, asset_type: asset.type, tag: asset.type, filename: asset.file.name });
     }
+
     if (assets.length > 0) {
       await supabase.from('assets').insert(assets.map(a => ({ ...a, project_id: projectId, user_id: userId })));
     }
@@ -510,7 +564,19 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
     generation_mode: generationMode,
     status: 'draft' as const,
     brand_kit: { colors: brandColors, fontFamily: brandFont } as any,
-    config: { primaryGoal, tone: selectedTone, shortDescription, valueProposition, keyFeatures: keyFeatures.split('\n').filter(Boolean), topBenefits: topBenefits.split('\n').filter(Boolean), outputLanguage, appCategory, targetAudience } as any,
+    config: {
+      primaryGoal,
+      tone: selectedTone,
+      shortDescription,
+      valueProposition,
+      keyFeatures: keyFeatures.split('\n').filter(Boolean),
+      topBenefits: topBenefits.split('\n').filter(Boolean),
+      outputLanguage,
+      appCategory,
+      targetAudience,
+      inspirationText,
+      visualPreferences,
+    } as any,
     output_language: outputLanguage,
   });
 
@@ -584,6 +650,8 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
       valueProposition, setValueProposition, keyFeatures, setKeyFeatures,
       topBenefits, setTopBenefits, selectedTone, setSelectedTone,
       uploadedScreens, setUploadedScreens, handleScreenUpload, removeScreen, screenInputRef,
+      referenceMockups, handleReferenceUpload, removeReferenceMockup, referenceInputRef,
+      inspirationText, setInspirationText,
       brandAssets, setBrandAssets, brandColors, setBrandColors, brandFont, setBrandFont,
       newColor, setNewColor, handleBrandUpload, removeBrandAsset, handleAutoDetectColors,
       brandInputRefs, visualPreferences, setVisualPreferences,

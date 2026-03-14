@@ -405,7 +405,7 @@ const Generating = () => {
       }
 
       // Auto-start if we just upgraded, even if it wasn't "generating" before
-      const shouldAutoStart = (currentStatus === "generating" && hasStarted) || isReturningFromCheckout;
+      const shouldAutoStart = currentStatus === "generating" || isReturningFromCheckout;
       await processQueue(session.access_token, shouldAutoStart);
     };
 

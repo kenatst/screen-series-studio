@@ -25,13 +25,15 @@ export function useTemplateRecommendations() {
       inspirationText?: string;
       appName?: string;
       appDescription?: string;
+      contextText?: string;
     }) => {
       // Need at least some input
       if (
         (!params.screenshotUrls || params.screenshotUrls.length === 0) &&
         !params.logoUrl &&
         !params.inspirationText &&
-        !params.appDescription
+        !params.appDescription &&
+        !params.contextText
       ) {
         return;
       }
@@ -49,6 +51,7 @@ export function useTemplateRecommendations() {
               user_inspiration_text: params.inspirationText || null,
               app_name: params.appName || null,
               app_description: params.appDescription || null,
+              context_text: params.contextText || null,
             },
           }
         );
