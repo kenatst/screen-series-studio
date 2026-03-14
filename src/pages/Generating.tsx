@@ -435,7 +435,9 @@ const Generating = () => {
     } catch (e: any) {
       setIsDispatching(false);
       if (e.name === "AbortError") return "busy";
-      return { error: "Request failed or aborted." };
+      console.error("[Generating] request failed", e);
+      const message = typeof e?.message === "string" ? e.message : "Network/CORS error";
+      return { error: `Request failed: ${message}` };
     }
   }, [projectId]);
 
