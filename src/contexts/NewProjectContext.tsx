@@ -551,28 +551,43 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
   const uploadAssetsToStorage = async (projectId: string, userId: string) => {
     const assets: { storage_path: string; asset_type: string; tag: string; filename: string }[] = [];
 
+    const uploadWithSafeFallback = async (
+      folder: 'screens' | 'references' | 'brand',
+      file: File,
+      prefix: string,
+    ) => {
+      const safeFileName = sanitizeFileNameForStorage(file.name);
+      let storagePath = `${userId}/${projectId}/${folder}/${prefix}-${safeFileName}`;
+
+      const { error } = await supabase.storage.from('raw-uploads').upload(storagePath, file, { upsert: true });
+
+      if (error && /invalid key/i.test(error.message || '')) {
+        const ext = safeFileName.includes('.') ? safeFileName.split('.').pop() : '';
+        const retryName = `${prefix}-${crypto.randomUUID()}${ext ? `.${ext}` : ''}`;
+        storagePath = `${userId}/${projectId}/${folder}/${retryName}`;
+
+        const { error: retryError } = await supabase.storage.from('raw-uploads').upload(storagePath, file, { upsert: true });
+        if (retryError) throw retryError;
+      } else if (error) {
+        throw error;
+      }
+
+      return storagePath;
+    };
+
     for (const screen of uploadedScreens) {
-      const safeFileName = sanitizeFileNameForStorage(screen.file.name);
-      const path = `${userId}/${projectId}/screens/${screen.id}-${safeFileName}`;
-      const { error } = await supabase.storage.from('raw-uploads').upload(path, screen.file, { upsert: true });
-      if (error) throw error;
-      assets.push({ storage_path: path, asset_type: 'raw_screen', tag: screen.tag, filename: screen.file.name });
+      const storagePath = await uploadWithSafeFallback('screens', screen.file, screen.id);
+      assets.push({ storage_path: storagePath, asset_type: 'raw_screen', tag: screen.tag, filename: screen.file.name });
     }
 
     for (const ref of referenceMockups) {
-      const safeFileName = sanitizeFileNameForStorage(ref.file.name);
-      const path = `${userId}/${projectId}/references/${ref.id}-${safeFileName}`;
-      const { error } = await supabase.storage.from('raw-uploads').upload(path, ref.file, { upsert: true });
-      if (error) throw error;
-      assets.push({ storage_path: path, asset_type: 'reference', tag: 'reference', filename: ref.file.name });
+      const storagePath = await uploadWithSafeFallback('references', ref.file, ref.id);
+      assets.push({ storage_path: storagePath, asset_type: 'reference', tag: 'reference', filename: ref.file.name });
     }
 
     for (const asset of brandAssets) {
-      const safeFileName = sanitizeFileNameForStorage(asset.file.name);
-      const path = `${userId}/${projectId}/brand/${asset.type}-${safeFileName}`;
-      const { error } = await supabase.storage.from('raw-uploads').upload(path, asset.file, { upsert: true });
-      if (error) throw error;
-      assets.push({ storage_path: path, asset_type: asset.type, tag: asset.type, filename: asset.file.name });
+      const storagePath = await uploadWithSafeFallback('brand', asset.file, asset.type);
+      assets.push({ storage_path: storagePath, asset_type: asset.type, tag: asset.type, filename: asset.file.name });
     }
 
     if (assets.length === 0) return;
