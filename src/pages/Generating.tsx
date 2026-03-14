@@ -738,10 +738,12 @@ const Generating = () => {
                     <img src={image} alt={`Tmb ${i + 1}`} className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105" loading="lazy" />
                   ) : null}
 
-                  {status === "generating" ? (
+                  {status === "generating" || (status === "pending" && isDispatching && (i + 1 === activeSlideNumber || activeSlideNumber === null)) ? (
                     <div className="flex flex-col items-center gap-2 z-10">
                       <Loader2 className="h-6 w-6 text-primary animate-spin" />
-                      <span className="text-[8px] font-black uppercase tracking-tighter text-primary">Generating</span>
+                      <span className="text-[8px] font-black uppercase tracking-tighter text-primary">
+                        {status === "generating" ? "Generating" : "Starting"}
+                      </span>
                     </div>
                   ) : !image ? (
                     <div className="flex flex-col items-center gap-1 z-10">
