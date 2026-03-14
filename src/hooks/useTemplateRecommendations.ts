@@ -32,7 +32,8 @@ export function useTemplateRecommendations() {
         (!params.screenshotUrls || params.screenshotUrls.length === 0) &&
         !params.logoUrl &&
         !params.inspirationText &&
-        !params.appDescription
+        !params.appDescription &&
+        !params.contextText
       ) {
         return;
       }
