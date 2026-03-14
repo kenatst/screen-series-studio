@@ -51,6 +51,7 @@ export function useTemplateRecommendations() {
               user_inspiration_text: params.inspirationText || null,
               app_name: params.appName || null,
               app_description: params.appDescription || null,
+              context_text: params.contextText || null,
             },
           }
         );
