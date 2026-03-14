@@ -143,9 +143,8 @@ interface NewProjectContextType {
   getScreenOptions: () => string[];
   maxSlides: number;
 
-  // Review
+  // Review (generation mode is always 'full')
   generationMode: string;
-  setGenerationMode: (v: 'full' | 'creative-direction' | 'first-3') => void;
 
   // Save
   isSaving: boolean;
@@ -195,7 +194,7 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
   const [topBenefits, setTopBenefits] = useState('');
   const [deviceFormats, setDeviceFormats] = useState<string[]>(['iphone-6-5', 'iphone-6-9']);
   const [isSaving, setIsSaving] = useState(false);
-  const [generationMode, setGenerationMode] = useState<'full' | 'creative-direction' | 'first-3'>('full');
+  const [generationMode] = useState<'full'>('full');
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
   const [savedProjectId, setSavedProjectId] = useState<string | null>(editProjectId);
@@ -230,7 +229,7 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
     setSelectedTemplate(existingProject.template_id || '');
     setConsistencyLevel((existingProject.consistency_level as any) || 'balanced');
     setDeviceFormats((existingProject.device_formats as string[]) || ['iphone-6-5', 'iphone-6-9']);
-    setGenerationMode((existingProject.generation_mode as any) || 'full');
+    // generationMode is always 'full'
     setOutputLanguage(existingProject.output_language || 'en');
     const config = existingProject.config as any;
     if (config) {
@@ -593,7 +592,7 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
       slides, setSlides, slideCount, handleSlideCountChange, isAutoFilling,
       consistencyLevel, setConsistencyLevel, sensors, handleDragEnd,
       handleAutoFillSlides, updateSlide, removeSlide, addSlide, getScreenOptions, maxSlides,
-      generationMode, setGenerationMode,
+      generationMode,
       isSaving, lastSavedAt, handleSaveDraft, handleGenerate, getFinalProjectName,
       profile,
     }}>

@@ -6,7 +6,7 @@ export const StepReview = () => {
   const {
     appName, platform, selectedTone, selectedTemplate, deviceFormats,
     slideCount, uploadedScreens, brandAssets, consistencyLevel,
-    outputLanguage, slides, generationMode, setGenerationMode,
+    outputLanguage, slides,
     isSaving, handleSaveDraft, handleGenerate,
   } = useNewProject();
 
@@ -56,21 +56,6 @@ export const StepReview = () => {
         </div>
       </div>
 
-      <div className="space-y-5 pt-4">
-        <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">Generation mode</h3>
-        <div className="grid md:grid-cols-4 gap-4">
-          {[
-            { id: 'full', title: 'Full set generation', desc: 'Generate all slides at once' },
-            { id: 'creative-direction', title: 'Creative direction first', desc: 'Generate 3 style directions for Slide 1' },
-            { id: 'first-3', title: 'First 3 slides only', desc: 'Quick preview before full generation' },
-          ].map(mode => (
-            <button key={mode.id} onClick={() => setGenerationMode(mode.id as any)} className={`text-left rounded-2xl border-2 p-5 transition-all duration-300 hover:-translate-y-1 shadow-elevated ${generationMode === mode.id ? 'border-primary bg-primary/10 shadow-[0_5px_20px_hsl(var(--primary)/0.2)]' : 'border-border bg-card/90 hover:border-primary/40 hover:bg-muted/50'}`}>
-              <p className={`text-sm font-black mb-1.5 tracking-tight ${generationMode === mode.id ? 'text-primary' : 'text-foreground'}`}>{mode.title}</p>
-              <p className={`text-xs font-medium ${generationMode === mode.id ? 'text-primary/70' : 'text-foreground/40'}`}>{mode.desc}</p>
-            </button>
-          ))}
-        </div>
-      </div>
 
       <div className="flex gap-4 pt-8 mt-8 border-t border-border">
         <Button variant="outline" size="lg" onClick={handleSaveDraft} disabled={isSaving} className="h-16 rounded-2xl text-lg font-bold border-border hover:border-primary/40 px-8">
