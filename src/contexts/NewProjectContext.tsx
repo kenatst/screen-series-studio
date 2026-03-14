@@ -219,6 +219,8 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
   const [templateMoodFilter, setTemplateMoodFilter] = useState<string>('All');
   const [templateCategoryFilter, setTemplateCategoryFilter] = useState<string>('All');
   const [uploadedScreens, setUploadedScreens] = useState<UploadedScreen[]>([]);
+  const [referenceMockups, setReferenceMockups] = useState<ReferenceMockup[]>([]);
+  const [inspirationText, setInspirationText] = useState('');
   const [brandAssets, setBrandAssets] = useState<BrandAsset[]>([]);
   const [brandColors, setBrandColors] = useState<string[]>([]);
   const [brandFont, setBrandFont] = useState('');
@@ -226,6 +228,7 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
   const [visualPreferences, setVisualPreferences] = useState<string[]>([]);
 
   const screenInputRef = useRef<HTMLInputElement | null>(null);
+  const referenceInputRef = useRef<HTMLInputElement | null>(null);
   const brandInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   // Fetch existing project data for draft hydration
