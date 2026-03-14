@@ -88,6 +88,7 @@ const Generating = () => {
   // Interactive Workflow State
   const [reviewMode, setReviewMode] = useState(false);
   const [activeSlideNumber, setActiveSlideNumber] = useState<number | null>(null);
+  const [reviewSlideNumber, setReviewSlideNumber] = useState<number | null>(null);
   const [feedback, setFeedback] = useState("");
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   const [hasMoreSlides, setHasMoreSlides] = useState(true);
