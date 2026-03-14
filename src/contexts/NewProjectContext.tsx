@@ -598,13 +598,17 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
     const payload = buildProjectPayload();
     let projectId: string;
     if (savedProjectId) {
+      console.log("[SAVE] Updating existing project:", savedProjectId);
       await updateProject.mutateAsync({ id: savedProjectId, ...payload });
       projectId = savedProjectId;
     } else {
+      console.log("[SAVE] Creating new project with payload:", JSON.stringify(payload).slice(0, 200));
       const project = await createProject.mutateAsync(payload);
       projectId = project.id;
       setSavedProjectId(projectId);
+      console.log("[SAVE] Created project:", projectId);
     }
+    console.log("[SAVE] Saving", slides.length, "slides for project:", projectId);
     await saveSlides.mutateAsync({
       projectId,
       slides: slides.map((s, i) => ({
@@ -618,7 +622,9 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
         status: 'pending',
       })),
     });
+    console.log("[SAVE] Slides saved, uploading assets...");
     if (user) await uploadAssetsToStorage(projectId, user.id);
+    console.log("[SAVE] Assets uploaded");
     return projectId;
   };
 
