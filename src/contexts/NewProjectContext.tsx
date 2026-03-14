@@ -421,6 +421,28 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  useEffect(() => {
+    if (uploadedScreens.length === 0) return;
+
+    const availableTags = [...new Set(uploadedScreens.map((screen) => screen.tag).filter(Boolean))];
+    if (availableTags.length === 0) return;
+
+    setSlides((prev) => {
+      let hasChanges = false;
+      const normalized = prev.map((slide, idx) => {
+        if (availableTags.includes(slide.rawScreenTag)) return slide;
+
+        const fallbackTag = availableTags[Math.min(idx, availableTags.length - 1)] || availableTags[0];
+        if (fallbackTag === slide.rawScreenTag) return slide;
+
+        hasChanges = true;
+        return { ...slide, rawScreenTag: fallbackTag };
+      });
+
+      return hasChanges ? normalized : prev;
+    });
+  }, [uploadedScreens]);
+
   const handleReferenceUpload = useCallback((files: FileList | null) => {
     if (!files) return;
     const newRefs: ReferenceMockup[] = [];
@@ -513,8 +535,8 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
   };
 
   const getScreenOptions = () => {
-    const uploadOptions = uploadedScreens.map(s => s.tag);
-    return [...new Set([...screenTags, ...uploadOptions])];
+    const uploadOptions = [...new Set(uploadedScreens.map((s) => s.tag).filter(Boolean))];
+    return uploadOptions.length > 0 ? uploadOptions : screenTags;
   };
 
   const filteredTemplates = demoTemplates.filter(t => {
