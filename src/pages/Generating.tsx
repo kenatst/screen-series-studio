@@ -56,7 +56,7 @@ const normalizeStatus = (status: string, imageUrl: string | null): SlideUiStatus
 const statusLabel: Record<SlideUiStatus, string> = {
   pending: "pending",
   generating: "generating",
-  completed: "ready",
+  completed: "completed",
   error: "error",
 };
 
@@ -88,6 +88,7 @@ const Generating = () => {
   // Interactive Workflow State
   const [reviewMode, setReviewMode] = useState(false);
   const [activeSlideNumber, setActiveSlideNumber] = useState<number | null>(null);
+  const [reviewSlideNumber, setReviewSlideNumber] = useState<number | null>(null);
   const [feedback, setFeedback] = useState("");
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   const [hasMoreSlides, setHasMoreSlides] = useState(true);
@@ -356,6 +357,7 @@ const Generating = () => {
           const num = data.slideNumber || 1;
           const index = Math.max(0, num - 1);
           setActiveSlideNumber(num);
+          setReviewSlideNumber(num);
 
           setSlideStatuses((prev) => {
             const length = Math.max(prev.length, index + 1);
@@ -557,29 +559,34 @@ const Generating = () => {
 
   const handleRedesign = async () => {
     if (!feedback.trim()) return;
+
+    const targetSlide = reviewSlideNumber ?? activeSlideNumber ?? 1;
+
     setIsSubmittingFeedback(true);
     setReviewMode(false);
+    setActiveSlideNumber(targetSlide);
+    setReviewSlideNumber(targetSlide);
 
     toast({
       title: "Redesigning slide...",
       description: "Applying your feedback to the creative engine.",
     });
 
-    // Optimistic UI back to generating
+    // Optimistic UI back to generating on the exact reviewed slide
     setSlideStatuses((prev) => {
       const next = [...prev];
-      if (activeSlideNumber) next[activeSlideNumber - 1] = "generating";
+      next[targetSlide - 1] = "generating";
       return next;
     });
     setSlideImages((prev) => {
       const next = [...prev];
-      if (activeSlideNumber) next[activeSlideNumber - 1] = null;
+      next[targetSlide - 1] = null;
       return next;
     });
 
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
-      await processQueue(session.access_token, false, activeSlideNumber || undefined, feedback);
+      await processQueue(session.access_token, false, targetSlide, feedback);
     }
 
     setIsSubmittingFeedback(false);
@@ -698,7 +705,7 @@ const Generating = () => {
                     <CheckCircle2 className="h-8 w-8 text-primary" />
                   </motion.div>
                 ) : !centralImage && (centralStatus === "generating" || (centralStatus === "pending" && isDispatching)) ? (
-                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }}>
+                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 2.6, repeat: Infinity, ease: "linear" }}>
                     <Loader2 className="h-12 w-12 text-primary mb-4" />
                   </motion.div>
                 ) : !centralImage && centralStatus === "error" ? (
@@ -706,9 +713,11 @@ const Generating = () => {
                 ) : null}
 
                 <span className="text-lg font-black text-foreground tracking-tight">Slide {actualIndex + 1}</span>
-                <Badge className="mt-2 text-xs uppercase tracking-widest font-bold shadow-sm">
-                  {isDispatching && centralStatus === "pending" ? "initializing" : statusLabel[centralStatus]}
-                </Badge>
+                {!(centralStatus === "completed" && centralImage) && (
+                  <Badge className="mt-2 text-xs uppercase tracking-widest font-bold shadow-sm">
+                    {isDispatching && centralStatus === "pending" ? "initializing" : statusLabel[centralStatus]}
+                  </Badge>
+                )}
               </div>
             </div>
 
@@ -719,10 +728,10 @@ const Generating = () => {
                   initial={{ opacity: 0, scale: 0.95, y: 30 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                  className="fixed inset-x-4 bottom-4 z-[100] md:max-w-[400px] md:mx-auto xl:absolute xl:inset-auto xl:top-1/2 xl:-translate-y-1/2 xl:-right-10 xl:translate-x-full xl:w-[400px] bg-background/95 backdrop-blur-xl border-border border-2 shadow-2xl rounded-3xl p-6"
+                  className="fixed inset-x-4 bottom-4 z-[100] sm:max-w-[360px] sm:mx-auto md:absolute md:inset-auto md:right-4 md:bottom-4 md:w-[340px] md:mx-0 bg-background/95 backdrop-blur-xl border-border border-2 shadow-2xl rounded-3xl p-5"
                 >
-                  <h3 className="text-xl font-black mb-1">Slide Ready</h3>
-                  <p className="text-sm text-muted-foreground mb-6">Review this slide. Modify it or proceed.</p>
+                  <h3 className="text-lg font-black mb-0.5">Review Slide</h3>
+                  <p className="text-xs text-muted-foreground mb-5">Modify this slide or continue.</p>
 
                   <div className="space-y-4">
                     <div className="space-y-2">
@@ -770,18 +779,16 @@ const Generating = () => {
               const isActive = (activeSlideNumber === i + 1);
 
               return (
-                <div key={i} className={`group flex-shrink-0 relative w-24 xl:w-full aspect-[9/19.5] rounded-xl border-2 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 overflow-hidden shadow-sm hover:shadow-lg hover:scale-[1.02] ${status === "completed"
+                <div key={i} className={`group flex-shrink-0 relative w-24 xl:w-full aspect-[9/19.5] rounded-xl border-2 flex flex-col items-center justify-center cursor-pointer transition-all duration-500 overflow-hidden shadow-sm hover:shadow-lg hover:scale-[1.02] ${status === "completed"
                   ? "border-primary/50 bg-card/90"
                   : status === "generating"
-                    ? "border-primary animate-pulse bg-primary/5 backdrop-blur-md"
+                    ? "border-primary bg-primary/5 backdrop-blur-md animate-[pulse_2.6s_ease-in-out_infinite]"
                     : "border-border bg-card/50 opacity-60 hover:opacity-100"
                   } ${isActive ? 'ring-4 ring-primary ring-offset-2 ring-offset-background z-10' : ''}`}
                   onClick={() => {
                     setActiveSlideNumber(i + 1);
-                    // If we navigate to a slide that isn't the "currently generating/ready" one, 
-                    // we might want to toggle reviewMode based on whether THAT slide is completed.
                     if (status === "completed") {
-                      // Optionally setReviewMode(true) if we want the redesign input to show for any completed slide
+                      setReviewSlideNumber(i + 1);
                     }
                   }}
                 >
@@ -791,7 +798,7 @@ const Generating = () => {
 
                   {status === "generating" || (status === "pending" && isDispatching && (i + 1 === activeSlideNumber || activeSlideNumber === null)) ? (
                     <div className="flex flex-col items-center gap-2 z-10">
-                      <Loader2 className="h-6 w-6 text-primary animate-spin" />
+                      <Loader2 className="h-6 w-6 text-primary animate-[spin_2.4s_linear_infinite]" />
                       <span className="text-[8px] font-black uppercase tracking-tighter text-primary">
                         {status === "generating" ? "Generating" : "Starting"}
                       </span>
@@ -805,9 +812,8 @@ const Generating = () => {
 
                   {/* Status Indicator Overlays */}
                   {status === "completed" && (
-                    <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-primary/90 text-primary-foreground px-1.5 py-0.5 rounded-md backdrop-blur-sm z-20">
+                    <div className="absolute top-2 left-2 flex items-center justify-center bg-primary/90 text-primary-foreground p-1 rounded-full backdrop-blur-sm z-20">
                       <CheckCircle2 className="h-2.5 w-2.5" />
-                      <span className="text-[8px] font-black uppercase">READY</span>
                     </div>
                   )}
 

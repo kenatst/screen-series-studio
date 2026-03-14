@@ -533,24 +533,38 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
     for (const screen of uploadedScreens) {
       const path = `${userId}/${projectId}/screens/${screen.id}-${screen.file.name}`;
       const { error } = await supabase.storage.from('raw-uploads').upload(path, screen.file, { upsert: true });
-      if (!error) assets.push({ storage_path: path, asset_type: 'screen', tag: screen.tag, filename: screen.file.name });
+      if (error) throw error;
+      assets.push({ storage_path: path, asset_type: 'raw_screen', tag: screen.tag, filename: screen.file.name });
     }
 
     for (const ref of referenceMockups) {
       const path = `${userId}/${projectId}/references/${ref.id}-${ref.file.name}`;
       const { error } = await supabase.storage.from('raw-uploads').upload(path, ref.file, { upsert: true });
-      if (!error) assets.push({ storage_path: path, asset_type: 'reference', tag: 'reference', filename: ref.file.name });
+      if (error) throw error;
+      assets.push({ storage_path: path, asset_type: 'reference', tag: 'reference', filename: ref.file.name });
     }
 
     for (const asset of brandAssets) {
       const path = `${userId}/${projectId}/brand/${asset.type}-${asset.file.name}`;
       const { error } = await supabase.storage.from('raw-uploads').upload(path, asset.file, { upsert: true });
-      if (!error) assets.push({ storage_path: path, asset_type: asset.type, tag: asset.type, filename: asset.file.name });
+      if (error) throw error;
+      assets.push({ storage_path: path, asset_type: asset.type, tag: asset.type, filename: asset.file.name });
     }
 
-    if (assets.length > 0) {
-      await supabase.from('assets').insert(assets.map(a => ({ ...a, project_id: projectId, user_id: userId })));
-    }
+    if (assets.length === 0) return;
+
+    const { error: deleteError } = await supabase
+      .from('assets')
+      .delete()
+      .eq('project_id', projectId);
+
+    if (deleteError) throw deleteError;
+
+    const { error: insertError } = await supabase
+      .from('assets')
+      .insert(assets.map(a => ({ ...a, project_id: projectId, user_id: userId })));
+
+    if (insertError) throw insertError;
   };
 
   const buildProjectPayload = () => ({
