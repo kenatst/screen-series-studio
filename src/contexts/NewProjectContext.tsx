@@ -592,7 +592,7 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
       slides, setSlides, slideCount, handleSlideCountChange, isAutoFilling,
       consistencyLevel, setConsistencyLevel, sensors, handleDragEnd,
       handleAutoFillSlides, updateSlide, removeSlide, addSlide, getScreenOptions, maxSlides,
-      generationMode, setGenerationMode,
+      generationMode,
       isSaving, lastSavedAt, handleSaveDraft, handleGenerate, getFinalProjectName,
       profile,
     }}>
