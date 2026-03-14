@@ -86,6 +86,7 @@ serve(async (req) => {
       app_name ? `App: ${app_name}` : "",
       app_description ? `Description: ${app_description}` : "",
       user_inspiration_text ? `Style inspiration: ${user_inspiration_text}` : "",
+      context_text ? `Additional context: ${context_text}` : "",
     ].filter(Boolean).join(". ");
 
     if (textContent) {
