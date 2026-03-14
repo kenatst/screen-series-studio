@@ -84,6 +84,7 @@ const Generating = () => {
   const [feedback, setFeedback] = useState("");
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   const [hasMoreSlides, setHasMoreSlides] = useState(true);
+  const [isDispatching, setIsDispatching] = useState(false);
 
   // Handle successful checkout return
   useEffect(() => {
