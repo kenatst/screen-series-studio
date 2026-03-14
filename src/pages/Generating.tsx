@@ -47,7 +47,7 @@ const isStoragePath = (value: string | null) => {
 };
 
 const normalizeStatus = (status: string, imageUrl: string | null): SlideUiStatus => {
-  if (imageUrl) return "completed";
+  if (imageUrl || status === "completed") return "completed";
   if (status === "generating") return "generating";
   if (status === "error") return "error";
   return "pending";
