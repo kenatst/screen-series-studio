@@ -290,7 +290,7 @@ ${templateStyle}
 
 === OUTPUT QA REPORT (MANDATORY) ===
 Return a JSON object in TEXT modality only, with this exact schema:
-{"overall_score": number, "checks": {"headline_exact": boolean, "subheadline_exact": boolean, "no_placeholder": boolean, "ui_preserved": boolean, "contrast_ok": boolean}, "issues": string[]}
+{"overall_score": number, "checks": {"headline_exact": boolean, "subheadline_exact": boolean, "no_placeholder": boolean, "ui_preserved": boolean, "template_fidelity": boolean, "pixel_fidelity": boolean, "contrast_ok": boolean}, "issues": string[]}
 
 ${langDirective}${userDirective}
 
