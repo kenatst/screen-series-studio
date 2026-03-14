@@ -670,18 +670,27 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
       console.log("[SAVE] Created project:", projectId);
     }
     console.log("[SAVE] Saving", slides.length, "slides for project:", projectId);
+    const availableScreenTags = [...new Set(uploadedScreens.map((screen) => screen.tag).filter(Boolean))];
+
     await saveSlides.mutateAsync({
       projectId,
-      slides: slides.map((s, i) => ({
-        slide_number: i + 1,
-        objective: s.objective,
-        headline: s.headline,
-        subheadline: s.subheadline || '',
-        raw_screen_tag: s.rawScreenTag,
-        emphasis: s.emphasis,
-        importance: s.importance,
-        status: 'pending',
-      })),
+      slides: slides.map((s, i) => {
+        const fallbackTag = availableScreenTags[Math.min(i, availableScreenTags.length - 1)] || 'home';
+        const normalizedTag = availableScreenTags.length > 0
+          ? (availableScreenTags.includes(s.rawScreenTag) ? s.rawScreenTag : fallbackTag)
+          : (s.rawScreenTag || 'home');
+
+        return {
+          slide_number: i + 1,
+          objective: s.objective,
+          headline: s.headline,
+          subheadline: s.subheadline || '',
+          raw_screen_tag: normalizedTag,
+          emphasis: s.emphasis,
+          importance: s.importance,
+          status: 'pending',
+        };
+      }),
     });
     console.log("[SAVE] Slides saved, uploading assets...");
     if (user) await uploadAssetsToStorage(projectId, user.id);
