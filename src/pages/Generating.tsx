@@ -779,18 +779,16 @@ const Generating = () => {
               const isActive = (activeSlideNumber === i + 1);
 
               return (
-                <div key={i} className={`group flex-shrink-0 relative w-24 xl:w-full aspect-[9/19.5] rounded-xl border-2 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 overflow-hidden shadow-sm hover:shadow-lg hover:scale-[1.02] ${status === "completed"
+                <div key={i} className={`group flex-shrink-0 relative w-24 xl:w-full aspect-[9/19.5] rounded-xl border-2 flex flex-col items-center justify-center cursor-pointer transition-all duration-500 overflow-hidden shadow-sm hover:shadow-lg hover:scale-[1.02] ${status === "completed"
                   ? "border-primary/50 bg-card/90"
                   : status === "generating"
-                    ? "border-primary animate-pulse bg-primary/5 backdrop-blur-md"
+                    ? "border-primary bg-primary/5 backdrop-blur-md animate-[pulse_2.6s_ease-in-out_infinite]"
                     : "border-border bg-card/50 opacity-60 hover:opacity-100"
                   } ${isActive ? 'ring-4 ring-primary ring-offset-2 ring-offset-background z-10' : ''}`}
                   onClick={() => {
                     setActiveSlideNumber(i + 1);
-                    // If we navigate to a slide that isn't the "currently generating/ready" one, 
-                    // we might want to toggle reviewMode based on whether THAT slide is completed.
                     if (status === "completed") {
-                      // Optionally setReviewMode(true) if we want the redesign input to show for any completed slide
+                      setReviewSlideNumber(i + 1);
                     }
                   }}
                 >
@@ -800,7 +798,7 @@ const Generating = () => {
 
                   {status === "generating" || (status === "pending" && isDispatching && (i + 1 === activeSlideNumber || activeSlideNumber === null)) ? (
                     <div className="flex flex-col items-center gap-2 z-10">
-                      <Loader2 className="h-6 w-6 text-primary animate-spin" />
+                      <Loader2 className="h-6 w-6 text-primary animate-[spin_2.4s_linear_infinite]" />
                       <span className="text-[8px] font-black uppercase tracking-tighter text-primary">
                         {status === "generating" ? "Generating" : "Starting"}
                       </span>
@@ -814,9 +812,8 @@ const Generating = () => {
 
                   {/* Status Indicator Overlays */}
                   {status === "completed" && (
-                    <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-primary/90 text-primary-foreground px-1.5 py-0.5 rounded-md backdrop-blur-sm z-20">
+                    <div className="absolute top-2 left-2 flex items-center justify-center bg-primary/90 text-primary-foreground p-1 rounded-full backdrop-blur-sm z-20">
                       <CheckCircle2 className="h-2.5 w-2.5" />
-                      <span className="text-[8px] font-black uppercase">READY</span>
                     </div>
                   )}
 
