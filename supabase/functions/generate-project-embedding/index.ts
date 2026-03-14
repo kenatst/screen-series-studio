@@ -9,6 +9,44 @@ const corsHeaders = {
 const GEMINI_EMBED_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-2-preview:embedContent";
 const EMBED_DIM = 768;
 
+function parseEmbeddingToArray(value: unknown): number[] | null {
+  if (!value) return null;
+
+  if (Array.isArray(value)) {
+    const arr = value.map((v) => Number(v));
+    return arr.every((v) => Number.isFinite(v)) ? arr : null;
+  }
+
+  if (typeof value === "string") {
+    try {
+      const normalized = value.trim().replace(/^\[/, "").replace(/\]$/, "");
+      if (!normalized) return null;
+      const arr = normalized.split(",").map((v) => Number(v.trim()));
+      return arr.every((v) => Number.isFinite(v)) ? arr : null;
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+}
+
+function cosineSimilarity(a: number[], b: number[]): number {
+  if (a.length !== b.length || a.length === 0) return 0;
+  let dot = 0;
+  let normA = 0;
+  let normB = 0;
+  for (let i = 0; i < a.length; i++) {
+    const av = a[i];
+    const bv = b[i];
+    dot += av * bv;
+    normA += av * av;
+    normB += bv * bv;
+  }
+  if (normA === 0 || normB === 0) return 0;
+  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
