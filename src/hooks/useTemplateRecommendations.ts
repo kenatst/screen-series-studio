@@ -25,6 +25,7 @@ export function useTemplateRecommendations() {
       inspirationText?: string;
       appName?: string;
       appDescription?: string;
+      contextText?: string;
     }) => {
       // Need at least some input
       if (
