@@ -485,18 +485,16 @@ const Generating = () => {
         .eq("project_id", projectId)
         .order("slide_number", { ascending: true });
 
-      const slidesSnapshot = latestSlides ?? [];
+      const slidesSnapshot = (latestSlides ?? []) as SlideSnapshot[];
+      const hydratedSlidesSnapshot = await hydrateSlidesForUi(slidesSnapshot);
 
-      if (slidesSnapshot.length > 0) {
-        applyLiveSlides(slidesSnapshot);
+      if (hydratedSlidesSnapshot.length > 0) {
+        applyLiveSlides(hydratedSlidesSnapshot);
       }
 
-      const hasIncomplete = slidesSnapshot.length > 0
-        ? slidesSnapshot.some((slide) => normalizeStatus(slide.status, slide.image_url) !== "completed")
+      const hasIncomplete = hydratedSlidesSnapshot.length > 0
+        ? hydratedSlidesSnapshot.some((slide) => normalizeStatus(slide.status, slide.image_url) !== "completed")
         : true;
-      const hasStarted = slidesSnapshot.some(
-        (slide) => slide.status === "generating" || normalizeStatus(slide.status, slide.image_url) === "completed"
-      );
 
       const isReturningFromCheckout = isReturningFromCheckoutRef.current;
 
