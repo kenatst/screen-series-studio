@@ -728,10 +728,10 @@ const Generating = () => {
                   initial={{ opacity: 0, scale: 0.95, y: 30 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                  className="fixed inset-x-4 bottom-4 z-[100] md:max-w-[400px] md:mx-auto xl:absolute xl:inset-auto xl:top-1/2 xl:-translate-y-1/2 xl:-right-10 xl:translate-x-full xl:w-[400px] bg-background/95 backdrop-blur-xl border-border border-2 shadow-2xl rounded-3xl p-6"
+                  className="fixed inset-x-4 bottom-4 z-[100] sm:max-w-[360px] sm:mx-auto md:absolute md:inset-auto md:right-4 md:bottom-4 md:w-[340px] md:mx-0 bg-background/95 backdrop-blur-xl border-border border-2 shadow-2xl rounded-3xl p-5"
                 >
-                  <h3 className="text-xl font-black mb-1">Slide Ready</h3>
-                  <p className="text-sm text-muted-foreground mb-6">Review this slide. Modify it or proceed.</p>
+                  <h3 className="text-lg font-black mb-0.5">Review Slide</h3>
+                  <p className="text-xs text-muted-foreground mb-5">Modify this slide or continue.</p>
 
                   <div className="space-y-4">
                     <div className="space-y-2">
