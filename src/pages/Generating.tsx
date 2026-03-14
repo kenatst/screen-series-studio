@@ -482,7 +482,7 @@ const Generating = () => {
       stopPolling();
       requestAbortRef.current?.abort();
     };
-  }, [navigate, projectId, applyLiveSlides, processQueue, routeToResults, stopPolling]);
+  }, [navigate, projectId, applyLiveSlides, processQueue, routeToResults, startPolling, stopPolling]);
 
   const handleApprove = async () => {
     setReviewMode(false);
