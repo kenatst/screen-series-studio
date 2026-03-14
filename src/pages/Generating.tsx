@@ -69,6 +69,7 @@ const Generating = () => {
   const pollIntervalRef = useRef<number | null>(null);
   const requestAbortRef = useRef<AbortController | null>(null);
   const warmupIntervalRef = useRef<number | null>(null);
+  const realtimeChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const isReturningFromCheckoutRef = useRef(searchParams.get("checkout") === "success");
 
   const [progress, setProgress] = useState(0);
