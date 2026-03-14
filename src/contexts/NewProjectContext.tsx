@@ -650,6 +650,8 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
       valueProposition, setValueProposition, keyFeatures, setKeyFeatures,
       topBenefits, setTopBenefits, selectedTone, setSelectedTone,
       uploadedScreens, setUploadedScreens, handleScreenUpload, removeScreen, screenInputRef,
+      referenceMockups, handleReferenceUpload, removeReferenceMockup, referenceInputRef,
+      inspirationText, setInspirationText,
       brandAssets, setBrandAssets, brandColors, setBrandColors, brandFont, setBrandFont,
       newColor, setNewColor, handleBrandUpload, removeBrandAsset, handleAutoDetectColors,
       brandInputRefs, visualPreferences, setVisualPreferences,
