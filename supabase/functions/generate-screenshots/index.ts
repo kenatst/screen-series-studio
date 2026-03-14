@@ -669,18 +669,24 @@ serve(async (req) => {
 
               // Inject template preview image FIRST so the AI sees the target style
               if (templatePreviewImage) {
+                parts[0] = {
+                  text: `${promptText}\n\n=== TEMPLATE REFERENCE IMAGE ===\nThe image immediately following this text is the TEMPLATE you must replicate in terms of layout, composition, spacing rhythm, color scheme, typography style, and overall mood.\n=== END TEMPLATE REFERENCE ===`,
+                };
                 parts.push({
                   inlineData: { mimeType: templatePreviewImage.mimeType, data: templatePreviewImage.data }
                 });
-                parts[0] = {
-                  text: `${promptText}\n\n=== TEMPLATE REFERENCE IMAGE ===\nThe image immediately following this text is the TEMPLATE you must replicate in terms of layout, composition, color scheme, typography style, and overall mood. Study it carefully and produce a slide that follows this exact aesthetic direction while using the user's app content.\n=== END TEMPLATE REFERENCE ===`,
-                };
               }
 
-              // Add the matching raw screen for this slide
-              const matchingRef = referenceImages.find((r) => r.tag === slide.raw_screen_tag);
-              if (matchingRef) {
-                parts.push({ inlineData: { mimeType: matchingRef.mimeType, data: matchingRef.data } });
+              const rawScreenReferences = referenceImages.filter((r) => r.assetType === "raw_screen");
+              const exactRawScreen = rawScreenReferences.find((r) => r.tag === slide.raw_screen_tag);
+              const fallbackRawScreen = rawScreenReferences[Math.min(displayNum - 1, Math.max(rawScreenReferences.length - 1, 0))] || rawScreenReferences[0];
+              const selectedRawScreen = exactRawScreen || fallbackRawScreen;
+
+              if (selectedRawScreen) {
+                parts.push({
+                  text: `=== RAW APP SCREEN (SOURCE OF TRUTH) ===\nUse this image as the exact UI source and preserve its pixel-level structure inside the device screen. Do not redesign internal app UI elements.\n=== END RAW APP SCREEN ===`,
+                });
+                parts.push({ inlineData: { mimeType: selectedRawScreen.mimeType, data: selectedRawScreen.data } });
               }
 
               // Add brand assets (logo, icon, mascot)
@@ -688,8 +694,8 @@ serve(async (req) => {
                 parts.push({ inlineData: { mimeType: img.mimeType, data: img.data } });
               }
 
-              // Add other reference screens (up to 3 extra)
-              for (const img of referenceImages.filter((r) => r.tag !== slide.raw_screen_tag && !["logo", "icon", "mascot"].includes(r.tag || "")).slice(0, 3)) {
+              // Add non-raw reference visuals (up to 2) for atmosphere only
+              for (const img of referenceImages.filter((r) => r.assetType !== "raw_screen" && !["logo", "icon", "mascot"].includes(r.tag || "")).slice(0, 2)) {
                 parts.push({ inlineData: { mimeType: img.mimeType, data: img.data } });
               }
 
