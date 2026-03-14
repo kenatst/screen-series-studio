@@ -468,6 +468,9 @@ const Generating = () => {
 
       // Auto-start if we just upgraded, even if it wasn't "generating" before
       const shouldAutoStart = currentStatus === "generating" || isReturningFromCheckout;
+
+      // Always subscribe to live DB updates first so UI moves even if SSE chunks are delayed
+      startPolling();
       await processQueue(session.access_token, shouldAutoStart);
     };
 
