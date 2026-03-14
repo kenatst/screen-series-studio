@@ -646,7 +646,7 @@ const Generating = () => {
                   <motion.div initial={{ scale: 0, rotate: -180 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: "spring" }} className="h-16 w-16 rounded-full bg-primary/20 border border-primary flex items-center justify-center mb-4 shadow-glow">
                     <CheckCircle2 className="h-8 w-8 text-primary" />
                   </motion.div>
-                ) : !centralImage && centralStatus === "generating" ? (
+                ) : !centralImage && (centralStatus === "generating" || (centralStatus === "pending" && isDispatching)) ? (
                   <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }}>
                     <Loader2 className="h-12 w-12 text-primary mb-4" />
                   </motion.div>
@@ -655,7 +655,9 @@ const Generating = () => {
                 ) : null}
 
                 <span className="text-lg font-black text-foreground tracking-tight">Slide {actualIndex + 1}</span>
-                <Badge className="mt-2 text-xs uppercase tracking-widest font-bold shadow-sm">{statusLabel[centralStatus]}</Badge>
+                <Badge className="mt-2 text-xs uppercase tracking-widest font-bold shadow-sm">
+                  {isDispatching && centralStatus === "pending" ? "initializing" : statusLabel[centralStatus]}
+                </Badge>
               </div>
             </div>
 
