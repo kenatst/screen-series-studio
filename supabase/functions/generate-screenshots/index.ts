@@ -219,7 +219,8 @@ COPYWRITING RULES FOR RENDERING
 1. You MUST render the exact string provided above.
 2. DO NOT add punctuation if it is missing.
 3. DO NOT change capitalization unless structurally necessary for the design (e.g., ALL CAPS for impact).
-4. DO NOT write "Lorem Ipsum" or any generic placeholder text ANYWHERE on the canvas. 
+4. DO NOT write "Lorem Ipsum" or any generic placeholder text ANYWHERE on the canvas.
+5. NEVER render meta labels such as "Slide 1", "Slide 2", "Review", or any workflow/debug text on the final creative.
 
 OBJECTIVE MAPPING
 The objective of this specific slide is: [ ${slide.objective || "Feature spotlight"} ]. 
