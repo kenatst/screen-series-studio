@@ -531,7 +531,7 @@ const Generating = () => {
       stopPolling();
       requestAbortRef.current?.abort();
     };
-  }, [navigate, projectId, applyLiveSlides, processQueue, routeToResults, startPolling, stopPolling]);
+  }, [navigate, projectId, applyLiveSlides, hydrateSlidesForUi, processQueue, routeToResults, startPolling, stopPolling]);
 
   const handleApprove = async () => {
     setReviewMode(false);
