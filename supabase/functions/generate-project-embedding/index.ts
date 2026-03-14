@@ -173,15 +173,30 @@ serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const adminClient = createClient(supabaseUrl, serviceKey);
 
-    const { data: matches, error: matchError } = await adminClient.rpc("match_templates", {
-      query_embedding: JSON.stringify(projectVector),
-      match_limit: 5,
-      similarity_threshold: 0.1,
-    });
+    const { data: templateRows, error: templateError } = await adminClient
+      .from("template_embeddings")
+      .select("template_name, visual_summary, metadata, embedding");
 
-    if (matchError) {
-      console.error("match_templates RPC error:", matchError);
+    if (templateError) {
+      console.error("template_embeddings query error:", templateError);
     }
+
+    const matches = (templateRows || [])
+      .map((row: any) => {
+        const templateVector = parseEmbeddingToArray(row.embedding);
+        if (!templateVector || templateVector.length !== EMBED_DIM) return null;
+        const similarity = cosineSimilarity(projectVector, templateVector);
+        return {
+          template_name: row.template_name,
+          visual_summary: row.visual_summary,
+          metadata: row.metadata,
+          similarity,
+        };
+      })
+      .filter(Boolean)
+      .filter((row: any) => row.similarity > 0.1)
+      .sort((a: any, b: any) => b.similarity - a.similarity)
+      .slice(0, 5);
 
     // Generate explainability summary for the top match using Lovable AI
     let copilotSummary = "";
