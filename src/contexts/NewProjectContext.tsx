@@ -20,6 +20,12 @@ export interface BrandAsset {
   preview: string;
 }
 
+export interface ReferenceMockup {
+  id: string;
+  file: File;
+  preview: string;
+}
+
 /** Extract dominant colors from an image via canvas sampling */
 function extractColorsFromImage(imgSrc: string): Promise<string[]> {
   return new Promise((resolve) => {
