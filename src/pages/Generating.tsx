@@ -56,7 +56,7 @@ const normalizeStatus = (status: string, imageUrl: string | null): SlideUiStatus
 const statusLabel: Record<SlideUiStatus, string> = {
   pending: "pending",
   generating: "generating",
-  completed: "ready",
+  completed: "completed",
   error: "error",
 };
 
