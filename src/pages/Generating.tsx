@@ -69,6 +69,7 @@ const Generating = () => {
   const pollIntervalRef = useRef<number | null>(null);
   const requestAbortRef = useRef<AbortController | null>(null);
   const warmupIntervalRef = useRef<number | null>(null);
+  const realtimeChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const isReturningFromCheckoutRef = useRef(searchParams.get("checkout") === "success");
 
   const [progress, setProgress] = useState(0);
@@ -83,6 +84,7 @@ const Generating = () => {
   const [feedback, setFeedback] = useState("");
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   const [hasMoreSlides, setHasMoreSlides] = useState(true);
+  const [isDispatching, setIsDispatching] = useState(false);
 
   // Handle successful checkout return
   useEffect(() => {
@@ -108,11 +110,12 @@ const Generating = () => {
       window.clearInterval(pollIntervalRef.current);
       pollIntervalRef.current = null;
     }
-    // Also unsubscribe realtime channel
-    if (projectId) {
-      supabase.removeChannel(supabase.channel(`slides-${projectId}`));
+
+    if (realtimeChannelRef.current) {
+      supabase.removeChannel(realtimeChannelRef.current);
+      realtimeChannelRef.current = null;
     }
-  }, [projectId]);
+  }, []);
 
   const handleStopAndArchive = async () => {
     if (!projectId) return;
@@ -175,9 +178,8 @@ const Generating = () => {
   }, [dbSlides, applyLiveSlides]);
 
   const startPolling = useCallback(() => {
-    if (!projectId || reviewMode) return;
+    if (!projectId || reviewMode || realtimeChannelRef.current) return;
 
-    // Use Supabase Realtime instead of interval polling
     const channel = supabase
       .channel(`slides-${projectId}`)
       .on(
@@ -189,16 +191,29 @@ const Generating = () => {
             .select("slide_number,status,image_url")
             .eq("project_id", projectId)
             .order("slide_number", { ascending: true });
+
           if (data?.length) applyLiveSlides(data);
         }
       )
       .subscribe();
 
-    // Store channel ref for cleanup (reuse pollIntervalRef as sentinel)
-    pollIntervalRef.current = 1;
+    realtimeChannelRef.current = channel;
+
+    // Keep a lightweight fallback refresh in case realtime delivery is delayed
+    pollIntervalRef.current = window.setInterval(async () => {
+      const { data } = await supabase
+        .from("project_slides")
+        .select("slide_number,status,image_url")
+        .eq("project_id", projectId)
+        .order("slide_number", { ascending: true });
+
+      if (data?.length) applyLiveSlides(data);
+    }, 5000);
   }, [projectId, reviewMode, applyLiveSlides]);
 
   const startGenerationStream = useCallback(async (accessToken: string, resume = false, targetSlide?: number, userFeedback?: string): Promise<"done" | "hasMore" | "busy" | { error: string }> => {
+    setIsDispatching(true);
+
     try {
       if (!projectId) return { error: "No project ID" };
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -213,124 +228,170 @@ const Generating = () => {
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${accessToken}`,
+          "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
-        body: JSON.stringify({ project_id: projectId, resume, target_slide_number: targetSlide, user_feedback: userFeedback, idempotency_key: crypto.randomUUID() }),
+        body: JSON.stringify({
+          project_id: projectId,
+          resume,
+          target_slide_number: targetSlide,
+          user_feedback: userFeedback,
+          idempotency_key: crypto.randomUUID(),
+        }),
         signal: requestAbortRef.current.signal,
       });
 
-      if (response.status === 409) return "busy";
-      if (response.status === 402) return { error: "Insufficient credits. Please upgrade your plan." };
+      if (response.status === 409) {
+        setIsDispatching(false);
+        return "busy";
+      }
+      if (response.status === 402) {
+        setIsDispatching(false);
+        return { error: "Insufficient credits. Please upgrade your plan." };
+      }
+      if (response.status === 401 || response.status === 403) {
+        setIsDispatching(false);
+        return { error: "Authentication issue. Please reconnect and retry generation." };
+      }
       if (!response.ok || !response.body) {
         try {
           const errData = await response.json();
+          setIsDispatching(false);
           return { error: errData.error || `Server error (${response.status})` };
         } catch {
+          setIsDispatching(false);
           return { error: `Server error (${response.status})` };
         }
       }
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      let buffer = "";
+      let textBuffer = "";
       let localHasMore = false;
+      let currentEvent = "";
+      let currentData = "";
+      let hasReceivedEvent = false;
+
+      const handleEvent = (eventType: string, eventDataRaw: string) => {
+        if (!eventType || !eventDataRaw) return;
+
+        if (!hasReceivedEvent) {
+          hasReceivedEvent = true;
+          setIsDispatching(false);
+        }
+
+        let data: any = {};
+        try {
+          data = JSON.parse(eventDataRaw);
+        } catch {
+          return;
+        }
+
+        if (eventType === "slide-start") {
+          const num = data.slideNumber || 1;
+          const index = Math.max(0, num - 1);
+          setCurrentPhase(4);
+          setActiveSlideNumber(num);
+          setReviewMode(false);
+
+          setSlideStatuses((prev) => {
+            const length = Math.max(prev.length, index + 1, data.total || 0);
+            const next = Array.from({ length }, (_, i) => prev[i] ?? "pending") as SlideUiStatus[];
+            next[index] = "generating";
+            return next;
+          });
+        }
+
+        if (eventType === "slide-done") {
+          const num = data.slideNumber || 1;
+          const index = Math.max(0, num - 1);
+          setActiveSlideNumber(num);
+
+          setSlideStatuses((prev) => {
+            const length = Math.max(prev.length, index + 1);
+            const next = Array.from({ length }, (_, i) => prev[i] ?? "pending") as SlideUiStatus[];
+            next[index] = "completed";
+            return next;
+          });
+          setSlideImages((prev) => {
+            const length = Math.max(prev.length, index + 1);
+            const next = Array.from({ length }, (_, i) => prev[i] ?? null);
+            next[index] = data.imageUrl || next[index];
+            return next;
+          });
+        }
+
+        if (eventType === "slide-error") {
+          const index = Math.max(0, (data.slideNumber || 1) - 1);
+          setSlideStatuses((prev) => {
+            const length = Math.max(prev.length, index + 1);
+            const next = Array.from({ length }, (_, i) => prev[i] ?? "pending") as SlideUiStatus[];
+            next[index] = "error";
+            return next;
+          });
+        }
+
+        if (eventType === "all-done") {
+          localHasMore = Boolean(data.hasMore);
+          setHasMoreSlides(localHasMore);
+          setReviewMode(true);
+
+          if (!localHasMore) {
+            setCurrentPhase(6);
+            setProgress(100);
+          }
+        }
+      };
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        buffer += decoder.decode(value, { stream: true });
+
+        textBuffer += decoder.decode(value, { stream: true });
 
         let newlineIndex: number;
-        while ((newlineIndex = buffer.indexOf("\n\n")) !== -1) {
-          const chunk = buffer.slice(0, newlineIndex);
-          buffer = buffer.slice(newlineIndex + 2);
+        while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
+          let line = textBuffer.slice(0, newlineIndex);
+          textBuffer = textBuffer.slice(newlineIndex + 1);
 
-          const lines = chunk.split("\n");
-          let eventType = "";
-          let eventData = "";
+          if (line.endsWith("\r")) line = line.slice(0, -1);
 
-          for (const line of lines) {
-            if (line.startsWith("event: ")) eventType = line.slice(7);
-            else if (line.startsWith("data: ")) eventData = line.slice(6);
+          if (line.trim() === "") {
+            handleEvent(currentEvent, currentData);
+            currentEvent = "";
+            currentData = "";
+            continue;
           }
 
-          if (!eventType || !eventData) continue;
+          if (line.startsWith("event:")) {
+            currentEvent = line.slice(6).trim();
+            continue;
+          }
 
-          try {
-            const data = JSON.parse(eventData);
-
-            if (eventType === "slide-start") {
-              const num = data.slideNumber || 1;
-              const index = Math.max(0, num - 1);
-              setCurrentPhase(4);
-              setActiveSlideNumber(num);
-              setReviewMode(false);
-
-              setSlideStatuses((prev) => {
-                const length = Math.max(prev.length, index + 1, data.total || 0);
-                const next = Array.from({ length }, (_, i) => prev[i] ?? "pending") as SlideUiStatus[];
-                next[index] = "generating";
-                return next;
-              });
-            }
-
-            if (eventType === "slide-done") {
-              const num = data.slideNumber || 1;
-              const index = Math.max(0, num - 1);
-              setActiveSlideNumber(num);
-
-              setSlideStatuses((prev) => {
-                const length = Math.max(prev.length, index + 1);
-                const next = Array.from({ length }, (_, i) => prev[i] ?? "pending") as SlideUiStatus[];
-                next[index] = "completed";
-                return next;
-              });
-              setSlideImages((prev) => {
-                const length = Math.max(prev.length, index + 1);
-                const next = Array.from({ length }, (_, i) => prev[i] ?? null);
-                next[index] = data.imageUrl || next[index];
-                return next;
-              });
-            }
-
-            if (eventType === "slide-error") {
-              const index = Math.max(0, (data.slideNumber || 1) - 1);
-              setSlideStatuses((prev) => {
-                const length = Math.max(prev.length, index + 1);
-                const next = Array.from({ length }, (_, i) => prev[i] ?? "pending") as SlideUiStatus[];
-                next[index] = "error";
-                return next;
-              });
-            }
-
-            if (eventType === "all-done") {
-              localHasMore = Boolean(data.hasMore);
-              setHasMoreSlides(localHasMore);
-              setReviewMode(true); // Trigger review pause
-              stopPolling();
-
-              if (!localHasMore) {
-                setCurrentPhase(6);
-                setProgress(100);
-              }
-            }
-          } catch {
-            // Ignore malformed SSE events
+          if (line.startsWith("data:")) {
+            const payloadLine = line.slice(5).trimStart();
+            currentData = currentData ? `${currentData}\n${payloadLine}` : payloadLine;
           }
         }
       }
 
+      // Final flush in case stream ends without an empty line
+      if (currentEvent && currentData) {
+        handleEvent(currentEvent, currentData);
+      }
+
+      setIsDispatching(false);
       return localHasMore ? "hasMore" : "done";
     } catch (e: any) {
-      if (e.name === 'AbortError') return "busy";
+      setIsDispatching(false);
+      if (e.name === "AbortError") return "busy";
       return { error: "Request failed or aborted." };
     }
-  }, [projectId, stopPolling]);
+  }, [projectId]);
 
   const processQueue = useCallback(async (accessToken: string, initialResume: boolean, targetSlide?: number, userFeedback?: string) => {
     const result = await startGenerationStream(accessToken, initialResume, targetSlide, userFeedback);
 
     if (result === "busy") {
-      startPolling();
       return;
     }
 
@@ -340,9 +401,10 @@ const Generating = () => {
       return;
     }
 
-    // Whether "done" or "hasMore", we stop polling and rely on active user review
-    stopPolling();
-  }, [startGenerationStream, startPolling, stopPolling, toast]);
+    if (result === "done") {
+      stopPolling();
+    }
+  }, [startGenerationStream, stopPolling, toast]);
 
   useEffect(() => {
     if (!projectId || startedRef.current) return;
@@ -406,6 +468,9 @@ const Generating = () => {
 
       // Auto-start if we just upgraded, even if it wasn't "generating" before
       const shouldAutoStart = currentStatus === "generating" || isReturningFromCheckout;
+
+      // Always subscribe to live DB updates first so UI moves even if SSE chunks are delayed
+      startPolling();
       await processQueue(session.access_token, shouldAutoStart);
     };
 
@@ -417,7 +482,7 @@ const Generating = () => {
       stopPolling();
       requestAbortRef.current?.abort();
     };
-  }, [navigate, projectId, applyLiveSlides, processQueue, routeToResults, stopPolling]);
+  }, [navigate, projectId, applyLiveSlides, processQueue, routeToResults, startPolling, stopPolling]);
 
   const handleApprove = async () => {
     setReviewMode(false);
@@ -490,9 +555,11 @@ const Generating = () => {
               Consistency Engine
             </h2>
             <p className="text-sm text-muted-foreground font-medium mt-1">
-              {completedCount > 0 && completedCount < slideCount
-                ? `${completedCount} of ${slideCount} slides ready`
-                : "Crafting your premium store assets..."}
+              {isDispatching
+                ? "Connecting to the rendering engine..."
+                : completedCount > 0 && completedCount < slideCount
+                  ? `${completedCount} of ${slideCount} slides ready`
+                  : "Crafting your premium store assets..."}
             </p>
           </div>
 
@@ -579,7 +646,7 @@ const Generating = () => {
                   <motion.div initial={{ scale: 0, rotate: -180 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: "spring" }} className="h-16 w-16 rounded-full bg-primary/20 border border-primary flex items-center justify-center mb-4 shadow-glow">
                     <CheckCircle2 className="h-8 w-8 text-primary" />
                   </motion.div>
-                ) : !centralImage && centralStatus === "generating" ? (
+                ) : !centralImage && (centralStatus === "generating" || (centralStatus === "pending" && isDispatching)) ? (
                   <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }}>
                     <Loader2 className="h-12 w-12 text-primary mb-4" />
                   </motion.div>
@@ -588,7 +655,9 @@ const Generating = () => {
                 ) : null}
 
                 <span className="text-lg font-black text-foreground tracking-tight">Slide {actualIndex + 1}</span>
-                <Badge className="mt-2 text-xs uppercase tracking-widest font-bold shadow-sm">{statusLabel[centralStatus]}</Badge>
+                <Badge className="mt-2 text-xs uppercase tracking-widest font-bold shadow-sm">
+                  {isDispatching && centralStatus === "pending" ? "initializing" : statusLabel[centralStatus]}
+                </Badge>
               </div>
             </div>
 
@@ -669,10 +738,12 @@ const Generating = () => {
                     <img src={image} alt={`Tmb ${i + 1}`} className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105" loading="lazy" />
                   ) : null}
 
-                  {status === "generating" ? (
+                  {status === "generating" || (status === "pending" && isDispatching && (i + 1 === activeSlideNumber || activeSlideNumber === null)) ? (
                     <div className="flex flex-col items-center gap-2 z-10">
                       <Loader2 className="h-6 w-6 text-primary animate-spin" />
-                      <span className="text-[8px] font-black uppercase tracking-tighter text-primary">Generating</span>
+                      <span className="text-[8px] font-black uppercase tracking-tighter text-primary">
+                        {status === "generating" ? "Generating" : "Starting"}
+                      </span>
                     </div>
                   ) : !image ? (
                     <div className="flex flex-col items-center gap-1 z-10">
