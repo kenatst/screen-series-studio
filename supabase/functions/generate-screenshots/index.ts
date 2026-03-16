@@ -607,24 +607,34 @@ serve(async (req) => {
       }
     }
 
-    // Try to fetch template preview image from the public templates bucket
+    // CRITICAL: Fetch template preview image from the public templates bucket
     let templatePreviewImage: { mimeType: string; data: string } | null = null;
     const templateKey = (project.template_id || "").toLowerCase().replace(/\s+/g, "-");
+    console.log(`[TEMPLATE] Looking for template image: "${templateKey}" in templates bucket`);
     if (templateKey) {
-      // Try common naming patterns
       const possibleNames = [`${templateKey}.png`, `${templateKey}.jpg`, `${templateKey}.jpeg`, `${templateKey}.webp`];
       for (const name of possibleNames) {
         try {
-          const { data: tmplData } = await adminClient.storage.from("templates").download(name);
+          const { data: tmplData, error: tmplError } = await adminClient.storage.from("templates").download(name);
+          if (tmplError) {
+            console.log(`[TEMPLATE] ${name} not found: ${tmplError.message}`);
+            continue;
+          }
           if (tmplData) {
             const ab = await tmplData.arrayBuffer();
             const b64 = safeBase64(ab);
             const ext = name.split(".").pop() || "png";
-            templatePreviewImage = { mimeType: ext === "jpg" ? "image/jpeg" : `image/${ext}`, data: b64 };
+            templatePreviewImage = { mimeType: ext === "jpg" || ext === "jpeg" ? "image/jpeg" : `image/${ext}`, data: b64 };
+            console.log(`[TEMPLATE] ✅ Loaded template image: ${name} (${Math.round(ab.byteLength / 1024)}KB)`);
             break;
           }
-        } catch { /* skip */ }
+        } catch (e: any) {
+          console.error(`[TEMPLATE] Error downloading ${name}:`, e?.message);
+        }
       }
+    }
+    if (!templatePreviewImage) {
+      console.warn(`[TEMPLATE] ⚠️ No template image found for "${templateKey}". Generation will rely on text description only.`);
     }
 
     // Update project status
