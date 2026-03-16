@@ -658,7 +658,7 @@ serve(async (req) => {
             const { data: contextData } = await adminClient.storage.from("generated-outputs").download(contextPath);
             if (!contextData) continue;
             const ab = await contextData.arrayBuffer();
-            const b64 = btoa(String.fromCharCode(...new Uint8Array(ab)));
+            const b64 = safeBase64(ab);
             previousSlideImages.push({ mimeType: "image/png", data: b64 });
           } catch { /* ignore */ }
         }
