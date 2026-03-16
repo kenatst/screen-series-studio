@@ -12,6 +12,17 @@ const corsHeaders = {
 const CREDIT_COST_PER_SLIDE = 1;
 const QUALITY_SCORE_MIN = 78;
 
+/** Chunked base64 encoding — avoids stack overflow on large images */
+function safeBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  const chunks: string[] = [];
+  const chunkSize = 8192;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    chunks.push(String.fromCharCode(...bytes.subarray(i, Math.min(i + chunkSize, bytes.length))));
+  }
+  return btoa(chunks.join(""));
+}
+
 // ── Template metadata (mirrors frontend demoTemplates) ──
 const TEMPLATE_CATALOG: Record<string, {
   tags: string[];
