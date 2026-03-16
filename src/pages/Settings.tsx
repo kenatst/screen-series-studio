@@ -14,6 +14,7 @@ import { Crown, CheckCircle2, Loader2, CreditCard, ExternalLink, RefreshCw, User
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
+import { useTranslation } from "react-i18next";
 
 const Settings_Page = () => {
   const { profile, checkSubscription, user, refreshProfile, signOut } = useAuth();
@@ -21,6 +22,7 @@ const Settings_Page = () => {
   const [searchParams] = useSearchParams();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { handleUpgrade, handleManageSubscription, isOpeningPortal, isUpgrading } = useBilling();
+  const { t } = useTranslation();
 
   // Password change
   const [newPassword, setNewPassword] = useState("");
@@ -37,7 +39,7 @@ const Settings_Page = () => {
 
   useEffect(() => {
     if (searchParams.get("checkout") === "success") {
-      toast({ title: "Payment successful!", description: "Your subscription is active. Refreshing..." });
+      toast({ title: t('settings.paymentSuccess'), description: t('settings.subActive') });
       setTimeout(() => { checkSubscription(); refreshProfile(); }, 2000);
     }
   }, [searchParams]);
@@ -47,25 +49,25 @@ const Settings_Page = () => {
     await checkSubscription();
     await refreshProfile();
     setIsRefreshing(false);
-    toast({ title: "Status updated" });
+    toast({ title: t('dashboard.statusUpdated') });
   };
 
   const handleChangePassword = async () => {
     if (!newPassword || newPassword.length < 8) {
-      toast({ title: "Password too short", description: "Minimum 8 characters.", variant: "destructive" });
+      toast({ title: t('settings.passwordTooShort'), description: t('settings.minChars'), variant: "destructive" });
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast({ title: "Passwords don't match", variant: "destructive" });
+      toast({ title: t('settings.passwordNoMatch'), variant: "destructive" });
       return;
     }
     setIsChangingPassword(true);
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     setIsChangingPassword(false);
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: t('common.error'), description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Password updated ✨", description: "Your password has been changed successfully." });
+      toast({ title: t('settings.passwordUpdated'), description: t('settings.passwordUpdatedDesc') });
       setNewPassword("");
       setConfirmPassword("");
     }
@@ -79,12 +81,12 @@ const Settings_Page = () => {
       if (error) throw error;
       await supabase.auth.signOut();
       toast({
-        title: "Account deleted",
-        description: "Your account and all data have been permanently removed.",
+        title: t('settings.accountDeleted'),
+        description: t('settings.accountDeletedDesc'),
       });
     } catch (e: any) {
       toast({
-        title: "Deletion failed",
+        title: t('settings.deletionFailed'),
         description: e.message || "Please contact support.",
         variant: "destructive",
       });
@@ -97,8 +99,8 @@ const Settings_Page = () => {
     <DashboardLayout>
       <div className="p-8 max-w-5xl mx-auto">
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-3xl font-black tracking-tight text-foreground mb-1">Settings</h1>
-          <p className="text-muted-foreground font-medium mb-10">Manage your account, credits, and subscription.</p>
+          <h1 className="text-3xl font-black tracking-tight text-foreground mb-1">{t('settings.title')}</h1>
+          <p className="text-muted-foreground font-medium mb-10">{t('settings.subtitle')}</p>
         </motion.div>
 
         {/* Credits Card */}
@@ -113,34 +115,34 @@ const Settings_Page = () => {
                 <Coins className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <h2 className="text-2xl font-black tracking-tight text-foreground">Credits</h2>
-                <p className="text-sm text-muted-foreground">Your generation balance</p>
+                <h2 className="text-2xl font-black tracking-tight text-foreground">{t('settings.credits')}</h2>
+                <p className="text-sm text-muted-foreground">{t('settings.generationBalance')}</p>
               </div>
             </div>
 
             <div className="flex items-baseline gap-2 mb-6">
               <span className="text-6xl font-black text-primary">{credits}</span>
-              <span className="text-xl text-muted-foreground font-bold">credits remaining</span>
+              <span className="text-xl text-muted-foreground font-bold">{t('settings.creditsRemaining')}</span>
             </div>
 
             <div className="grid sm:grid-cols-3 gap-4 mb-6">
               <div className="rounded-xl bg-card/90 border border-border p-4">
-                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Generation</p>
-                <p className="text-lg font-black text-foreground">{CREDIT_COSTS.generateSlide} cr. <span className="text-sm font-medium text-muted-foreground">/ slide</span></p>
+                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">{t('settings.generation')}</p>
+                <p className="text-lg font-black text-foreground">{CREDIT_COSTS.generateSlide} cr. <span className="text-sm font-medium text-muted-foreground">{t('settings.perSlide')}</span></p>
               </div>
               <div className="rounded-xl bg-card/90 border border-border p-4">
-                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Regeneration</p>
-                <p className="text-lg font-black text-foreground">{CREDIT_COSTS.regenerateSlide} cr. <span className="text-sm font-medium text-muted-foreground">/ slide</span></p>
+                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">{t('settings.regeneration')}</p>
+                <p className="text-lg font-black text-foreground">{CREDIT_COSTS.regenerateSlide} cr. <span className="text-sm font-medium text-muted-foreground">{t('settings.perSlide')}</span></p>
               </div>
               <div className="rounded-xl bg-card/90 border border-border p-4">
-                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Translation</p>
-                <p className="text-lg font-black text-foreground">{CREDIT_COSTS.translateSlide} cr. <span className="text-sm font-medium text-muted-foreground">/ slide</span></p>
+                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">{t('settings.translation')}</p>
+                <p className="text-lg font-black text-foreground">{CREDIT_COSTS.translateSlide} cr. <span className="text-sm font-medium text-muted-foreground">{t('settings.perSlide')}</span></p>
               </div>
             </div>
 
             <p className="text-xs text-muted-foreground">
               Your <span className="font-bold text-primary">{plan.name}</span> plan includes <span className="font-bold text-foreground">{plan.monthlyCredits} credits/mo</span>.
-              {plan.id === 'free' && ' Upgrade to a paid plan for more credits.'}
+              {plan.id === 'free' && ` ${t('settings.upgradePrompt')}`}
             </p>
           </div>
         </motion.div>
@@ -178,18 +180,18 @@ const Settings_Page = () => {
             {profile?.plan !== "free" ? (
               <Button onClick={handleManageSubscription} disabled={isOpeningPortal} variant="outline" className="rounded-xl">
                 {isOpeningPortal ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CreditCard className="h-4 w-4 mr-2" />}
-                Manage subscription
+                {t('settings.manageSub')}
                 <ExternalLink className="h-3 w-3 ml-2" />
               </Button>
             ) : (
               <Button onClick={() => window.location.href = '/#pricing'} className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90">
-                Upgrade plan
+                {t('settings.upgradePlan')}
                 <ExternalLink className="h-3 w-3 ml-2" />
               </Button>
             )}
             <Button onClick={handleRefresh} disabled={isRefreshing} variant="ghost" className="rounded-xl">
               {isRefreshing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-              Refresh
+              {t('settings.refresh')}
             </Button>
           </div>
         </motion.div>
@@ -201,7 +203,7 @@ const Settings_Page = () => {
         >
           <div className="flex items-center gap-3 mb-4">
             <User className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-bold text-foreground">Account</h2>
+            <h2 className="text-lg font-bold text-foreground">{t('settings.account')}</h2>
           </div>
           <div className="space-y-3">
             <div className="flex justify-between">
@@ -213,7 +215,7 @@ const Settings_Page = () => {
               <Badge className="bg-primary/20 text-primary border-primary/30 text-xs">{plan.name}</Badge>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Credits</span>
+              <span className="text-sm text-muted-foreground">{t('settings.credits')}</span>
               <span className="text-sm font-bold text-primary">{credits}</span>
             </div>
           </div>
@@ -226,24 +228,24 @@ const Settings_Page = () => {
         >
           <div className="flex items-center gap-3 mb-6">
             <Lock className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-bold text-foreground">Change Password</h2>
+            <h2 className="text-lg font-bold text-foreground">{t('settings.changePassword')}</h2>
           </div>
           <div className="space-y-4 max-w-md">
             <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">New Password</label>
+              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t('settings.newPassword')}</label>
               <Input
                 type="password"
-                placeholder="Min. 8 characters"
+                placeholder={t('settings.minChars')}
                 value={newPassword}
                 onChange={e => setNewPassword(e.target.value)}
                 className="rounded-xl border-border bg-background/50"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Confirm Password</label>
+              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t('settings.confirmPassword')}</label>
               <Input
                 type="password"
-                placeholder="Repeat new password"
+                placeholder={t('settings.repeatPassword')}
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
                 className="rounded-xl border-border bg-background/50"
@@ -255,7 +257,7 @@ const Settings_Page = () => {
               className="rounded-xl"
             >
               {isChangingPassword ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Lock className="h-4 w-4 mr-2" />}
-              Update Password
+              {t('settings.updatePassword')}
             </Button>
           </div>
         </motion.div>
@@ -267,17 +269,17 @@ const Settings_Page = () => {
         >
           <div className="flex items-center gap-3 mb-4">
             <AlertTriangle className="h-5 w-5 text-destructive" />
-            <h2 className="text-lg font-bold text-destructive">Danger Zone</h2>
+            <h2 className="text-lg font-bold text-destructive">{t('settings.dangerZone')}</h2>
           </div>
           <p className="text-sm text-muted-foreground mb-4">
-            Permanently delete your account and all associated data. This action cannot be undone.
+            {t('settings.deleteAccountDesc')}
           </p>
           <Button
             variant="outline"
             className="border-destructive/40 text-destructive hover:bg-destructive/10 rounded-xl"
             onClick={() => setShowDeleteDialog(true)}
           >
-            Delete Account
+            {t('settings.deleteAccount')}
           </Button>
 
           <div className="mt-8 pt-6 border-t border-border/50">
@@ -287,7 +289,7 @@ const Settings_Page = () => {
               className="w-full sm:w-auto rounded-xl font-bold bg-zinc-900 hover:bg-zinc-800 text-white"
             >
               <LogOut className="h-4 w-4 mr-2" />
-              Sign Out from ShotApp
+              {t('settings.signOut')}
             </Button>
           </div>
         </motion.div>
@@ -298,28 +300,28 @@ const Settings_Page = () => {
         <DialogContent className="sm:max-w-md bg-card/95 border border-destructive/30 backdrop-blur-xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl font-black text-destructive">
-              <AlertTriangle className="h-5 w-5" /> Delete Account?
+              <AlertTriangle className="h-5 w-5" /> {t('settings.deleteConfirmTitle')}
             </DialogTitle>
             <DialogDescription className="text-muted-foreground pt-2">
-              This will permanently end your session and request deletion of all your data.
+              {t('settings.deleteConfirmDesc')}{' '}
               Type <span className="font-black text-foreground">DELETE</span> to confirm.
             </DialogDescription>
           </DialogHeader>
           <Input
             value={deleteConfirmText}
             onChange={e => setDeleteConfirmText(e.target.value)}
-            placeholder="Type DELETE to confirm"
+            placeholder={t('settings.typeDelete')}
             className="rounded-xl border-destructive/30 mt-2"
           />
           <DialogFooter className="flex gap-3 mt-4">
-            <Button variant="ghost" onClick={() => setShowDeleteDialog(false)} className="rounded-xl">Cancel</Button>
+            <Button variant="ghost" onClick={() => setShowDeleteDialog(false)} className="rounded-xl">{t('settings.cancel')}</Button>
             <Button
               onClick={handleDeleteAccount}
               disabled={deleteConfirmText !== "DELETE" || isDeletingAccount}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl"
             >
               {isDeletingAccount ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Confirm Deletion
+              {t('settings.confirmDeletion')}
             </Button>
           </DialogFooter>
         </DialogContent>

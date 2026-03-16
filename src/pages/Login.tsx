@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import { Navigate } from "react-router-dom";
 const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const { session, loading } = useAuth();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
@@ -43,14 +45,14 @@ const Login = () => {
           options: { emailRedirectTo: window.location.origin },
         });
         if (error) throw error;
-        toast({ title: "Check your email", description: "We sent you a confirmation link." });
+        toast({ title: t('login.checkEmail'), description: t('login.confirmationSent') });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         navigate("/dashboard");
       }
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: t('common.error'), description: err.message, variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
@@ -62,10 +64,10 @@ const Login = () => {
         redirect_uri: window.location.origin + "/dashboard",
       });
       if (result?.error) {
-        toast({ title: "Error", description: String(result.error), variant: "destructive" });
+        toast({ title: t('common.error'), description: String(result.error), variant: "destructive" });
       }
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: t('common.error'), description: err.message, variant: "destructive" });
     }
   };
 
@@ -80,14 +82,14 @@ const Login = () => {
       >
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-3 mb-6">
-            <img src={appLogo} alt="ShotApp AI" className="h-10 w-10 rounded-xl shadow-glow object-cover" />
-            <span className="text-xl font-black tracking-tight text-foreground">ShotApp AI</span>
+            <img src={appLogo} alt={t('login.appName')} className="h-10 w-10 rounded-xl shadow-glow object-cover" />
+            <span className="text-xl font-black tracking-tight text-foreground">{t('login.appName')}</span>
           </div>
           <h1 className="text-3xl font-black tracking-tight text-foreground mb-2">
-            {isSignUp ? "Create your account" : "Welcome back"}
+            {isSignUp ? t('login.createAccount') : t('login.welcomeBack')}
           </h1>
           <p className="text-muted-foreground font-medium">
-            {isSignUp ? "Start generating premium screenshot sets" : "Sign in to your account"}
+            {isSignUp ? t('login.startGenerating') : t('login.signInAccount')}
           </p>
         </div>
 
@@ -103,17 +105,17 @@ const Login = () => {
               <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
             </svg>
-            Continue with Google
+            {t('login.continueGoogle')}
           </Button>
 
           <div className="relative mb-6">
             <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
-            <div className="relative flex justify-center text-xs"><span className="bg-card px-3 text-muted-foreground font-medium uppercase tracking-widest">or</span></div>
+            <div className="relative flex justify-center text-xs"><span className="bg-card px-3 text-muted-foreground font-medium uppercase tracking-widest">{t('login.or')}</span></div>
           </div>
 
           <form onSubmit={handleEmailAuth} className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="login-email" className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Email</label>
+              <label htmlFor="login-email" className="text-sm font-bold text-muted-foreground uppercase tracking-wider">{t('login.email')}</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
                 <Input
@@ -121,7 +123,7 @@ const Login = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@company.com"
+                  placeholder={t('login.emailPlaceholder')}
                   className="pl-10 h-12 bg-muted/50 border-border rounded-xl"
                   required
                 />
@@ -129,20 +131,20 @@ const Login = () => {
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label htmlFor="login-password" className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Password</label>
+                <label htmlFor="login-password" className="text-sm font-bold text-muted-foreground uppercase tracking-wider">{t('login.password')}</label>
                 {!isSignUp && (
                   <button
                     onClick={async () => {
-                      if (!email) { toast({ title: "Enter your email first", variant: "destructive" }); return; }
+                      if (!email) { toast({ title: t('login.enterEmailFirst'), variant: "destructive" }); return; }
                       setSubmitting(true);
                       try {
                         const { error } = await supabase.auth.resetPasswordForEmail(email, {
                           redirectTo: window.location.origin + "/login",
                         });
                         if (error) throw error;
-                        toast({ title: "Check your email", description: "Password reset link sent." });
+                        toast({ title: t('login.checkEmail'), description: t('login.resetSent') });
                       } catch (err: any) {
-                        toast({ title: "Error", description: err.message, variant: "destructive" });
+                        toast({ title: t('common.error'), description: err.message, variant: "destructive" });
                       } finally {
                         setSubmitting(false);
                       }
@@ -151,7 +153,7 @@ const Login = () => {
                     type="button"
                     className="text-xs text-primary font-bold hover:underline"
                   >
-                    Forgot password?
+                    {t('login.forgotPassword')}
                   </button>
                 )}
               </div>
@@ -162,7 +164,7 @@ const Login = () => {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder={t('login.passwordPlaceholder')}
                   className="pl-10 h-12 bg-muted/50 border-border rounded-xl"
                   required
                   minLength={6}
@@ -171,14 +173,14 @@ const Login = () => {
             </div>
             <Button type="submit" className="w-full h-12 font-bold rounded-xl" disabled={submitting}>
               {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ArrowRight className="h-4 w-4 mr-2" />}
-              {isSignUp ? "Create account" : "Sign in"}
+              {isSignUp ? t('login.createAccountBtn') : t('login.signIn')}
             </Button>
           </form>
 
           <p className="text-center text-sm text-muted-foreground mt-6">
-            {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
+            {isSignUp ? t('login.alreadyAccount') : t('login.noAccount')}{" "}
             <button onClick={() => setIsSignUp(!isSignUp)} className="text-primary font-bold hover:underline">
-              {isSignUp ? "Sign in" : "Sign up"}
+              {isSignUp ? t('login.signIn') : t('login.signUp')}
             </button>
           </p>
         </div>

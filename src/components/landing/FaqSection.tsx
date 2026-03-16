@@ -4,6 +4,7 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from "@/components/ui/accordion";
+import { useTranslation } from "react-i18next";
 
 const faqs = [
     {
@@ -49,14 +50,15 @@ const faqs = [
 ];
 
 export const FaqSection = () => {
+    const { t } = useTranslation();
     return (
         <section id="faq" className="py-24 bg-background border-t border-border">
             <div className="container mx-auto px-6 max-w-4xl">
                 <div className="text-center mb-16">
                     <h2 className="text-3xl md:text-4xl font-black tracking-tight text-foreground mb-4">
-                        Frequently Asked Questions
+                        {t('faq.title')}
                     </h2>
-                    <p className="text-muted-foreground">Everything you need to know about ShotApp AI.</p>
+                    <p className="text-muted-foreground">{t('faq.subtitle')}</p>
                 </div>
 
                 <Accordion type="single" collapsible className="w-full space-y-4">

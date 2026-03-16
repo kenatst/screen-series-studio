@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Sparkles, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from 'react-i18next';
 
 const fadeUp = {
     hidden: { opacity: 0, y: 30 },
@@ -11,6 +12,7 @@ const fadeUp = {
 
 export const HeroSection = () => {
     const { session } = useAuth();
+    const { t } = useTranslation();
 
     return (
         <section className="relative min-h-[100vh] pt-32 pb-20 overflow-hidden bg-background flex flex-col items-center">
@@ -23,7 +25,7 @@ export const HeroSection = () => {
                 <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0} className="flex justify-center mb-8">
                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-black/5 border border-border backdrop-blur-md shadow-glow">
                         <Sparkles className="h-4 w-4 text-primary" />
-                        <span className="text-sm font-medium text-foreground/90">Built for App Store & Google Play</span>
+                        <span className="text-sm font-medium text-foreground/90">{t('hero.badge')}</span>
                     </div>
                 </motion.div>
 
@@ -31,19 +33,19 @@ export const HeroSection = () => {
                     className="mx-auto max-w-5xl text-5xl md:text-7xl lg:text-[5.5rem] font-black tracking-tight leading-[1.05] text-foreground"
                     initial="hidden" animate="visible" variants={fadeUp} custom={1}
                 >
-                    Generate screenshot sets that look{' '}
+                    {t('hero.title')}{' '}
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-orange-400 to-accent drop-shadow-[0_0_30px_rgba(245,166,35,0.4)]">
-                        world-class
+                        {t('hero.titleHighlight')}
                     </span>
                     <br />
-                    <span className="opacity-90">— in minutes.</span>
+                    <span className="opacity-90">{t('hero.titleSuffix')}</span>
                 </motion.h1>
 
                 <motion.p
                     className="mx-auto mt-8 max-w-2xl text-lg md:text-xl text-muted-foreground leading-relaxed font-medium"
                     initial="hidden" animate="visible" variants={fadeUp} custom={2}
                 >
-                    Upload your app screens, choose a style, define each slide, and orchestrate up to 10 store-ready visuals in one coherent batch.
+                    {t('hero.subtitle')}
                 </motion.p>
 
                 <motion.div
@@ -52,12 +54,12 @@ export const HeroSection = () => {
                 >
                     <Link to={session ? "/project/new" : "/login?redirect=/project/new"} className="w-full sm:w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-full">
                         <Button size="lg" className="w-full text-base px-10 h-14 bg-white text-black hover:bg-white/90 hover:scale-105 transition-all shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] rounded-full font-bold">
-                            Start free trial
+                            {t('hero.cta')}
                         </Button>
                     </Link>
                     <Button variant="outline" size="lg" className="w-full sm:w-auto text-base px-10 h-14 border-border bg-black/5 backdrop-blur-md text-foreground hover:bg-white/10 rounded-full font-medium transition-all group"
                         onClick={() => document.getElementById('workflow')?.scrollIntoView({ behavior: 'smooth' })}
-                    >                        Watch the workflow <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    >                        {t('hero.ctaSecondary')} <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                     </Button>
                 </motion.div>
             </div>
@@ -67,7 +69,7 @@ export const HeroSection = () => {
                 className="pb-12 flex flex-col items-center gap-3 z-10"
                 initial="hidden" animate="visible" variants={fadeUp} custom={4}
             >
-                <span className="text-xs uppercase tracking-widest text-muted-foreground font-medium">Scroll to explore</span>
+                <span className="text-xs uppercase tracking-widest text-muted-foreground font-medium">{t('hero.scroll')}</span>
                 <motion.div
                     className="w-6 h-10 rounded-full border-2 border-muted-foreground/30 flex items-start justify-center p-1.5"
                     animate={{ opacity: [0.4, 1, 0.4] }}

@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { demoTemplates, templateMoods } from "@/lib/demo-data";
 import { Search } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { templatePreviews } from "@/constants/templates";
@@ -11,6 +12,7 @@ const categories = ['All', 'Business', 'Entertainment', 'Education', 'Lifestyle'
 const tones = ['All', 'corporate', 'bold', 'premium', 'playful', 'minimalist'];
 
 const Templates = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -29,11 +31,11 @@ const Templates = () => {
     setSearchParams(next, { replace: true });
   };
 
-  const filtered = demoTemplates.filter(t => {
-    if (selectedCategory !== 'All' && t.category !== selectedCategory) return false;
-    if (selectedTone !== 'All' && t.tone !== selectedTone) return false;
-    if (selectedMood !== 'All' && t.mood !== selectedMood) return false;
-    if (search && !t.name.toLowerCase().includes(search.toLowerCase())) return false;
+  const filtered = demoTemplates.filter(tmpl => {
+    if (selectedCategory !== 'All' && tmpl.category !== selectedCategory) return false;
+    if (selectedTone !== 'All' && tmpl.tone !== selectedTone) return false;
+    if (selectedMood !== 'All' && tmpl.mood !== selectedMood) return false;
+    if (search && !tmpl.name.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
 
@@ -49,13 +51,13 @@ const Templates = () => {
 
           <div className="p-8 md:p-12 lg:p-16 max-w-7xl mx-auto flex flex-col items-center text-center">
             <Badge variant="outline" className="mb-6 border-primary/30 text-primary uppercase tracking-widest font-bold bg-primary/5">
-              Template Gallery
+              {t('templates.badge')}
             </Badge>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-foreground mb-6">
-              Start with a <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-400">proven foundation</span>
+              {t('templates.title')} <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-400">{t('templates.titleHighlight')}</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl font-medium mb-10">
-              High-converting, production-ready layouts for every app category. Just select a template and customize 10 screens instantly.
+              {t('templates.subtitle')}
             </p>
 
             <div className="flex gap-4 items-center mb-8">
@@ -69,7 +71,7 @@ const Templates = () => {
                   </div>
                 ))}
               </div>
-              <span className="text-sm font-bold text-muted-foreground">26 premium templates</span>
+              <span className="text-sm font-bold text-muted-foreground">{t('templates.premiumTemplates', { count: 26 })}</span>
             </div>
 
             {/* Search Bar in Hero */}
@@ -78,7 +80,7 @@ const Templates = () => {
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
-                  placeholder="Search templates (e.g., Finance, Bold, Dark)..."
+                  placeholder={t('templates.searchPlaceholder')}
                   value={search}
                   onChange={e => setFilter('q', e.target.value)}
                   className="pl-12 pr-4 h-14 bg-background/80 border-border/50 text-foreground text-base rounded-xl backdrop-blur-xl shadow-inner focus-visible:ring-primary/30"
@@ -92,11 +94,12 @@ const Templates = () => {
           {/* Filters */}
           <div className="flex flex-col xl:flex-row gap-6 mb-8 items-start xl:items-center justify-between">
             <div className="flex flex-wrap gap-2 items-center">
-              <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest mr-2 hidden sm:inline-block">Category:</span>
+              <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest mr-2 hidden sm:inline-block">{t('templates.category')}:</span>
               {categories.map(c => (
                 <button
                   key={c}
                   onClick={() => setFilter('category', c)}
+                  aria-selected={selectedCategory === c}
                   className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all duration-300 ${selectedCategory === c ? 'bg-primary/20 text-primary border-primary shadow-glow' : 'bg-secondary text-muted-foreground border-border hover:border-primary/40 hover:text-foreground'
                     }`}
                 >
@@ -108,29 +111,31 @@ const Templates = () => {
 
           {/* Mood filter */}
           <div className="flex gap-2 flex-wrap mb-4">
-            <span className="text-sm text-muted-foreground mr-2">Mood:</span>
+            <span className="text-sm text-muted-foreground mr-2">{t('templates.mood')}:</span>
             {templateMoods.map(m => (
               <button
                 key={m}
                 onClick={() => setFilter('mood', m)}
+                aria-selected={selectedMood === m}
                 className={`px-3 py-1 rounded-lg text-xs capitalize border transition-colors ${selectedMood === m ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border hover:border-primary/30'}`}
               >
-                {m === 'dark' ? '🌙 Dark' : m === 'light' ? '☀️ Light' : m === 'colorful' ? '🌈 Colorful' : m === 'neutral' ? '⚪ Neutral' : '🎨 All'}
+                {m === 'dark' ? `🌙 ${t('templates.moods.dark')}` : m === 'light' ? `☀️ ${t('templates.moods.light')}` : m === 'colorful' ? `🌈 ${t('templates.moods.colorful')}` : m === 'neutral' ? `⚪ ${t('templates.moods.neutral')}` : `🎨 ${t('templates.moods.all')}`}
               </button>
             ))}
           </div>
 
           {/* Style filter — was outside container, now inside */}
           <div className="flex gap-2 flex-wrap mb-10 items-center">
-            <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest mr-2 hidden sm:inline-block">Style:</span>
-            {tones.map(t => (
+            <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest mr-2 hidden sm:inline-block">{t('templates.style')}:</span>
+            {tones.map(tone => (
               <button
-                key={t}
-                onClick={() => setFilter('tone', t)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold capitalize border transition-all duration-300 ${selectedTone === t ? 'bg-primary/20 text-primary border-primary shadow-glow' : 'bg-secondary/50 text-muted-foreground border-border hover:border-primary/40 hover:text-foreground'
+                key={tone}
+                onClick={() => setFilter('tone', tone)}
+                aria-selected={selectedTone === tone}
+                className={`px-4 py-2 rounded-xl text-xs font-bold capitalize border transition-all duration-300 ${selectedTone === tone ? 'bg-primary/20 text-primary border-primary shadow-glow' : 'bg-secondary/50 text-muted-foreground border-border hover:border-primary/40 hover:text-foreground'
                   }`}
               >
-                {t}
+                {tone}
               </button>
             ))}
           </div>
@@ -175,8 +180,8 @@ const Templates = () => {
           {filtered.length === 0 && (
             <div className="text-center py-24 text-muted-foreground border border-dashed border-border rounded-2xl bg-card/20">
               <Search className="h-10 w-10 mx-auto text-primary/40 mb-4" />
-              <p className="text-xl font-bold text-foreground">No templates match your filters.</p>
-              <p className="text-sm mt-2">Try adjusting mood, tone, or category.</p>
+              <p className="text-xl font-bold text-foreground">{t('templates.noResults')}</p>
+              <p className="text-sm mt-2">{t('templates.noResultsHint')}</p>
             </div>
           )}
         </div>

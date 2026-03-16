@@ -8,11 +8,13 @@ import { PLANS } from '@/lib/plans';
 import { useBilling } from '@/hooks/useBilling';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from 'react-i18next';
 
 export const PricingSection = () => {
     const { session, profile } = useAuth();
     const { toast } = useToast();
     const { handleUpgrade, isUpgrading } = useBilling();
+    const { t } = useTranslation();
 
     const handleCta = async (planId: string) => {
         if (planId === 'free') {
@@ -31,13 +33,12 @@ export const PricingSection = () => {
         <section id="pricing" className="py-24 bg-surface-elevated relative z-10 border-t border-border">
             <div className="container mx-auto px-6">
                 <div className="text-center mb-16">
-                    <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">Pricing</Badge>
+                    <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">{t('pricing.badge')}</Badge>
                     <h2 className="text-4xl md:text-5xl font-black tracking-tight text-foreground mb-4">
-                        Simple, transparent pricing.
+                        {t('pricing.title')}
                     </h2>
                     <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                        Stop paying thousands for manual screenshot production.
-                        Automate perfection at a fraction of the cost.
+                        {t('pricing.subtitle')}
                     </p>
                 </div>
 
@@ -60,12 +61,12 @@ export const PricingSection = () => {
                             >
                                 {plan.popular && (
                                     <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-primary text-primary-foreground font-bold text-xs uppercase tracking-wider py-1 px-4 rounded-full">
-                                        Most Popular
+                                        {t('pricing.mostPopular')}
                                     </div>
                                 )}
                                 {isCurrentPlan && (
                                     <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-green-500 text-white font-bold text-xs uppercase tracking-wider py-1 px-4 rounded-full">
-                                        Your Plan
+                                        {t('pricing.yourPlan')}
                                     </div>
                                 )}
 
@@ -79,7 +80,7 @@ export const PricingSection = () => {
                                     {plan.priceValue > 0 && <span className="text-muted-foreground text-sm ml-1">/mo</span>}
                                 </div>
                                 <div className="mb-6 flex items-center gap-1.5">
-                                    <span className="text-xs text-muted-foreground">{plan.monthlyCredits} credits/month</span>
+                                    <span className="text-xs text-muted-foreground">{plan.monthlyCredits} {t('pricing.creditsPerMonth')}</span>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                             <Info className="h-3.5 w-3.5 text-muted-foreground/60 cursor-help" />
@@ -119,7 +120,7 @@ export const PricingSection = () => {
                                         : 'bg-secondary text-foreground hover:bg-secondary/80'
                                         }`}
                                 >
-                                    {isCurrentPlan ? 'Current Plan' : plan.cta}
+                                    {isCurrentPlan ? t('pricing.currentPlan') : plan.cta}
                                 </Button>
                             </motion.div>
                         );
