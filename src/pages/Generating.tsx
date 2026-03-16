@@ -269,6 +269,8 @@ const Generating = () => {
             next[index] = data.imageUrl || next[index];
             return next;
           });
+          // Refresh credit count after each slide generation
+          refreshProfile();
         }
 
         if (eventType === "slide-error") {
