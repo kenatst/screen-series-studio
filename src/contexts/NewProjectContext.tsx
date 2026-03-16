@@ -718,13 +718,14 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
     if (!user) { toast({ title: "Not authenticated", variant: "destructive" }); return; }
     setIsSaving(true);
     try {
-      // Refresh session to prevent stale JWT causing RLS violations
-      const { error: refreshError } = await supabase.auth.refreshSession();
-      if (refreshError) {
-        console.warn("[GENERATE] Session refresh failed, proceeding anyway:", refreshError.message);
+      // Force-refresh session & verify user server-side to prevent stale JWT
+      const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
+      if (sessionError || !session) {
+        toast({ title: "Session expired", description: "Please log in again.", variant: "destructive" });
+        setIsSaving(false);
+        return;
       }
-      console.log("[GENERATE] Starting saveProjectAndSlides...");
-      console.log("[GENERATE] slides count:", slides.length, "user:", user.id);
+      console.log("[GENERATE] Session verified, uid:", session.user.id);
       const projectId = await saveProjectAndSlides();
       console.log("[GENERATE] Project saved, id:", projectId);
       // Ensure status is set to generating so the generation page auto-starts
