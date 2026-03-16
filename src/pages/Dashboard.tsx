@@ -13,6 +13,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useBilling } from "@/hooks/useBilling";
 import { ProjectThumbnail } from "@/components/dashboard/ProjectThumbnail";
+import { useTranslation } from "react-i18next";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -38,6 +39,7 @@ const Dashboard = () => {
   const { handleUpgrade, handleManageSubscription, isOpeningPortal } = useBilling();
   const unarchiveProject = useUnarchiveProject();
   const archiveProject = useArchiveProject();
+  const { t } = useTranslation();
 
   const activeProjects = projects?.filter(p => p.status !== 'archived') || [];
   const archivedProjects = projects?.filter(p => p.status === 'archived') || [];
@@ -45,7 +47,7 @@ const Dashboard = () => {
 
   const handleNewProject = () => {
     if (!canCreateProject(profile?.plan || 'free', activeProjects.length)) {
-      toast({ title: "Limit reached", description: `Your ${plan.name} plan allows ${plan.limits.maxProjects} project(s). Upgrade to a higher plan.`, variant: "destructive" });
+      toast({ title: t('dashboard.limitReached'), description: `Your ${plan.name} plan allows ${plan.limits.maxProjects} project(s). Upgrade to a higher plan.`, variant: "destructive" });
       return;
     }
     navigate('/project/new');
@@ -55,29 +57,28 @@ const Dashboard = () => {
     setIsCheckingSub(true);
     await checkSubscription();
     setIsCheckingSub(false);
-    toast({ title: "Status updated", description: `Current plan: ${plan.name}` });
+    toast({ title: t('dashboard.statusUpdated'), description: `Current plan: ${plan.name}` });
   };
 
   const handleUnarchive = async (e: React.MouseEvent, projectId: string) => {
     e.stopPropagation();
     try {
       await unarchiveProject.mutateAsync(projectId);
-      toast({ title: "Project restored", description: "Project is active again." });
+      toast({ title: t('dashboard.projectRestored'), description: "Project is active again." });
     } catch {
-      toast({ title: "Error", description: "Could not restore the project.", variant: "destructive" });
+      toast({ title: t('common.error'), description: "Could not restore the project.", variant: "destructive" });
     }
   };
 
   const handleArchive = async (e: React.MouseEvent, projectId: string) => {
     e.stopPropagation();
     e.preventDefault();
-    if (!window.confirm("Are you sure you want to archive this project?")) return;
+    if (!window.confirm(t('dashboard.archiveConfirm'))) return;
     try {
       await archiveProject.mutateAsync(projectId);
-      toast({ title: "Project archived" });
+      toast({ title: t('dashboard.projectArchived') });
     } catch (err: any) {
-      console.error("Archive error:", err);
-      toast({ title: "Error", description: err?.message || "Could not archive the project.", variant: "destructive" });
+      toast({ title: t('common.error'), description: err?.message || "Could not archive the project.", variant: "destructive" });
     }
   };
 
@@ -93,8 +94,8 @@ const Dashboard = () => {
           className="flex items-center justify-between mb-10"
         >
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
-            <p className="text-muted-foreground mt-1 font-medium text-lg">Create, edit, and export your screenshot sets</p>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">{t('dashboard.title')}</h1>
+            <p className="text-muted-foreground mt-1 font-medium text-lg">{t('dashboard.subtitle')}</p>
           </div>
           <div className="flex flex-wrap md:flex-nowrap items-center gap-3 overflow-x-auto pb-2 w-full md:w-auto scrollbar-hide">
             <Badge variant="outline" className="text-xs font-bold uppercase tracking-wider whitespace-nowrap">
@@ -111,12 +112,12 @@ const Dashboard = () => {
             {profile?.plan !== 'free' && (
               <Button variant="outline" size="sm" onClick={handleManageSubscription} disabled={isOpeningPortal} className="rounded-xl text-xs">
                 {isOpeningPortal ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Settings className="h-3 w-3 mr-1" />}
-                Billing
+                {t('dashboard.billing')}
               </Button>
             )}
             {profile?.plan === 'free' && (
               <Button variant="outline" size="sm" onClick={() => handleUpgrade('starter')} className="rounded-xl text-xs text-primary border-primary/30">
-                Upgrade
+                {t('dashboard.upgrade')}
               </Button>
             )}
             <Button
@@ -124,7 +125,7 @@ const Dashboard = () => {
               className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow rounded-xl px-6 font-black hover:scale-105 transition-all duration-300"
               onClick={handleNewProject}
             >
-              <Plus className="mr-2 h-5 w-5" /> New project
+              <Plus className="mr-2 h-5 w-5" /> {t('dashboard.newProject')}
             </Button>
           </div>
         </motion.div>
@@ -138,7 +139,7 @@ const Dashboard = () => {
               </div>
               <div>
                 <p className="text-2xl font-black text-foreground">{activeProjects.length}</p>
-                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Active Projects</p>
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('dashboard.activeProjects')}</p>
               </div>
             </div>
             <div className="rounded-2xl border border-border bg-card/50 backdrop-blur-sm p-5 flex items-center gap-4">
@@ -147,7 +148,7 @@ const Dashboard = () => {
               </div>
               <div>
                 <p className="text-2xl font-black text-foreground">{completedProjects}</p>
-                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Sets Completed</p>
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('dashboard.setsCompleted')}</p>
               </div>
             </div>
             <div className="rounded-2xl border border-primary/20 bg-primary/5 backdrop-blur-sm p-5 flex items-center gap-4">
@@ -156,7 +157,7 @@ const Dashboard = () => {
               </div>
               <div>
                 <p className="text-2xl font-black text-primary">{profile?.credits ?? 0}</p>
-                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Credits Left</p>
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('dashboard.creditsLeft')}</p>
               </div>
             </div>
           </div>
@@ -173,14 +174,14 @@ const Dashboard = () => {
             <div className="inline-flex items-center justify-center p-6 rounded-3xl bg-primary/10 border border-primary/20 mb-8 shadow-inner">
               <LayoutTemplate className="h-12 w-12 text-primary drop-shadow-md" />
             </div>
-            <h3 className="text-3xl font-black text-foreground mb-3 tracking-tight">No projects yet</h3>
-            <p className="text-lg text-muted-foreground mb-8 max-w-md mx-auto">Create your first screenshot set to start generating high-converting App Store visuals.</p>
+            <h3 className="text-3xl font-black text-foreground mb-3 tracking-tight">{t('dashboard.noProjects')}</h3>
+            <p className="text-lg text-muted-foreground mb-8 max-w-md mx-auto">{t('dashboard.noProjectsDesc')}</p>
             <div className="flex items-center justify-center gap-4">
               <Button size="lg" onClick={() => navigate('/project/new')} className="rounded-xl px-8 shadow-glow hover:scale-105 transition-all duration-300">
-                <Plus className="mr-2 h-5 w-5" /> Create first project
+                <Plus className="mr-2 h-5 w-5" /> {t('dashboard.createFirst')}
               </Button>
               <Button size="lg" variant="outline" onClick={() => navigate('/templates')} className="rounded-xl px-8 hover:bg-secondary/50">
-                Browse Templates
+                {t('dashboard.browseTemplates')}
               </Button>
             </div>
           </motion.div>
@@ -192,7 +193,7 @@ const Dashboard = () => {
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}
               className="text-xl font-semibold text-foreground mb-4 tracking-tight flex items-center gap-2"
             >
-              Continue working
+              {t('dashboard.continueWorking')}
             </motion.h2>
             <motion.div
               initial="hidden" animate="visible" variants={fadeUp} custom={1}
@@ -220,10 +221,10 @@ const Dashboard = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <Button variant="ghost" size="sm" className="rounded-xl text-xs text-muted-foreground hover:text-foreground" onClick={(e) => handleArchive(e, currentProject.id)}>
-                    <Archive className="h-3 w-3 mr-1" /> Archive
+                    <Archive className="h-3 w-3 mr-1" /> {t('dashboard.archive')}
                   </Button>
                   <Button variant="default" className="rounded-xl font-bold px-6">
-                    {currentProject.status === 'completed' ? 'View Results' : currentProject.status === 'generating' ? 'View Progress' : 'Continue'}
+                    {currentProject.status === 'completed' ? t('dashboard.viewResults') : currentProject.status === 'generating' ? t('dashboard.viewProgress') : t('dashboard.continue')}
                   </Button>
                 </div>
               </div>
@@ -233,7 +234,7 @@ const Dashboard = () => {
 
         {recentProjects.length > 0 && (
           <div>
-            <h2 className="text-xl font-semibold text-foreground mb-4 tracking-tight">All Projects</h2>
+            <h2 className="text-xl font-semibold text-foreground mb-4 tracking-tight">{t('dashboard.allProjects')}</h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               {recentProjects.map((project, i) => (
                 <motion.div
@@ -279,7 +280,7 @@ const Dashboard = () => {
               className="flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors mb-4"
             >
               <Archive className="h-4 w-4" />
-              Archived ({archivedProjects.length})
+              {t('dashboard.archived')} ({archivedProjects.length})
               <span className="text-xs">{showArchived ? '▼' : '▶'}</span>
             </button>
             {showArchived && (
@@ -298,14 +299,14 @@ const Dashboard = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className="text-xs">{project.platform}</Badge>
-                      <Badge className="text-xs bg-muted text-muted-foreground/60">archived</Badge>
+                      <Badge className="text-xs bg-muted text-muted-foreground/60">{t('dashboard.archived').toLowerCase()}</Badge>
                     </div>
                     <div className="flex items-center justify-between mt-3">
                       <p className="text-xs text-muted-foreground">
                         Updated {new Date(project.updated_at).toLocaleDateString()}
                       </p>
                       <Button variant="outline" size="sm" className="h-7 px-3 text-xs rounded-xl" onClick={(e) => handleUnarchive(e, project.id)}>
-                        <ArchiveRestore className="h-3 w-3 mr-1" /> Restore
+                        <ArchiveRestore className="h-3 w-3 mr-1" /> {t('dashboard.restore')}
                       </Button>
                     </div>
                   </motion.div>

@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, SlidersHorizontal } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const cards = [
     { label: 'Hero', src: '/screenshots/cw-5-security.png' },
@@ -14,20 +15,20 @@ const cards = [
 export const ConsistencyEngine = () => {
     const ref = useRef(null);
     const isInView = useInView(ref, { once: true, margin: "-100px" });
+    const { t } = useTranslation();
 
     return (
         <section className="py-24 bg-surface-elevated relative overflow-x-hidden">
             <div className="container mx-auto px-6" ref={ref}>
                 <div className="text-center mb-16 max-w-3xl mx-auto">
                     <Badge className="mb-4 bg-primary/10 text-primary border-primary/20 shadow-sm font-semibold uppercase tracking-wider">
-                        The Differentiator
+                        {t('consistency.badge')}
                     </Badge>
                     <h2 className="text-4xl md:text-5xl font-black tracking-tight text-foreground mb-6">
-                        The Consistency Engine
+                        {t('consistency.title')}
                     </h2>
                     <p className="text-lg text-muted-foreground leading-relaxed font-medium">
-                        ShotApp AI doesn't generate isolated images. It orchestrates a cohesive visual system.
-                        One shared creative direction propagates globally across your entire screenshot set.
+                        {t('consistency.subtitle')}
                     </p>
                 </div>
 
@@ -44,7 +45,7 @@ export const ConsistencyEngine = () => {
                         <div className="h-12 w-12 bg-[#FF9500]/10 rounded-full flex items-center justify-center mb-4">
                             <SlidersHorizontal className="h-6 w-6 text-[#FF9500]" />
                         </div>
-                        <span className="text-white tracking-tight mb-4 text-xl" style={{ fontFamily: '"Inter", sans-serif', fontWeight: 800 }}>Global Rules</span>
+                        <span className="text-white tracking-tight mb-4 text-xl" style={{ fontFamily: '"Inter", sans-serif', fontWeight: 800 }}>{t('consistency.rulesLabel')}</span>
                         <div className="flex gap-3 mb-4">
                             <div className="h-4 w-4 rounded-full bg-[#FF9500]" />
                             <div className="h-4 w-4 rounded-full border border-white/20 bg-transparent" />
@@ -102,11 +103,11 @@ export const ConsistencyEngine = () => {
                 {/* ── Feature Pills ── */}
                 <div className="mt-20 flex flex-wrap justify-center gap-4 max-w-4xl mx-auto">
                     {[
-                        'Shared color logic',
-                        'Synchronized typography',
-                        'Global layout rhythm',
-                        'Slide-to-slide coherence',
-                        'Unified creative direction'
+                        t('consistency.features.colors'),
+                        t('consistency.features.typography'),
+                        t('consistency.features.layout'),
+                        t('consistency.features.coherence'),
+                        t('consistency.features.direction'),
                     ].map((feature, i) => (
                         <motion.div
                             key={feature}

@@ -167,6 +167,9 @@ serve(async (req) => {
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
     const result = toolCall ? JSON.parse(toolCall.function.arguments) : {};
 
+    // Deduct 1 credit after successful AI response
+    await adminClient.from("profiles").update({ credits: (profile?.credits ?? 1) - 1 }).eq("id", userData.user.id);
+
     return new Response(JSON.stringify({ type, result }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

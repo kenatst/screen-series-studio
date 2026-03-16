@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -55,6 +56,7 @@ const normalizeStatus = (status: string, imageUrl: string | null): SlideUiStatus
 
 const Generating = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { projectId } = useParams();
   const { data: project } = useProject(projectId);
@@ -312,7 +314,6 @@ const Generating = () => {
     } catch (e: any) {
       setIsDispatching(false);
       if (e.name === "AbortError") return "busy";
-      console.error("[Generating] request failed", e);
       return { error: `Request failed: ${e?.message || "Network/CORS error"}` };
     }
   }, [projectId]);
@@ -321,12 +322,12 @@ const Generating = () => {
     const result = await startGenerationStream(accessToken, initialResume, targetSlide, userFeedback);
     if (result === "busy") return;
     if (typeof result === "object" && result.error) {
-      toast({ title: "Generation Failed", description: result.error, variant: "destructive", duration: 8000 });
+      toast({ title: t('generating.generationFailed'), description: result.error, variant: "destructive", duration: 8000 });
       stopPolling();
       return;
     }
     if (result === "done") stopPolling();
-  }, [startGenerationStream, stopPolling, toast]);
+  }, [startGenerationStream, stopPolling, toast, t]);
 
   useEffect(() => {
     if (!projectId || startedRef.current) return;
@@ -390,7 +391,7 @@ const Generating = () => {
     setReviewMode(false);
     setActiveSlideNumber(targetSlide);
     setReviewSlideNumber(targetSlide);
-    toast({ title: "Redesigning slide...", description: "Applying your feedback to the creative engine." });
+    toast({ title: t('generating.redesigning'), description: t('generating.redesigningDesc') });
     setSlideStatuses((prev) => { const next = [...prev]; next[targetSlide - 1] = "generating"; return next; });
     setSlideImages((prev) => { const next = [...prev]; next[targetSlide - 1] = null; return next; });
     const { data: { session } } = await supabase.auth.getSession();
@@ -419,17 +420,17 @@ const Generating = () => {
           <div>
             <h2 className="text-3xl font-black tracking-tight text-foreground flex items-center gap-3">
               <Sparkles className="h-6 w-6 text-primary" />
-              Consistency Engine
+              {t('generating.title')}
             </h2>
             <p className="text-sm text-muted-foreground font-medium mt-1">
-              {isDispatching ? "Connecting to the rendering engine..." : completedCount > 0 && completedCount < slideCount ? `${completedCount} of ${slideCount} slides ready` : completedCount >= slideCount ? `All ${slideCount} slides completed!` : "Crafting your premium store assets..."}
+              {isDispatching ? t('generating.connecting') : completedCount > 0 && completedCount < slideCount ? t('generating.slidesReady', { completed: completedCount, total: slideCount }) : completedCount >= slideCount ? t('generating.allCompleted', { total: slideCount }) : t('generating.crafting')}
             </p>
           </div>
           <div className="flex items-center gap-4">
             <div className="hidden md:flex items-center gap-1.5 bg-primary/10 border border-primary/20 rounded-xl px-3 py-1.5">
               <Coins className="h-3.5 w-3.5 text-primary" />
               <span className="text-sm font-black text-primary">{profile?.credits ?? 0}</span>
-              <span className="text-xs text-muted-foreground font-medium">credits</span>
+              <span className="text-xs text-muted-foreground font-medium">{t('generating.credits')}</span>
             </div>
             <div className="hidden md:flex items-center gap-2">
               <span className="text-sm font-bold text-primary">{phases[currentPhase]?.icon}</span>
@@ -440,17 +441,17 @@ const Generating = () => {
               <AlertDialogTrigger asChild>
                 <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10 rounded-xl text-xs gap-1.5" disabled={isStopping || (progress >= 100 && !reviewMode)}>
                   {isStopping ? <Loader2 className="h-3 w-3 animate-spin" /> : <StopCircle className="h-3 w-3" />}
-                  Archive
+                  {t('generating.stopArchive')}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Stop generation?</AlertDialogTitle>
-                  <AlertDialogDescription>This will stop the current generation and archive the project.</AlertDialogDescription>
+                  <AlertDialogTitle>{t('generating.stopConfirmTitle')}</AlertDialogTitle>
+                  <AlertDialogDescription>{t('generating.stopConfirmDesc')}</AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Continue generating</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleStopAndArchive} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Stop & Archive</AlertDialogAction>
+                  <AlertDialogCancel>{t('generating.continueGenerating')}</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleStopAndArchive} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{t('generating.stopAndArchive')}</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
@@ -463,7 +464,7 @@ const Generating = () => {
           {/* Central Active Slide */}
           <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1} className="flex-1 flex flex-col items-center justify-center relative min-h-0">
             <div className={`relative w-full max-w-sm aspect-[9/19.5] max-h-[70vh] rounded-[2rem] border-2 flex flex-col items-center justify-center transition-all duration-700 overflow-hidden shadow-2xl ${centralStatus === "completed" ? "border-primary/50 bg-card/90 shadow-glow" : centralStatus === "generating" ? "border-primary/40 bg-primary/5 scale-[1.02] backdrop-blur-xl ring-4 ring-primary/20" : centralStatus === "error" ? "border-destructive/40 bg-destructive/5" : "border-border bg-card/90 opacity-50 backdrop-blur-sm"}`}>
-              {centralImage && <img src={centralImage} alt={`Slide ${actualIndex + 1}`} className="absolute inset-0 w-full h-full object-cover" />}
+              {centralImage && <img src={centralImage} alt={t('generating.slide', { number: actualIndex + 1 })} className="absolute inset-0 w-full h-full object-cover" />}
               {!centralImage && centralStatus === "generating" && (
                 <>
                   <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-primary/30 to-transparent animate-pulse" />
@@ -484,9 +485,9 @@ const Generating = () => {
                 ) : null}
                 {!centralImage && (
                   <>
-                    <span className="text-lg font-black text-foreground tracking-tight">Slide {actualIndex + 1}</span>
+                    <span className="text-lg font-black text-foreground tracking-tight">{t('generating.slide', { number: actualIndex + 1 })}</span>
                     <Badge className="mt-2 text-xs uppercase tracking-widest font-bold shadow-sm">
-                      {isDispatching && centralStatus === "pending" ? "initializing" : centralStatus}
+                      {isDispatching && centralStatus === "pending" ? t('generating.initializing') : centralStatus}
                     </Badge>
                   </>
                 )}
@@ -532,10 +533,10 @@ const Generating = () => {
               <div className="max-w-4xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
                 <div className="flex-1">
                   <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-1.5">
-                    ✏️ Want changes? Describe them:
+                    ✏️ {t('generating.wantChanges')}
                   </p>
                   <Textarea
-                    placeholder="e.g., 'Make the headline smaller', 'Change background to blue'"
+                    placeholder={t('generating.feedbackPlaceholder')}
                     value={feedback}
                     onChange={(e) => setFeedback(e.target.value)}
                     className="resize-none min-h-[56px] max-h-[80px] border-primary/20 bg-card text-sm placeholder:text-muted-foreground/50 focus-visible:ring-primary rounded-xl p-3"
@@ -549,7 +550,7 @@ const Generating = () => {
                     className="h-12 rounded-xl text-primary font-bold border-primary/20 hover:bg-primary/10 px-5"
                   >
                     {isSubmittingFeedback ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-1.5 h-4 w-4" />}
-                    Redesign
+                    {t('generating.redesign')}
                   </Button>
                   <Button
                     onClick={handleApprove}
@@ -558,8 +559,8 @@ const Generating = () => {
                   >
                     <ThumbsUp className="mr-2 h-4 w-4" />
                     {hasMoreSlides
-                      ? `Looks Good, Continue with Slide ${nextSlideNumberForCta ?? "next"}`
-                      : "Looks Good, View Results"}
+                      ? t('generating.looksGoodContinue', { number: nextSlideNumberForCta ?? "next" })
+                      : t('generating.looksGoodResults')}
                   </Button>
                 </div>
               </div>
@@ -580,13 +581,13 @@ const Generating = () => {
                 <CheckCircle2 className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <p className="text-lg font-black text-foreground">All {completedCount} slides ready!</p>
-                <p className="text-sm text-muted-foreground">Your screenshot set is complete.</p>
+                <p className="text-lg font-black text-foreground">{t('generating.allSlidesReady', { count: completedCount })}</p>
+                <p className="text-sm text-muted-foreground">{t('generating.setComplete')}</p>
               </div>
             </div>
             <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground font-black rounded-2xl px-8 shadow-glow flex-shrink-0" onClick={() => navigate(`/project/${projectId}/results`)}>
               <Download className="mr-2 h-5 w-5" />
-              View & Download Results
+              {t('generating.viewDownload')}
             </Button>
           </motion.div>
         )}

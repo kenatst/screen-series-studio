@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, CheckCircle2, Save, Loader2 } from "lucide-react";
 import { ProjectWizardProvider, useNewProject } from "@/contexts/NewProjectContext";
+import { useTranslation } from "react-i18next";
 import { StepProject } from "@/components/new-project/StepProject";
 import { StepAppInfo } from "@/components/new-project/StepAppInfo";
 import { StepScreens } from "@/components/new-project/StepScreens";
@@ -11,18 +12,13 @@ import { StepStyle } from "@/components/new-project/StepStyle";
 import { StepPlanner } from "@/components/new-project/StepPlanner";
 import { StepReview } from "@/components/new-project/StepReview";
 
-const steps = [
-  { id: 1, label: 'Project' },
-  { id: 2, label: 'App Info' },
-  { id: 3, label: 'Screens' },
-  { id: 4, label: 'Brand Kit' },
-  { id: 5, label: 'Style' },
-  { id: 6, label: 'Planner' },
-  { id: 7, label: 'Review' },
-];
+const stepKeys = ['project', 'appInfo', 'screens', 'brandKit', 'style', 'planner', 'review'] as const;
 
 const WizardContent = () => {
   const { currentStep, setCurrentStep, next, prev, isSaving, lastSavedAt, handleSaveDraft } = useNewProject();
+  const { t } = useTranslation();
+
+  const steps = stepKeys.map((key, i) => ({ id: i + 1, label: t(`newProject.steps.${key}`) }));
 
   return (
     <div className="p-8 max-w-5xl mx-auto">
@@ -46,12 +42,12 @@ const WizardContent = () => {
         <div className="ml-auto flex items-center gap-2">
           {lastSavedAt && (
             <span className="text-[10px] text-muted-foreground font-medium">
-              Saved {lastSavedAt.toLocaleTimeString()}
+              {t('newProject.saved')} {lastSavedAt.toLocaleTimeString()}
             </span>
           )}
           <Button variant="outline" size="sm" onClick={handleSaveDraft} disabled={isSaving} className="rounded-full text-xs font-bold border-border hover:border-primary/40 h-9 px-4">
             {isSaving ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : <Save className="h-3 w-3 mr-1.5" />}
-            Save draft
+            {t('newProject.saveDraft')}
           </Button>
         </div>
       </div>
@@ -80,11 +76,11 @@ const WizardContent = () => {
       {/* Navigation */}
       <div className="flex justify-between mt-12 pt-8 border-t border-border relative z-10">
         <Button variant="secondary" onClick={prev} disabled={currentStep === 1} className="bg-muted/50 text-foreground hover:bg-muted border-border h-12 px-6 rounded-xl font-bold tracking-tight">
-          <ArrowLeft className="mr-2 h-4.5 w-4.5" /> Back
+          <ArrowLeft className="mr-2 h-4.5 w-4.5" /> {t('newProject.back')}
         </Button>
         {currentStep < 7 ? (
           <Button variant="default" onClick={next} className="bg-foreground text-background hover:bg-foreground/90 h-12 px-8 rounded-xl font-black tracking-tight shadow-glow hover:shadow-[0_0_20px_hsl(var(--foreground)/0.4)] transition-all">
-            Continue <ArrowRight className="ml-2 h-4.5 w-4.5" />
+            {t('newProject.continue')} <ArrowRight className="ml-2 h-4.5 w-4.5" />
           </Button>
         ) : null}
       </div>

@@ -57,7 +57,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const { data, error } = await supabase.functions.invoke("check-subscription");
       if (error) {
-        console.warn("check-subscription error:", error);
         return;
       }
 
@@ -68,8 +67,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           subscriptionEnd: data.subscription_end ?? prev?.subscriptionEnd ?? null,
         }));
       }
-    } catch (e) {
-      console.warn("check-subscription failed:", e);
+    } catch {
+      // silently fail
     }
   }, [session?.user?.id]);
 

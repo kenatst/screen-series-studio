@@ -176,18 +176,16 @@ serve(async (req) => {
     for (const slide of slides) {
       if (!slide.image_url) continue;
 
-      for (const format of deviceFormats) {
-        const { data: fileData } = await adminClient.storage.from("generated-outputs").download(slide.image_url);
+      const { data: fileData } = await adminClient.storage.from("generated-outputs").download(slide.image_url);
 
-        if (fileData) {
-          const arrayBuffer = await fileData.arrayBuffer();
-          const imageData = new Uint8Array(arrayBuffer);
-          const paddedNum = String(slide.slide_number).padStart(2, "0");
-          const fileName = `${safeName}/${locale}/${format}/${paddedNum}_slide.png`;
-          zipFiles.push({ name: fileName, data: imageData });
-        } else {
-          console.warn(`Failed to download image for slide ${slide.slide_number}`);
-        }
+      if (fileData) {
+        const arrayBuffer = await fileData.arrayBuffer();
+        const imageData = new Uint8Array(arrayBuffer);
+        const paddedNum = String(slide.slide_number).padStart(2, "0");
+        const fileName = `${safeName}/${locale}/slide-${paddedNum}.png`;
+        zipFiles.push({ name: fileName, data: imageData });
+      } else {
+        console.warn(`Failed to download image for slide ${slide.slide_number}`);
       }
     }
 
