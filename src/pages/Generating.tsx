@@ -459,8 +459,8 @@ const Generating = () => {
         <div className="flex flex-col xl:flex-row gap-6 w-full flex-1">
 
           {/* Central Active Slide */}
-          <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1} className="flex-1 flex flex-col items-center justify-center relative">
-            <div className={`relative w-full max-w-sm aspect-[9/19.5] rounded-[2rem] border-2 flex flex-col items-center justify-center transition-all duration-700 overflow-hidden shadow-2xl ${centralStatus === "completed" ? "border-primary/50 bg-card/90 shadow-glow" : centralStatus === "generating" ? "border-primary/40 bg-primary/5 scale-[1.02] backdrop-blur-xl ring-4 ring-primary/20" : centralStatus === "error" ? "border-destructive/40 bg-destructive/5" : "border-border bg-card/90 opacity-50 backdrop-blur-sm"}`}>
+          <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1} className="flex-1 flex flex-col items-center justify-center relative min-h-0">
+            <div className={`relative w-full max-w-sm aspect-[9/19.5] max-h-[70vh] rounded-[2rem] border-2 flex flex-col items-center justify-center transition-all duration-700 overflow-hidden shadow-2xl ${centralStatus === "completed" ? "border-primary/50 bg-card/90 shadow-glow" : centralStatus === "generating" ? "border-primary/40 bg-primary/5 scale-[1.02] backdrop-blur-xl ring-4 ring-primary/20" : centralStatus === "error" ? "border-destructive/40 bg-destructive/5" : "border-border bg-card/90 opacity-50 backdrop-blur-sm"}`}>
               {centralImage && <img src={centralImage} alt={`Slide ${actualIndex + 1}`} className="absolute inset-0 w-full h-full object-cover" />}
               {!centralImage && centralStatus === "generating" && (
                 <>

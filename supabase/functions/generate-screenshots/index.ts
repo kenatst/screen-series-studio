@@ -286,8 +286,9 @@ Focus the energy of the composition on: [ ${slide.emphasis || "UI focused"} ].
 - "icon-driven": Use icons and visual elements to communicate features instead of heavy text.
 
 RAW ASSET INJECTION
-- You are provided a raw app screenshot tagged as: [ "${slide.raw_screen_tag || "home"}" ].
-- This raw screenshot MUST be composited INTO the blank screen of the 3D smartphone mockup.
+- You are provided a raw app screenshot tagged as: [ "${slide.raw_screen_tag || ""}" ].
+- IF A TAG IS PROVIDED: This raw screenshot MUST be composited INTO the blank screen of the 3D smartphone mockup.
+- IF NO TAG IS PROVIDED (empty string): This slide is a PURE TEXT / TYPOGRAPHIC slide. DO NOT render a smartphone device mockup. Focus 100% on the headline, subheadline, and background visual energy (icons, logos, or abstract brand elements).
 
 ====================================================================
 SECTION 4: THE ANTI-HALLUCINATION & INTEGRITY PROTOCOL (CRITICAL)
@@ -368,7 +369,7 @@ function isRateLimited(ip: string): boolean {
 
 const idempotencyCache = new Set<string>();
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -544,7 +545,7 @@ serve(async (req) => {
     let assets = (dbAssets || []) as Array<{ storage_path: string; asset_type: string; tag: string | null }>;
 
     if (assets.length === 0) {
-      const slideTags = Array.from(new Set(allSlides.map((s: any) => s.raw_screen_tag).filter(Boolean)));
+      const slideTags: string[] = Array.from(new Set(allSlides.map((s: any) => s.raw_screen_tag).filter(Boolean))) as string[];
 
       const [screenList, referenceList, brandList] = await Promise.all([
         adminClient.storage.from("raw-uploads").list(`${userId}/${projectId}/screens`, { limit: 20, sortBy: { column: "name", order: "asc" } }),

@@ -224,7 +224,7 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
   const [brandAssets, setBrandAssets] = useState<BrandAsset[]>([]);
   const [brandColors, setBrandColors] = useState<string[]>([]);
   const [brandFont, setBrandFont] = useState('');
-  const [newColor, setNewColor] = useState('#6C5CE7');
+  const [newColor, setNewColor] = useState('#000000');
   const [visualPreferences, setVisualPreferences] = useState<string[]>([]);
 
   const screenInputRef = useRef<HTMLInputElement | null>(null);

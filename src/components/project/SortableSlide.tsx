@@ -98,6 +98,7 @@ export const SortableSlide = ({
                                 value={slide.rawScreenTag}
                                 onChange={e => updateSlide(slide.id, 'rawScreenTag', e.target.value)}
                             >
+                                <option value="">No screen (Text only)</option>
                                 {getScreenOptions().map(t => {
                                     const matchingScreen = uploadedScreens.find((s: UploadedScreen) => s.tag === t);
                                     return (
