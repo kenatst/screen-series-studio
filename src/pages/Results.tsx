@@ -377,7 +377,7 @@ const Results = () => {
         isOpen={isTranslationModalOpen}
         onOpenChange={setIsTranslationModalOpen}
         projectId={projectId || ''}
-        onSuccess={() => refetchSlides()}
+        onSuccess={() => { refetchSlides(); refreshProfile(); }}
       />
 
       <Dialog open={showWatermarkWarning} onOpenChange={setShowWatermarkWarning}>

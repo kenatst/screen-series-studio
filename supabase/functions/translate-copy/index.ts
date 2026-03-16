@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
-import { GoogleGenAI } from "https://esm.sh/@google/genai@1.44.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,6 +7,18 @@ const corsHeaders = {
 };
 
 const CREDIT_COST_PER_SLIDE = 1;
+
+/** Chunked base64 encoding that doesn't blow the stack */
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  const chunks: string[] = [];
+  const chunkSize = 8192;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const slice = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+    chunks.push(String.fromCharCode(...slice));
+  }
+  return btoa(chunks.join(""));
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -21,7 +32,15 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const geminiApiKey = Deno.env.get("GEMINI_API_KEY")!;
+    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+    const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
+
+    // We need native Gemini for image generation (gateway doesn't support IMAGE modality)
+    // Use GoogleGenAI if available, otherwise fail gracefully
+    const apiKey = geminiApiKey || lovableApiKey;
+    if (!apiKey) {
+      return new Response(JSON.stringify({ error: "AI API key not configured" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
@@ -39,58 +58,75 @@ serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Fetch completed slides with images
-    const { data: slides, error } = await userClient
+    // Fetch slides - check for completed status OR slides with image_url
+    const { data: slides, error } = await adminClient
       .from("project_slides")
-      .select("id, slide_number, image_url, headline, subheadline")
+      .select("id, slide_number, image_url, headline, subheadline, status")
       .eq("project_id", project_id)
-      .eq("status", "completed")
       .order("slide_number");
 
-    if (error || !slides?.length) {
-      return new Response(JSON.stringify({ error: "No completed slides found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (error) {
+      console.error("Error fetching slides:", error);
+      return new Response(JSON.stringify({ error: "Failed to fetch slides" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const totalCost = slides.length * CREDIT_COST_PER_SLIDE;
+    // Filter to slides that have an image (completed or with image_url)
+    const completedSlides = (slides || []).filter(
+      (s: any) => s.image_url && (s.status === "completed" || s.image_url)
+    );
+
+    if (completedSlides.length === 0) {
+      console.error("No slides with images found. Slides:", JSON.stringify(slides?.map(s => ({ id: s.id, status: s.status, has_image: !!s.image_url }))));
+      return new Response(JSON.stringify({ error: "No slides with images found. Generate screenshots first." }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const totalCost = completedSlides.length * CREDIT_COST_PER_SLIDE;
     const { data: profileData } = await adminClient.from("profiles").select("credits").eq("id", userId).single();
     const currentCredits = profileData?.credits ?? 0;
 
     if (currentCredits < totalCost) {
-      return new Response(JSON.stringify({ error: `Insufficient credits. This action requires ${totalCost} credit(s), but you have ${currentCredits}.` }), {
+      return new Response(JSON.stringify({ error: `Insufficient credits. Need ${totalCost}, have ${currentCredits}.` }), {
         status: 402,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // No upfront deduction - we deduct per successful slide in the loop below
-    const ai = new GoogleGenAI({ apiKey: geminiApiKey });
+    // Dynamic import of GoogleGenAI
+    const { GoogleGenAI } = await import("https://esm.sh/@google/genai@1.44.0");
+    const ai = new GoogleGenAI({ apiKey: geminiApiKey || apiKey });
+
     const translatedSlides: { slide_number: number; imageUrl: string }[] = [];
+    let creditsDeducted = 0;
 
-    // Track credits for deduction loop
-    let remainingCredits = currentCredits;
-
-    for (const slide of slides) {
+    // Process all slides in batch
+    for (const slide of completedSlides) {
       try {
-        // Download the existing slide image from storage
-        const storagePath = `${userId}/${project_id}/slide-${slide.slide_number}.png`;
-        const { data: fileData } = await adminClient.storage.from("generated-outputs").download(storagePath);
+        // Resolve storage path - image_url might be a storage path or full URL
+        let storagePath: string;
+        if (slide.image_url!.startsWith("http")) {
+          // It's a signed URL - construct the storage path instead
+          storagePath = `${userId}/${project_id}/slide-${slide.slide_number}.png`;
+        } else {
+          storagePath = slide.image_url!;
+        }
 
-        if (!fileData) {
-          console.error(`No image found for slide ${slide.slide_number}`);
+        const { data: fileData, error: downloadError } = await adminClient.storage.from("generated-outputs").download(storagePath);
+        if (downloadError || !fileData) {
+          console.error(`Download failed for slide ${slide.slide_number}:`, downloadError?.message, "path:", storagePath);
           continue;
         }
 
         const arrayBuffer = await fileData.arrayBuffer();
-        const imageBase64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+        const imageBase64 = arrayBufferToBase64(arrayBuffer);
 
-        // Use Gemini image generation to translate text in the image
-        const translationPrompt = `Translate all visible text in the image from ${source_language || "English"} to natural ${target_language}.
+        const translationPrompt = `Translate all visible text in this app store screenshot image from ${source_language || "English"} to natural ${target_language}.
 
-Do not change anything else.
-Do not modify layout, spacing, alignment, font size, font weight, colors, or image composition.
-Do not add, remove, or rephrase content.
-Keep the tone calm, minimal, and reassuring.
-Text translation only.`;
+CRITICAL RULES:
+- Only translate text. Do not modify layout, spacing, alignment, font size, font weight, colors, or image composition.
+- Do not add, remove, or rephrase content.
+- Keep the tone calm, minimal, and reassuring.
+- Preserve all UI elements, icons, and graphics exactly as they are.
+- The output must be a complete image identical to the input except with translated text.`;
 
         const contents: any[] = [
           { text: translationPrompt },
@@ -120,26 +156,35 @@ Text translation only.`;
           continue;
         }
 
-        // Upload translated image with locale suffix
-        const langCode = target_language.toLowerCase().replace(/\s+/g, "-").slice(0, 5);
+        // Upload translated image
+        const langCode = target_language.toLowerCase().replace(/[^a-z0-9]/g, "-").slice(0, 5);
         const translatedPath = `${userId}/${project_id}/slide-${slide.slide_number}-${langCode}.png`;
-        const imageBytes = Uint8Array.from(atob(newImageBase64), (c) => c.charCodeAt(0));
+
+        // Chunked decode
+        const raw = atob(newImageBase64);
+        const imageBytes = new Uint8Array(raw.length);
+        for (let j = 0; j < raw.length; j++) {
+          imageBytes[j] = raw.charCodeAt(j);
+        }
+
         await adminClient.storage.from("generated-outputs").upload(translatedPath, imageBytes, {
           contentType: "image/png",
           upsert: true,
         });
 
         const { data: signedData } = await adminClient.storage.from("generated-outputs").createSignedUrl(translatedPath, 60 * 60 * 24 * 7);
+
         translatedSlides.push({
           slide_number: slide.slide_number,
           imageUrl: signedData?.signedUrl || "",
         });
 
         // Deduct 1 credit per successful slide
-        remainingCredits -= 1;
-        await adminClient.from("profiles").update({ credits: remainingCredits }).eq("id", userId);
+        creditsDeducted += 1;
+        const newCredits = Math.max(0, currentCredits - creditsDeducted);
+        await adminClient.from("profiles").update({ credits: newCredits }).eq("id", userId);
       } catch (err: any) {
-        console.error(`Translation error for slide ${slide.slide_number}:`, err);
+        console.error(`Translation error for slide ${slide.slide_number}:`, err?.message || err);
       }
     }
 

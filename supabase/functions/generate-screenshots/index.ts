@@ -12,6 +12,17 @@ const corsHeaders = {
 const CREDIT_COST_PER_SLIDE = 1;
 const QUALITY_SCORE_MIN = 78;
 
+/** Chunked base64 encoding — avoids stack overflow on large images */
+function safeBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  const chunks: string[] = [];
+  const chunkSize = 8192;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    chunks.push(String.fromCharCode(...bytes.subarray(i, Math.min(i + chunkSize, bytes.length))));
+  }
+  return btoa(chunks.join(""));
+}
+
 // ── Template metadata (mirrors frontend demoTemplates) ──
 const TEMPLATE_CATALOG: Record<string, {
   tags: string[];
@@ -126,6 +137,28 @@ ${directive}
 --- END CONSISTENCY ---`;
 }
 
+/** Map device_formats to aspect ratio and platform constraints */
+function getDeviceConstraints(deviceFormats: string[]): string {
+  if (!deviceFormats || deviceFormats.length === 0) return "- Format: Strict 9:16 Portrait Aspect Ratio (1290×2796 px).";
+
+  const formatMap: Record<string, string> = {
+    "iphone-6-5": "iPhone 6.5\" (1284×2778 px, 9:19.5 ratio)",
+    "iphone-6-9": "iPhone 6.9\" (1320×2868 px, 9:19.5 ratio)",
+    "iphone-5-5": "iPhone 5.5\" (1242×2208 px, 9:16 ratio)",
+    "ipad-12-9": "iPad Pro 12.9\" (2048×2732 px, 3:4 ratio)",
+    "android-phone": "Android Phone (1080×1920 px, 9:16 ratio)",
+    "android-tablet": "Android Tablet (1200×1920 px, 10:16 ratio)",
+  };
+
+  const descriptions = deviceFormats
+    .map(f => formatMap[f] || f)
+    .join(", ");
+
+  return `- Target Device Formats: ${descriptions}
+- Primary format: Use 9:16 Portrait unless generating for iPad (use 3:4).
+- All generated screenshots must be optimized for App Store / Play Store submission at the correct resolution.`;
+}
+
 function buildSlidePrompt(
   slide: any,
   project: any,
@@ -164,6 +197,8 @@ function buildSlidePrompt(
     ? `\n=== LANGUAGE ===\nAll text on the screenshot (headline, subheadline) MUST be written in ${outputLang}. The provided headline and subheadline are already in the target language — reproduce them EXACTLY as given.\n=== END LANGUAGE ===`
     : "";
 
+  const deviceConstraints = getDeviceConstraints((project.device_formats as string[]) || []);
+
   return `# THE ULTIMATE ASO SCREENSHOT GENERATION PROTOCOL
 **SYSTEM PERSONA**: You are the world's most elite App Store Optimization (ASO) and Conversion Rate Optimization (CRO) Creative Director. You have generated billions of dollars in revenue for top-tier SaaS and gaming companies. You do not make "pretty pictures"—you engineer high-converting psychological visual assets. Your aesthetic is ultra-premium, cinematic, heavily polished, and flawless.
 
@@ -186,7 +221,7 @@ APP IDENTITY
 - Primary Business Goal: ${(project.config as any)?.primaryGoal || "Maximize install velocity and convey undeniable premium value."}
 
 PLATFORM CONSTRAINTS
-- Format: Strict 9:16 Portrait Aspect Ratio.
+${deviceConstraints}
 - Safe Zones: Text must remain comfortably within the inner 85% of the canvas to avoid clipping on smaller device screens.
 - Mockup Device: Render an ultra-realistic, modern flagship device. The bezel must be accurate, metallic/glass textures must reflect environment light, and the screen must not be obscured by glare.
 
@@ -563,7 +598,7 @@ serve(async (req) => {
         const { data: fileData } = await adminClient.storage.from("raw-uploads").download(asset.storage_path);
         if (!fileData) continue;
         const arrayBuffer = await fileData.arrayBuffer();
-        const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+        const base64 = safeBase64(arrayBuffer);
         const ext = asset.storage_path.split(".").pop()?.toLowerCase() || "png";
         const mime = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
         referenceImages.push({ mimeType: mime, data: base64, tag: asset.tag || undefined, assetType: asset.asset_type });
@@ -583,7 +618,7 @@ serve(async (req) => {
           const { data: tmplData } = await adminClient.storage.from("templates").download(name);
           if (tmplData) {
             const ab = await tmplData.arrayBuffer();
-            const b64 = btoa(String.fromCharCode(...new Uint8Array(ab)));
+            const b64 = safeBase64(ab);
             const ext = name.split(".").pop() || "png";
             templatePreviewImage = { mimeType: ext === "jpg" ? "image/jpeg" : `image/${ext}`, data: b64 };
             break;
@@ -623,7 +658,7 @@ serve(async (req) => {
             const { data: contextData } = await adminClient.storage.from("generated-outputs").download(contextPath);
             if (!contextData) continue;
             const ab = await contextData.arrayBuffer();
-            const b64 = btoa(String.fromCharCode(...new Uint8Array(ab)));
+            const b64 = safeBase64(ab);
             previousSlideImages.push({ mimeType: "image/png", data: b64 });
           } catch { /* ignore */ }
         }

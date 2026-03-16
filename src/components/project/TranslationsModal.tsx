@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Globe, CheckCircle2, Download } from 'lucide-react';
+import { Loader2, Globe, CheckCircle2, Download, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Progress } from '@/components/ui/progress';
 
 interface TranslationsModalProps {
     isOpen: boolean;
@@ -14,16 +15,18 @@ interface TranslationsModalProps {
 }
 
 const LANGUAGES = [
-    { value: 'fr', label: 'French (Français)' },
-    { value: 'es', label: 'Spanish (Español)' },
-    { value: 'de', label: 'German (Deutsch)' },
-    { value: 'ja', label: 'Japanese (日本語)' },
-    { value: 'pt', label: 'Portuguese (Português)' },
-    { value: 'zh', label: 'Chinese (Simplified)' },
-    { value: 'ko', label: 'Korean (한국어)' },
-    { value: 'it', label: 'Italian (Italiano)' },
-    { value: 'ar', label: 'Arabic (العربية)' },
-    { value: 'ru', label: 'Russian (Русский)' },
+    { value: 'French', label: 'French (Français)' },
+    { value: 'Spanish', label: 'Spanish (Español)' },
+    { value: 'German', label: 'German (Deutsch)' },
+    { value: 'Japanese', label: 'Japanese (日本語)' },
+    { value: 'Portuguese', label: 'Portuguese (Português)' },
+    { value: 'Chinese', label: 'Chinese (中文)' },
+    { value: 'Korean', label: 'Korean (한국어)' },
+    { value: 'Italian', label: 'Italian (Italiano)' },
+    { value: 'Arabic', label: 'Arabic (العربية)' },
+    { value: 'Russian', label: 'Russian (Русский)' },
+    { value: 'Turkish', label: 'Turkish (Türkçe)' },
+    { value: 'Hindi', label: 'Hindi (हिन्दी)' },
 ];
 
 interface TranslatedSlide {
@@ -36,6 +39,7 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, onSuccess }
     const [isTranslating, setIsTranslating] = useState(false);
     const [translatedSlides, setTranslatedSlides] = useState<TranslatedSlide[]>([]);
     const [error, setError] = useState('');
+    const [progressPercent, setProgressPercent] = useState(0);
     const { toast } = useToast();
 
     const handleTranslate = async () => {
@@ -43,9 +47,13 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, onSuccess }
         setIsTranslating(true);
         setError('');
         setTranslatedSlides([]);
+        setProgressPercent(10);
+
         try {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) throw new Error("Not authenticated");
+
+            setProgressPercent(20);
 
             const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
             const response = await fetch(`${supabaseUrl}/functions/v1/translate-copy`, {
@@ -55,8 +63,14 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, onSuccess }
                     'Authorization': `Bearer ${session.access_token}`,
                     'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
                 },
-                body: JSON.stringify({ project_id: projectId, target_language: language }),
+                body: JSON.stringify({
+                    project_id: projectId,
+                    target_language: language,
+                    source_language: 'English',
+                }),
             });
+
+            setProgressPercent(60);
 
             if (!response.ok) {
                 const errData = await response.json().catch(() => ({ error: 'Server error' }));
@@ -64,14 +78,16 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, onSuccess }
             }
 
             const result = await response.json();
+            setProgressPercent(90);
 
             if (result.translations?.length > 0) {
                 setTranslatedSlides(result.translations);
                 const langLabel = LANGUAGES.find(l => l.value === language)?.label || language;
                 toast({ title: `Translation to ${langLabel} completed!`, description: `${result.translations.length} slide(s) translated.` });
+                setProgressPercent(100);
                 onSuccess?.();
             } else {
-                setError('No slides were translated. Make sure you have completed slides with images.');
+                setError('No slides were translated. Make sure you have generated slides with images first.');
             }
         } catch (err: any) {
             console.error('Translation error:', err);
@@ -82,6 +98,12 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, onSuccess }
         }
     };
 
+    const handleDownloadAll = async () => {
+        for (const slide of translatedSlides) {
+            await handleDownloadTranslated(slide);
+        }
+    };
+
     const handleDownloadTranslated = async (slide: TranslatedSlide) => {
         try {
             const res = await fetch(slide.imageUrl);
@@ -89,7 +111,8 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, onSuccess }
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `slide-${slide.slide_number}-${language}.png`;
+            const langSlug = language.toLowerCase().replace(/[^a-z]/g, '');
+            a.download = `slide-${slide.slide_number}-${langSlug}.png`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -104,6 +127,7 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, onSuccess }
             setTranslatedSlides([]);
             setError('');
             setLanguage('');
+            setProgressPercent(0);
         }
         onOpenChange(open);
     };
@@ -114,16 +138,16 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, onSuccess }
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 text-xl font-bold">
                         <Globe className="h-5 w-5 text-primary" />
-                        1-Click Localization
+                        1-Click Batch Localization
                     </DialogTitle>
                     <DialogDescription className="text-muted-foreground pt-2">
-                        Select a target language. Translation costs 1 credit per slide.
+                        Translate all slides at once. Costs 1 credit per slide.
                     </DialogDescription>
                 </DialogHeader>
 
                 {translatedSlides.length === 0 ? (
                     <>
-                        <div className="py-4">
+                        <div className="py-4 space-y-4">
                             <Select value={language} onValueChange={setLanguage}>
                                 <SelectTrigger className="w-full bg-secondary border-border/60">
                                     <SelectValue placeholder="Select target language" />
@@ -136,21 +160,41 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, onSuccess }
                                     ))}
                                 </SelectContent>
                             </Select>
-                            {error && <p className="text-destructive text-sm mt-2">{error}</p>}
+
+                            {isTranslating && (
+                                <div className="space-y-2">
+                                    <Progress value={progressPercent} className="h-2" />
+                                    <p className="text-xs text-muted-foreground text-center">
+                                        Translating all slides to {LANGUAGES.find(l => l.value === language)?.label}...
+                                    </p>
+                                </div>
+                            )}
+
+                            {error && (
+                                <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                                    <AlertCircle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
+                                    <p className="text-destructive text-sm">{error}</p>
+                                </div>
+                            )}
                         </div>
                         <DialogFooter>
                             <Button variant="outline" onClick={() => handleClose(false)} className="border-border/60">Cancel</Button>
                             <Button onClick={handleTranslate} disabled={!language || isTranslating} className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-glow">
-                                {isTranslating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                {isTranslating ? 'Translating...' : 'Translate Instantly'}
+                                {isTranslating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Globe className="mr-2 h-4 w-4" />}
+                                {isTranslating ? 'Translating batch...' : 'Translate All Slides'}
                             </Button>
                         </DialogFooter>
                     </>
                 ) : (
                     <div className="space-y-4 py-2">
-                        <div className="flex items-center gap-2 text-sm text-primary font-bold">
-                            <CheckCircle2 className="h-4 w-4" />
-                            {translatedSlides.length} slide(s) translated to {LANGUAGES.find(l => l.value === language)?.label}
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-sm text-primary font-bold">
+                                <CheckCircle2 className="h-4 w-4" />
+                                {translatedSlides.length} slide(s) translated to {LANGUAGES.find(l => l.value === language)?.label}
+                            </div>
+                            <Button variant="outline" size="sm" onClick={handleDownloadAll} className="text-xs rounded-lg">
+                                <Download className="h-3 w-3 mr-1" /> Download All
+                            </Button>
                         </div>
                         <div className="grid grid-cols-3 gap-2">
                             {translatedSlides.map(slide => (
