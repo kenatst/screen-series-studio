@@ -702,6 +702,7 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
     if (!user) { toast({ title: "Not authenticated", variant: "destructive" }); return; }
     setIsSaving(true);
     try {
+      await supabase.auth.refreshSession();
       await saveProjectAndSlides();
       setLastSavedAt(new Date());
       toast({ title: "Draft saved ✓", description: `Project "${getFinalProjectName()}" saved.` });

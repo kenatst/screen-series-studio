@@ -22,7 +22,7 @@ const App = () => (
     <AuthProvider>
       <TooltipProvider>
         <Toaster />
-        <Sonner />
+        <Sonner visibleToasts={1} duration={2500} />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Landing />} />
