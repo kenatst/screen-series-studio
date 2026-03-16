@@ -1,4 +1,4 @@
-import { GripVertical, Lock, Trash2 } from "lucide-react";
+import { GripVertical, Trash2 } from "lucide-react";
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { slideObjectives, emphasisOptions } from "@/lib/demo-data";
@@ -123,7 +123,6 @@ export const SortableSlide = ({
                             {emphasisOptions.map(e => <option key={e} value={e}>{e}</option>)}
                         </select>
                         <div className="flex-1" />
-                        <Button variant="ghost" size="sm" className="h-9 text-xs font-bold mt-2 text-muted-foreground hover:text-foreground hover:bg-white/10 rounded-lg"><Lock className="mr-1.5 h-3.5 w-3.5" />Lock</Button>
                         <Button variant="ghost" size="sm" onClick={() => removeSlide(slide.id)} className="h-9 text-xs font-bold mt-2 text-red-400/70 hover:text-red-400 hover:bg-red-500/10 rounded-lg"><Trash2 className="mr-1.5 h-3.5 w-3.5" />Remove</Button>
                     </div>
                 </div>

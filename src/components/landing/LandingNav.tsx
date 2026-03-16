@@ -23,7 +23,7 @@ const LanguageSwitcher = forwardRef<HTMLDivElement>((props, ref) => {
     const [open, setOpen] = useState(false);
     const innerRef = useRef<HTMLDivElement>(null);
     const combinedRef = (node: HTMLDivElement | null) => {
-        (innerRef as any).current = node;
+        (innerRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
         if (typeof ref === 'function') {
             ref(node);
         } else if (ref) {
@@ -45,6 +45,9 @@ const LanguageSwitcher = forwardRef<HTMLDivElement>((props, ref) => {
         <div ref={combinedRef} className="relative">
             <button
                 onClick={() => setOpen(!open)}
+                aria-expanded={open}
+                aria-haspopup="listbox"
+                aria-label="Select language"
                 className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md"
             >
                 <Globe className="h-4 w-4" />

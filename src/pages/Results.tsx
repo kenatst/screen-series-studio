@@ -124,7 +124,6 @@ const Results = () => {
       saveAs(content, `${project?.app_name || project?.name || 'export'}.zip`);
       toast({ title: isFreePlan ? "Export with watermark complete" : "Export complete ✨" });
     } catch (e) {
-      console.error("Download failed", e);
       toast({ title: "Export failed", variant: "destructive" });
     } finally {
       setIsExporting(false);

@@ -56,6 +56,12 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "project_id and target_language required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // Verify project ownership
+    const { data: projectCheck } = await userClient.from("projects").select("id").eq("id", project_id).single();
+    if (!projectCheck) {
+      return new Response(JSON.stringify({ error: "Project not found or access denied" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
     // Fetch slides - check for completed status OR slides with image_url

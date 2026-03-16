@@ -326,21 +326,28 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
               } else if (['logo', 'icon', 'mascot'].includes(asset.asset_type)) {
                 newBrandAssets.push({ type: asset.asset_type as 'logo' | 'icon' | 'mascot', file, preview });
               }
-            } catch (e) { console.error("Failed to reconstruct asset", e); }
+            } catch (e) { /* asset reconstruction failed */ }
           }
         });
         await Promise.all(promises);
         if (newScreens.length > 0) setUploadedScreens(newScreens);
         if (newReferences.length > 0) setReferenceMockups(newReferences);
         if (newBrandAssets.length > 0) setBrandAssets(newBrandAssets);
-      } catch (e) { console.error("Failed to hydrate assets", e); }
+      } catch (e) { /* asset hydration failed */ }
       finally { setAssetsHydrated(true); }
     };
     fetchAssets();
   }, [editProjectId, user, assetsHydrated]);
 
   const toggleFormat = (f: string) => {
-    setDeviceFormats(prev => prev.includes(f) ? prev.filter(x => x !== f) : [...prev, f]);
+    setDeviceFormats(prev => {
+      if (prev.includes(f)) {
+        // Prevent removing the last format
+        if (prev.length <= 1) return prev;
+        return prev.filter(x => x !== f);
+      }
+      return [...prev, f];
+    });
   };
 
   const handleSlideCountChange = (count: number) => {
@@ -527,7 +534,6 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
         toast({ title: "Slides auto-filled!", description: "AI-generated headlines based on your app info." });
       }
     } catch (e) {
-      console.error("Auto-fill failed:", e);
       toast({ title: "Auto-fill failed", description: "Try again or fill manually.", variant: "destructive" });
     } finally {
       setIsAutoFilling(false);
@@ -659,17 +665,13 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
     const payload = buildProjectPayload();
     let projectId: string;
     if (savedProjectId) {
-      console.log("[SAVE] Updating existing project:", savedProjectId);
       await updateProject.mutateAsync({ id: savedProjectId, ...payload });
       projectId = savedProjectId;
     } else {
-      console.log("[SAVE] Creating new project with payload:", JSON.stringify(payload).slice(0, 200));
       const project = await createProject.mutateAsync(payload);
       projectId = project.id;
       setSavedProjectId(projectId);
-      console.log("[SAVE] Created project:", projectId);
     }
-    console.log("[SAVE] Saving", slides.length, "slides for project:", projectId);
     const availableScreenTags = [...new Set(uploadedScreens.map((screen) => screen.tag).filter(Boolean))];
 
     await saveSlides.mutateAsync({
@@ -692,9 +694,7 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
         };
       }),
     });
-    console.log("[SAVE] Slides saved, uploading assets...");
     if (user) await uploadAssetsToStorage(projectId, user.id);
-    console.log("[SAVE] Assets uploaded");
     return projectId;
   };
 
@@ -707,7 +707,6 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
       setLastSavedAt(new Date());
       toast({ title: "Draft saved ✓", description: `Project "${getFinalProjectName()}" saved.` });
     } catch (e) {
-      console.error("Draft save failed:", e);
       toast({ title: "Save failed", description: "Could not save draft.", variant: "destructive" });
     } finally {
       setIsSaving(false);
@@ -719,20 +718,12 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
     setIsSaving(true);
     try {
       // Refresh session to prevent stale JWT causing RLS violations
-      const { error: refreshError } = await supabase.auth.refreshSession();
-      if (refreshError) {
-        console.warn("[GENERATE] Session refresh failed, proceeding anyway:", refreshError.message);
-      }
-      console.log("[GENERATE] Starting saveProjectAndSlides...");
-      console.log("[GENERATE] slides count:", slides.length, "user:", user.id);
+      await supabase.auth.refreshSession();
       const projectId = await saveProjectAndSlides();
-      console.log("[GENERATE] Project saved, id:", projectId);
       // Ensure status is set to generating so the generation page auto-starts
       await updateProject.mutateAsync({ id: projectId, status: 'generating' });
-      console.log("[GENERATE] Status set to generating, navigating...");
       navigate(`/project/${projectId}/generating`);
     } catch (e: any) {
-      console.error("[GENERATE] Failed to save project:", e?.message, e?.code, e?.details, e);
       toast({ title: "Error", description: `Failed to create project: ${e?.message || 'Unknown error'}`, variant: "destructive" });
       setIsSaving(false);
     }

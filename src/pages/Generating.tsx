@@ -312,7 +312,6 @@ const Generating = () => {
     } catch (e: any) {
       setIsDispatching(false);
       if (e.name === "AbortError") return "busy";
-      console.error("[Generating] request failed", e);
       return { error: `Request failed: ${e?.message || "Network/CORS error"}` };
     }
   }, [projectId]);
@@ -440,7 +439,7 @@ const Generating = () => {
               <AlertDialogTrigger asChild>
                 <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10 rounded-xl text-xs gap-1.5" disabled={isStopping || (progress >= 100 && !reviewMode)}>
                   {isStopping ? <Loader2 className="h-3 w-3 animate-spin" /> : <StopCircle className="h-3 w-3" />}
-                  Archive
+                  Stop & Archive
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>

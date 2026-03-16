@@ -76,7 +76,6 @@ const Dashboard = () => {
       await archiveProject.mutateAsync(projectId);
       toast({ title: "Project archived" });
     } catch (err: any) {
-      console.error("Archive error:", err);
       toast({ title: "Error", description: err?.message || "Could not archive the project.", variant: "destructive" });
     }
   };

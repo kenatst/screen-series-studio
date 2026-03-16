@@ -90,7 +90,6 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, onSuccess }
                 setError('No slides were translated. Make sure you have generated slides with images first.');
             }
         } catch (err: any) {
-            console.error('Translation error:', err);
             setError(err.message || 'Translation failed');
             toast({ title: 'Translation failed', description: err.message || 'Unknown error', variant: 'destructive' });
         } finally {
@@ -128,6 +127,7 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, onSuccess }
             setError('');
             setLanguage('');
             setProgressPercent(0);
+            setIsTranslating(false);
         }
         onOpenChange(open);
     };
