@@ -587,14 +587,14 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
       const safeFileName = sanitizeFileNameForStorage(file.name);
       let storagePath = `${userId}/${projectId}/${folder}/${prefix}-${safeFileName}`;
 
-      const { error } = await supabase.storage.from('raw-uploads').upload(storagePath, file, { upsert: true });
+      const { error } = await supabase.storage.from('raw-uploads').upload(storagePath, file, { upsert: false });
 
-      if (error && /invalid key/i.test(error.message || '')) {
+      if (error && (/invalid key/i.test(error.message || '') || /duplicate key/i.test(error.message || ''))) {
         const ext = safeFileName.includes('.') ? safeFileName.split('.').pop() : '';
         const retryName = `${prefix}-${crypto.randomUUID()}${ext ? `.${ext}` : ''}`;
         storagePath = `${userId}/${projectId}/${folder}/${retryName}`;
 
-        const { error: retryError } = await supabase.storage.from('raw-uploads').upload(storagePath, file, { upsert: true });
+        const { error: retryError } = await supabase.storage.from('raw-uploads').upload(storagePath, file, { upsert: false });
         if (retryError) throw retryError;
       } else if (error) {
         throw error;
