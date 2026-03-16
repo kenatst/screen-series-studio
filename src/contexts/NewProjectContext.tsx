@@ -717,8 +717,6 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
     if (!user) { toast({ title: "Not authenticated", variant: "destructive" }); return; }
     setIsSaving(true);
     try {
-      // Refresh session to prevent stale JWT causing RLS violations
-      await supabase.auth.refreshSession();
       // Force-refresh session & verify user server-side to prevent stale JWT
       const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
       if (sessionError || !session) {
