@@ -589,16 +589,24 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
 
       const { error } = await supabase.storage.from('raw-uploads').upload(storagePath, file, { upsert: false });
 
-      if (error && (/invalid key/i.test(error.message || '') || /duplicate key/i.test(error.message || ''))) {
-        const ext = safeFileName.includes('.') ? safeFileName.split('.').pop() : '';
-        const retryName = `${prefix}-${crypto.randomUUID()}${ext ? `.${ext}` : ''}`;
-        storagePath = `${userId}/${projectId}/${folder}/${retryName}`;
+      if (!error) return storagePath;
 
-        const { error: retryError } = await supabase.storage.from('raw-uploads').upload(storagePath, file, { upsert: false });
-        if (retryError) throw retryError;
-      } else if (error) {
-        throw error;
-      }
+      const msg = (error.message || '').toLowerCase();
+      const statusCode = Number((error as any).statusCode ?? 0);
+      const isPermissionError =
+        msg.includes('row-level security') ||
+        msg.includes('permission denied') ||
+        statusCode === 401 ||
+        statusCode === 403;
+
+      if (isPermissionError) throw error;
+
+      const ext = safeFileName.includes('.') ? safeFileName.split('.').pop() : '';
+      const retryName = `${prefix}-${crypto.randomUUID()}${ext ? `.${ext}` : ''}`;
+      storagePath = `${userId}/${projectId}/${folder}/${retryName}`;
+
+      const { error: retryError } = await supabase.storage.from('raw-uploads').upload(storagePath, file, { upsert: false });
+      if (retryError) throw retryError;
 
       return storagePath;
     };
