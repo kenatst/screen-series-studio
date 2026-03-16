@@ -598,7 +598,7 @@ serve(async (req) => {
         const { data: fileData } = await adminClient.storage.from("raw-uploads").download(asset.storage_path);
         if (!fileData) continue;
         const arrayBuffer = await fileData.arrayBuffer();
-        const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+        const base64 = safeBase64(arrayBuffer);
         const ext = asset.storage_path.split(".").pop()?.toLowerCase() || "png";
         const mime = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
         referenceImages.push({ mimeType: mime, data: base64, tag: asset.tag || undefined, assetType: asset.asset_type });
