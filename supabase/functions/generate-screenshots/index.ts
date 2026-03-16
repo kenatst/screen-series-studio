@@ -712,10 +712,10 @@ serve(async (req) => {
             const buildContents = (promptText: string) => {
               const parts: any[] = [{ text: promptText }];
 
-              // Inject template preview image FIRST so the AI sees the target style
+              // CRITICAL: Inject template preview image FIRST — this is the PRIMARY visual reference
               if (templatePreviewImage) {
                 parts[0] = {
-                  text: `${promptText}\n\n=== TEMPLATE REFERENCE IMAGE ===\nThe image immediately following this text is the TEMPLATE you must replicate in terms of layout, composition, spacing rhythm, color scheme, typography style, and overall mood.\n=== END TEMPLATE REFERENCE ===`,
+                  text: `${promptText}\n\n====================================================================\nTEMPLATE REFERENCE IMAGE (THIS IS YOUR #1 PRIORITY)\n====================================================================\nThe image IMMEDIATELY FOLLOWING this text is the EXACT TEMPLATE you MUST replicate.\nYou are NOT creating a new design. You are ADAPTING this existing template.\n\nYOU MUST COPY FROM THIS IMAGE:\n- The EXACT background style (gradient, color, texture, pattern)\n- The EXACT layout composition (where the phone goes, where text goes)\n- The EXACT typography style (weight, size ratio, positioning)\n- The EXACT device mockup style (angle, shadow, reflection)\n- The EXACT spacing rhythm and visual hierarchy\n- The EXACT decorative elements (shapes, particles, glows)\n\nYOU MUST ONLY CHANGE:\n- The app screenshot inside the phone (use the user's raw screen)\n- The headline and subheadline text (use the provided copy)\n- Brand colors (if specified in the brand kit)\n\nTreat this template image as a Figma frame you're duplicating and swapping content into.\n====================================================================`,
                 };
                 parts.push({
                   inlineData: { mimeType: templatePreviewImage.mimeType, data: templatePreviewImage.data }
