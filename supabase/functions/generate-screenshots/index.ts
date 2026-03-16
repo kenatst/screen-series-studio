@@ -618,7 +618,7 @@ serve(async (req) => {
           const { data: tmplData } = await adminClient.storage.from("templates").download(name);
           if (tmplData) {
             const ab = await tmplData.arrayBuffer();
-            const b64 = btoa(String.fromCharCode(...new Uint8Array(ab)));
+            const b64 = safeBase64(ab);
             const ext = name.split(".").pop() || "png";
             templatePreviewImage = { mimeType: ext === "jpg" ? "image/jpeg" : `image/${ext}`, data: b64 };
             break;
