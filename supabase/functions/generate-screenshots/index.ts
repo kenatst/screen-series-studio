@@ -10,9 +10,11 @@ const corsHeaders = {
 };
 
 const CREDIT_COST_PER_SLIDE = 1;
-const QUALITY_SCORE_MIN = 78;
 
-/** Chunked base64 encoding — avoids stack overflow on large images */
+// ─────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────
+
 function safeBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
   const chunks: string[] = [];
@@ -23,316 +25,198 @@ function safeBase64(buffer: ArrayBuffer): string {
   return btoa(chunks.join(""));
 }
 
-// ── Template metadata (mirrors frontend demoTemplates) ──
-const TEMPLATE_CATALOG: Record<string, {
-  tags: string[];
-  tone: string;
+// ─────────────────────────────────────────────────────────────
+// Template Layout Analysis Types
+// ─────────────────────────────────────────────────────────────
+
+interface SlideLayoutAnalysis {
+  hasDeviceMockup: boolean;
+  devicePosition: string;
+  deviceScale: string;
+  textPosition: string;
+  headlineStyle: string;
+  backgroundType: string;
+  has3DElements: boolean;
+  hasMascot: boolean;
+  mascotDescription: string | null;
+  decorativeElements: string[];
   mood: string;
-  bestFor: string;
-  complexity: string;
-  conversionAngle: string;
-  category: string;
-  layoutDescription: string;
-}> = {
-  "habit-tracker": { tags: ["minimal", "professional", "clean"], tone: "corporate", mood: "light", bestFor: "Productivity, habit apps", complexity: "simple", conversionAngle: "Trust & clarity", category: "Lifestyle", layoutDescription: "Clean white background with soft rounded cards, progress rings, and a centered phone mockup. Minimal text with generous whitespace. Pastel accent colors." },
-  "ai-coach": { tags: ["vibrant", "energetic", "dynamic"], tone: "bold", mood: "dark", bestFor: "Coaching, fitness apps", complexity: "medium", conversionAngle: "Motivation", category: "Entertainment", layoutDescription: "Dark gradient background with neon accent glows. Bold typography with strong contrast. Phone angled dynamically with energy lines or particles." },
-  "map-explorer": { tags: ["clean", "geographic", "social"], tone: "minimalist", mood: "light", bestFor: "Travel, maps, social apps", complexity: "medium", conversionAngle: "Discovery", category: "Lifestyle", layoutDescription: "Light airy background with map-like subtle patterns. Phone showing map UI with pin markers. Clean sans-serif typography with earth-tone accents." },
-  "subscription-manager": { tags: ["premium", "gradient", "sleek"], tone: "premium", mood: "dark", bestFor: "Finance, subscription apps", complexity: "complex", conversionAngle: "Cost savings", category: "Business", layoutDescription: "Deep dark gradient (navy to black) with glassmorphism cards. Premium metallic phone frame. Sophisticated typography with gold/purple accents. Data visualizations visible." },
-  "hydration": { tags: ["playful", "colorful", "friendly"], tone: "playful", mood: "colorful", bestFor: "Health, wellness apps", complexity: "simple", conversionAngle: "Fun & health", category: "Lifestyle", layoutDescription: "Bright colorful background with water/liquid-themed illustrations. Rounded friendly UI elements. Playful bouncy typography with blue/cyan dominant palette." },
-  "sugar-free": { tags: ["organic", "warm", "aspirational"], tone: "minimalist", mood: "light", bestFor: "Diet, nutrition apps", complexity: "simple", conversionAngle: "Lifestyle change", category: "Lifestyle", layoutDescription: "Warm cream/beige background with organic shapes. Food photography integration. Elegant serif + sans-serif type pairing. Natural green accents." },
-  "aura-mood": { tags: ["luxury", "minimal", "elegant"], tone: "premium", mood: "dark", bestFor: "Meditation, mindfulness", complexity: "simple", conversionAngle: "Inner peace", category: "Luxury", layoutDescription: "Deep purple/indigo gradient with soft aurora borealis effects. Centered phone with meditation UI. Thin elegant typography. Ambient glow effects around device." },
-  "scribe-notes": { tags: ["structured", "feature-focused", "clear"], tone: "corporate", mood: "light", bestFor: "Note-taking, productivity", complexity: "medium", conversionAngle: "Feature showcase", category: "Business", layoutDescription: "Clean white/light gray background with structured grid layout. Multiple UI callouts pointing to specific features. Professional sans-serif type. Blue/gray accent palette." },
-  "personal-trainer": { tags: ["bold", "energetic", "dynamic"], tone: "bold", mood: "dark", bestFor: "Fitness, workout apps", complexity: "complex", conversionAngle: "Transformation", category: "Entertainment", layoutDescription: "High-contrast dark background with fiery orange/red accents. Athletic photography integration. Bold condensed uppercase headlines. Phone showing workout stats with dynamic angle." },
-  "stackr-finance": { tags: ["premium", "gradient", "data-driven"], tone: "premium", mood: "dark", bestFor: "Fintech, investment apps", complexity: "complex", conversionAngle: "Financial growth", category: "Business", layoutDescription: "Dark navy/charcoal gradient with green accent for gains. Data charts and financial graphs visible in UI. Premium metallic device frame. Clean monospace numbers mixed with sans-serif headlines." },
-  "trainer-ai": { tags: ["futuristic", "bold", "tech"], tone: "bold", mood: "dark", bestFor: "AI-powered fitness", complexity: "complex", conversionAngle: "Smart training", category: "Entertainment", layoutDescription: "Futuristic dark background with circuit/AI-themed subtle patterns. Neon cyan/electric blue accents. Bold geometric typography. Phone showing AI-generated workout plans." },
-  "stackr-yellow": { tags: ["vibrant", "modern", "bold"], tone: "bold", mood: "colorful", bestFor: "Finance, crypto apps", complexity: "medium", conversionAngle: "Bold positioning", category: "Business", layoutDescription: "Vibrant yellow/gold dominant palette on dark background. Strong geometric shapes. Ultra-bold sans-serif headlines. High energy composition with crypto/finance UI." },
-  "vow-couples": { tags: ["romantic", "warm", "elegant"], tone: "premium", mood: "light", bestFor: "Dating, relationship apps", complexity: "medium", conversionAngle: "Emotional connection", category: "Lifestyle", layoutDescription: "Soft pink/rose gradient background with gentle blur effects. Romantic warm lighting. Elegant script + sans-serif type pairing. Heart-shaped elements subtly integrated." },
-  "rpg-gaming": { tags: ["gaming", "immersive", "dramatic"], tone: "bold", mood: "dark", bestFor: "Games, RPG apps", complexity: "complex", conversionAngle: "Excitement & adventure", category: "Entertainment", layoutDescription: "Epic dark fantasy background with dramatic lighting. Game UI elements (health bars, inventory). Bold fantasy-inspired typography. Phone showing immersive game world." },
-  "cram-study": { tags: ["playful", "educational", "colorful"], tone: "playful", mood: "colorful", bestFor: "Study, flashcard apps", complexity: "medium", conversionAngle: "Learning made easy", category: "Education", layoutDescription: "Bright multi-color background with stacked card/flashcard motifs. Friendly rounded typography. Emoji and icon accents. Phone showing study interface with progress indicators." },
-  "adblock-shield": { tags: ["tech", "minimal", "powerful"], tone: "corporate", mood: "dark", bestFor: "Utility, security apps", complexity: "simple", conversionAngle: "Protection", category: "Business", layoutDescription: "Dark background with shield/security iconography. Minimal layout with centered phone. Strong blue/green accent for 'protected' status. Clean corporate typography." },
-  "drift-meditation": { tags: ["calm", "minimal", "serene"], tone: "minimalist", mood: "dark", bestFor: "Meditation, sleep apps", complexity: "simple", conversionAngle: "Relaxation", category: "Luxury", layoutDescription: "Deep navy/midnight blue gradient with soft star-like particles. Ultra-minimal layout. Thin light typography. Phone showing calming meditation timer UI. Ambient soft glow." },
-  "life-coaching": { tags: ["professional", "warm", "inspiring"], tone: "corporate", mood: "light", bestFor: "Coaching, self-improvement", complexity: "medium", conversionAngle: "Personal growth", category: "Education", layoutDescription: "Warm white/cream background with subtle geometric patterns. Professional but approachable typography. Orange/amber accent colors. Phone showing coaching dashboard with progress." },
-  "tape-recorder": { tags: ["retro", "creative", "unique"], tone: "bold", mood: "dark", bestFor: "Audio, music apps", complexity: "medium", conversionAngle: "Nostalgia & creativity", category: "Media", layoutDescription: "Retro-inspired dark background with cassette tape/vinyl textures. Vintage color palette (amber, brown, cream). Retro-modern typography mix. Phone showing audio waveform UI." },
-  "solo-travel": { tags: ["adventurous", "organic", "free"], tone: "minimalist", mood: "light", bestFor: "Travel, adventure apps", complexity: "medium", conversionAngle: "Freedom & discovery", category: "Lifestyle", layoutDescription: "Light background with travel photography integration (mountains, beaches). Organic hand-drawn accent elements. Clean modern typography. Phone showing itinerary/map UI." },
-  "minddrop-journal": { tags: ["calm", "minimal", "thoughtful"], tone: "minimalist", mood: "neutral", bestFor: "Journaling, mental health", complexity: "simple", conversionAngle: "Self-reflection", category: "Lifestyle", layoutDescription: "Soft neutral background (warm gray/beige). Minimal centered layout with generous margins. Thoughtful serif headlines. Phone showing journaling interface with clean typography." },
-  "meal-planner": { tags: ["fresh", "colorful", "friendly"], tone: "playful", mood: "colorful", bestFor: "Meal prep, recipe apps", complexity: "medium", conversionAngle: "Healthy lifestyle", category: "Lifestyle", layoutDescription: "Bright fresh background with food photography accents. Green/orange vibrant palette. Friendly rounded sans-serif type. Phone showing recipe cards and meal calendar UI." },
-  "vault-security": { tags: ["dark", "premium", "secure"], tone: "premium", mood: "dark", bestFor: "Password, security apps", complexity: "medium", conversionAngle: "Trust & safety", category: "Business", layoutDescription: "Ultra-dark background with vault/lock iconography. Green/cyan matrix-like accent colors. Strong bold typography. Phone showing encrypted password vault UI with biometric elements." },
-  "linguaflow": { tags: ["playful", "educational", "colorful"], tone: "playful", mood: "colorful", bestFor: "Language learning apps", complexity: "medium", conversionAngle: "Fun learning", category: "Education", layoutDescription: "Colorful gradient background with flag/language-themed elements. Playful rounded typography with multiple script samples. Phone showing lesson interface with progress streaks." },
-  "nestle-wellness": { tags: ["organic", "clean", "premium"], tone: "corporate", mood: "light", bestFor: "Health, corporate wellness", complexity: "simple", conversionAngle: "Trusted brand", category: "Lifestyle", layoutDescription: "Clean white background with subtle green organic accents. Premium corporate photography style. Elegant sans-serif typography. Phone showing health dashboard with clean data visualization." },
-  "lifeplan-goals": { tags: ["structured", "motivating", "clear"], tone: "corporate", mood: "neutral", bestFor: "Goal tracking, planning", complexity: "medium", conversionAngle: "Achievement", category: "Business", layoutDescription: "Neutral gray/white background with structured grid layout. Motivational accent colors (orange, teal). Clear hierarchical typography. Phone showing goal tracker with progress bars and milestones." },
-};
-
-function getTemplateStyle(templateId: string): string {
-  const key = (templateId || "").toLowerCase().replace(/\s+/g, "-");
-  const tmpl = TEMPLATE_CATALOG[key];
-  if (!tmpl) return "";
-
-  return `
-====================================================================
-SECTION 6: TEMPLATE STYLE DIRECTIVE (CRITICAL — FOLLOW THIS EXACTLY)
-====================================================================
-You have been assigned the "${templateId}" template. You MUST replicate its exact aesthetic:
-
-VISUAL DNA:
-- Style Tags: ${tmpl.tags.join(", ")}
-- Tone: ${tmpl.tone}
-- Mood: ${tmpl.mood}
-- Category: ${tmpl.category}
-- Complexity: ${tmpl.complexity}
-- Conversion Angle: ${tmpl.conversionAngle}
-- Best suited for: ${tmpl.bestFor}
-
-LAYOUT & COMPOSITION BLUEPRINT:
-${tmpl.layoutDescription}
-
-MANDATORY RULES:
-1. Your background, color palette, typography weight, and overall mood MUST match the description above.
-2. The phone mockup placement, angle, and framing MUST be consistent with the template's complexity level.
-3. DO NOT default to a generic "big title + tilted phone" layout. Each template has a UNIQUE composition — follow it.
-4. If the template mood is "dark", use a dark background. If "light", use a light background. If "colorful", use vibrant multi-color elements.
-5. The tone defines typography: "bold" = heavy condensed type; "minimalist" = thin elegant type; "playful" = rounded friendly type; "premium" = sophisticated serif + sans-serif; "corporate" = clean professional sans-serif.
-6. Match the ENERGY level: simple templates = calm & spacious; complex templates = rich & detailed.
-====================================================================`;
+  detailedComposition: string;
 }
 
-function buildConsistencyBlock(
-  level: string,
-  brandColors: string[],
-  fontFamily: string | undefined,
-  slideNumber: number,
-  totalSlides: number
-): string {
-  const colorPalette = brandColors.length > 0
-    ? `Color palette: ${brandColors.join(", ")}. Use these colors consistently.`
-    : "Use a harmonious, professional color palette throughout.";
-  const fontRule = fontFamily
-    ? `Typography: Use "${fontFamily}" or a visually similar font for all text.`
-    : "Typography: Use a clean, modern sans-serif font consistently.";
+// ─────────────────────────────────────────────────────────────
+// Step 1: Analyze template image with Gemini text model
+// ─────────────────────────────────────────────────────────────
 
-  let directive = "";
-  if (level === "strict") {
-    directive = `STRICT CONSISTENCY MODE (MAXIMUM UNIFORMITY):
-- This is a unified set. Every single slide MUST use the EXACT SAME background: same color hex, same gradient angle, same texture.
-- The 3D smartphone mockup MUST be the same model, same color, and same position/angle in every slide.
-- Typography MUST be identical in font-family, weight, and position across all slides.
-- The overall composition should feel like a single continuous canvas divided into slides. Zero variation in style allowed.`;
-  } else if (level === "balanced") {
-    directive = `BALANCED CONSISTENCY MODE (COHESIVE VARIATION):
-- Maintain a strictly unified color palette and typography system.
-- Background style should be fundamentally the same but can have subtle variations in lighting or secondary abstract elements to match the slide objective.
-- The smartphone mockup style (model/frame) must be consistent, but the angle can vary slightly (e.g., straight-on for hero, tilted for feature).
-- Overall look: A professional, branded collection.`;
-  } else {
-    directive = `EXPLORATORY MODE (CREATIVE FREEDOM):
-- Use the brand colors and typography as the core anchor.
-- Each slide is encouraged to explore unique layouts and background treatments while remaining recognizable as part of the same brand.
-- Dynamic angles, varying depths of field, and expressive compositions are allowed.`;
+async function analyzeTemplateSlide(
+  ai: any,
+  imageBase64: string,
+  mimeType: string
+): Promise<SlideLayoutAnalysis> {
+  try {
+    console.log("[ANALYSIS] Analyzing template layout...");
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [
+        {
+          inlineData: { mimeType, data: imageBase64 },
+        },
+        {
+          text: `Analyze this App Store screenshot template slide. Return ONLY a JSON object with these exact fields, no markdown, no backticks:
+
+{
+  "hasDeviceMockup": boolean,
+  "devicePosition": "center" | "left" | "right" | "angled",
+  "deviceScale": "small" | "medium" | "large" | "full",
+  "textPosition": "top" | "bottom" | "left" | "right" | "overlay",
+  "headlineStyle": "bold-serif" | "bold-sans" | "script" | "condensed",
+  "backgroundType": "gradient" | "solid" | "photo" | "3d-scene" | "pattern" | "aurora",
+  "has3DElements": boolean,
+  "hasMascot": boolean,
+  "mascotDescription": "description of mascot if present, null otherwise",
+  "decorativeElements": ["list", "of", "visual", "elements"],
+  "mood": "one-word-or-hyphenated mood descriptor",
+  "detailedComposition": "A 2-3 sentence precise description of the exact spatial layout, proportions, and visual hierarchy of every element in the image. Include exact positions (top 25%, center 60%), relative sizes, spacing rhythm, and color relationships."
+}`,
+        },
+      ],
+      config: {
+        temperature: 0.1,
+        maxOutputTokens: 1024,
+      },
+    });
+
+    const text = response.candidates?.[0]?.content?.parts
+      ?.find((p: any) => p.text)?.text || "{}";
+
+    const cleaned = text.replace(/```json\n?|```/g, "").trim();
+    const parsed = JSON.parse(cleaned);
+    console.log("[ANALYSIS] ✅ Template analysis complete:", JSON.stringify(parsed).slice(0, 200));
+    return parsed as SlideLayoutAnalysis;
+  } catch (e: any) {
+    console.error("[ANALYSIS] ❌ Template analysis failed:", e?.message);
+    return {
+      hasDeviceMockup: true,
+      devicePosition: "center",
+      deviceScale: "large",
+      textPosition: "top",
+      headlineStyle: "bold-sans",
+      backgroundType: "gradient",
+      has3DElements: false,
+      hasMascot: false,
+      mascotDescription: null,
+      decorativeElements: [],
+      mood: "premium",
+      detailedComposition: "Standard centered layout with large phone mockup and headline text above.",
+    };
   }
-
-  return `--- CONSISTENCY ENGINE ---
-Slide ${slideNumber} of ${totalSlides}.
-${colorPalette}
-${fontRule}
-${directive}
---- END CONSISTENCY ---`;
 }
 
-/** Map device_formats to aspect ratio and platform constraints */
-function getDeviceConstraints(deviceFormats: string[]): string {
-  if (!deviceFormats || deviceFormats.length === 0) return "- Format: Strict 9:16 Portrait Aspect Ratio (1290×2796 px).";
+// ─────────────────────────────────────────────────────────────
+// Step 2: Build the prompt — Template-faithful approach
+// ─────────────────────────────────────────────────────────────
 
-  const formatMap: Record<string, string> = {
-    "iphone-6-5": "iPhone 6.5\" (1284×2778 px, 9:19.5 ratio)",
-    "iphone-6-9": "iPhone 6.9\" (1320×2868 px, 9:19.5 ratio)",
-    "iphone-5-5": "iPhone 5.5\" (1242×2208 px, 9:16 ratio)",
-    "ipad-12-9": "iPad Pro 12.9\" (2048×2732 px, 3:4 ratio)",
-    "android-phone": "Android Phone (1080×1920 px, 9:16 ratio)",
-    "android-tablet": "Android Tablet (1200×1920 px, 10:16 ratio)",
-  };
+function buildSlidePrompt(params: {
+  slide: any;
+  project: any;
+  brandKit: any;
+  layout: SlideLayoutAnalysis;
+  isFirstSlide: boolean;
+  totalSlides: number;
+  hasPreviousSlides: boolean;
+  hasRawScreen: boolean;
+  userFeedback?: string;
+  deviceFormats: string[];
+}): string {
+  const { slide, project, brandKit, layout, isFirstSlide, totalSlides, hasPreviousSlides, hasRawScreen, userFeedback, deviceFormats } = params;
 
-  const descriptions = deviceFormats
-    .map(f => formatMap[f] || f)
-    .join(", ");
-
-  return `- Target Device Formats: ${descriptions}
-- Primary format: Use 9:16 Portrait unless generating for iPad (use 3:4).
-- All generated screenshots must be optimized for App Store / Play Store submission at the correct resolution.`;
-}
-
-function buildSlidePrompt(
-  slide: any,
-  project: any,
-  brandKit: any,
-  consistencyLevel: string,
-  userPrompt?: string
-): string {
-  const platformLabel =
-    project.platform === "ios"
-      ? "Apple App Store"
-      : project.platform === "android"
-        ? "Google Play Store"
-        : "App Store / Google Play";
+  const config = project.config as any || {};
+  const appName = project.app_name || project.name || "App";
 
   const brandBlock = [
     brandKit?.colors?.length > 0 ? `Brand colors: ${brandKit.colors.join(", ")}` : "",
     brandKit?.fontFamily ? `Brand font: ${brandKit.fontFamily}` : "",
   ].filter(Boolean).join("\n");
 
-  const consistency = buildConsistencyBlock(
-    consistencyLevel || "balanced",
-    brandKit?.colors || [],
-    brandKit?.fontFamily,
-    slide.slide_number,
-    slide.total_slides || 5
-  );
-
-  const templateStyle = getTemplateStyle(project.template_id || "");
-
-  const userDirective = userPrompt
-    ? `\n\n=== USER DIRECTION ===\nThe user has specifically requested: "${userPrompt}"\nApply this direction while maintaining brand consistency and quality standards.\n=== END USER DIRECTION ===`
-    : "";
-
-  const outputLang = project.output_language || (project.config as any)?.outputLanguage || "en";
+  const outputLang = project.output_language || config?.outputLanguage || "en";
   const langDirective = outputLang !== "en"
-    ? `\n=== LANGUAGE ===\nAll text on the screenshot (headline, subheadline) MUST be written in ${outputLang}. The provided headline and subheadline are already in the target language — reproduce them EXACTLY as given.\n=== END LANGUAGE ===`
+    ? `\n\nLANGUAGE: All text on the screenshot (headline, subheadline) MUST be written in ${outputLang}. Reproduce the provided text EXACTLY as given.`
     : "";
 
-  const deviceConstraints = getDeviceConstraints((project.device_formats as string[]) || []);
+  const feedbackBlock = userFeedback
+    ? `\n\n=== USER REDESIGN INSTRUCTION (HIGHEST PRIORITY) ===\nYou MUST incorporate the following feedback exactly: "${userFeedback}"\n=== END USER INSTRUCTION ===`
+    : "";
 
-  return `# THE ULTIMATE ASO SCREENSHOT GENERATION PROTOCOL
-**SYSTEM PERSONA**: You are the world's most elite App Store Optimization (ASO) and Conversion Rate Optimization (CRO) Creative Director. You have generated billions of dollars in revenue for top-tier SaaS and gaming companies. You do not make "pretty pictures"—you engineer high-converting psychological visual assets. Your aesthetic is ultra-premium, cinematic, heavily polished, and flawless.
+  // Device format info
+  const primaryFormat = deviceFormats[0] || "iphone-6-5";
+  const aspectStr = primaryFormat.includes("ipad") ? "3:4 (iPad portrait)" : "9:16 (iPhone portrait)";
 
-## 0. DIRECTIVE PRIME
-Your absolute, unyielding goal is to generate ONE (1) screenshot for an app store listing (Slide ${slide.slide_number} of ${slide.total_slides || 10}). You must aggressively adhere to the parameters below. Failure to follow these constraints will result in immediate rejection. There is zero tolerance for UI hallucination or placeholder text.
+  const prompt = `
+You are a world-class App Store screenshot designer. Your SOLE task is to recreate the EXACT SAME visual design, layout, and composition as the reference template image provided, but with different app content.
 
-====================================================================
-SECTION 1: TARGET PRODUCT & PLATFORM OVERVIEW
-====================================================================
-APP IDENTITY
-- App Name: "${project.app_name || project.name}"
-- Category: "${(project.config as any)?.appCategory || "Not specified"}"
-- Target Audience: "${(project.config as any)?.targetAudience || "Not specified"}"
-- Core Value Proposition: "${(project.config as any)?.valueProposition || ""}"
-- Description (Long): "${project.app_description || ""}"
-- Description (Short): "${(project.config as any)?.shortDescription || ""}"
-- Key Features: ${(project.config as any)?.keyFeatures?.join(", ") || "Automatic detection from UI"}
-- Top Benefits: ${(project.config as any)?.topBenefits?.join(", ") || "Automatic detection from visual benefit"}
-- Target Platform: ${platformLabel} 
-- Primary Business Goal: ${(project.config as any)?.primaryGoal || "Maximize install velocity and convey undeniable premium value."}
+=== REFERENCE TEMPLATE (IMAGE #1) ===
+The FIRST image attached is your MASTER TEMPLATE. You must reproduce its EXACT spatial composition:
+${layout.detailedComposition}
 
-PLATFORM CONSTRAINTS
-${deviceConstraints}
-- Safe Zones: Text must remain comfortably within the inner 85% of the canvas to avoid clipping on smaller device screens.
-- Mockup Device: Render an ultra-realistic, modern flagship device. The bezel must be accurate, metallic/glass textures must reflect environment light, and the screen must not be obscured by glare.
+=== CRITICAL LAYOUT INSTRUCTIONS ===
+Reproduce the EXACT spatial composition of the reference template:
+- Device mockup: ${layout.hasDeviceMockup ? `YES — positioned ${layout.devicePosition}, scale ${layout.deviceScale}` : "NO device mockup in template — DO NOT add one"}
+- Text placement: ${layout.textPosition}
+- Headline style: ${layout.headlineStyle}, large and impactful
+- Background: ${layout.backgroundType} style${layout.decorativeElements.length > 0 ? ` with elements like: ${layout.decorativeElements.join(", ")}` : ""}
+- 3D elements: ${layout.has3DElements ? "YES — include 3D rendered decorative elements matching template" : "NO"}
+${layout.hasMascot ? `- Mascot/Character: YES — ${layout.mascotDescription}` : ""}
+- Overall mood: ${layout.mood}
 
-====================================================================
-SECTION 2: BRAND IDENTITY & DESIGN SYSTEM
-====================================================================
-COLOR THEORY & APPLICATION
-${brandBlock || "Use a sophisticated, bespoke color palette derived from the app UI."}
-- Background Environment: The background must not overpower the UI. Use deep, premium gradients or subtle architectural/abstract geometry that naturally draws the eye toward the center.
-- Contrast Ratio: Ensure absolute maximum contrast between typography (Headline) and the background. If the background is dark, text MUST be luminous/white. If light, text MUST be deep charcoal/black.
-- Glows & Ambient Light: Use the primary brand color to cast subtle, cinematic ambient occlusion lighting behind the device mockup, giving it 3D presence.
-
-TYPOGRAPHY PROTOCOL
-- Font Family: Use the specified brand font. If unavailable, use a high-end geometric sans-serif (e.g., Inter, SF Pro, Circular, or Clash Display).
-- Hierarchy: 
-  -> HEADLINE: Massive, authoritative, heavy weight (Bold/Black). Tight tracking. Instant readability in less than 0.5 seconds.
-  -> SUBHEADLINE: Smaller (40-50% the size of the headline), lighter weight (Medium/Regular). Provides immediate supporting context. 
-
-====================================================================
-SECTION 3: SLIDE SPECIFIC MISSION & CONTENT
-====================================================================
-SLIDE POSITION: ${slide.slide_number} of ${slide.total_slides || 10}.
-IMPORTANCE/WEIGHT: ${slide.importance || "high"} (Adjust visual impact accordingly. High = aggressive & bold; Low = subtle & supporting).
-
-CONTENT TO RENDER (EXACT MATCH REQUIRED)
+=== APP CONTENT TO USE ===
+- App name: "${appName}"
+- Category: "${config?.appCategory || "Not specified"}"
 - >>> HEADLINE TO RENDER: "${slide.headline || ""}" <<<
 - >>> SUBHEADLINE TO RENDER: "${slide.subheadline || ""}" <<<
+${brandBlock ? `\n=== BRAND IDENTITY ===\n${brandBlock}` : ""}
+- Color palette: ${brandKit?.colors?.length > 0 ? `Use ${brandKit.colors.join(", ")} as primary/accent colors, adapting to the template's composition style.` : "Derive colors from the template's palette, adjusting hue to match any brand colors visible in the raw app screenshot."}
 
-COPYWRITING RULES FOR RENDERING
-1. You MUST render the exact string provided above.
-2. DO NOT add punctuation if it is missing.
-3. DO NOT change capitalization unless structurally necessary for the design (e.g., ALL CAPS for impact).
-4. DO NOT write "Lorem Ipsum" or any generic placeholder text ANYWHERE on the canvas.
-5. NEVER render meta labels such as "Slide 1", "Slide 2", "Review", or any workflow/debug text on the final creative.
+${hasRawScreen ? `=== RAW APP SCREEN (IMAGE #2) ===
+The second image is an actual screenshot of the app. 
+This raw screenshot MUST be composited INTO the device screen of the mockup.
+- Preserve the EXACT pixel layout of the raw screen inside the phone frame
+- Do NOT redesign, rearrange, or add UI elements
+- If the screen is too tall, crop the bottom naturally within the phone frame` : `=== NO RAW SCREEN PROVIDED ===
+This is a PURE TEXT / TYPOGRAPHIC slide. ${layout.hasDeviceMockup ? "You may still include a phone mockup with a generic branded screen." : "Focus 100% on headline, subheadline, and background visual energy."}`}
 
-OBJECTIVE MAPPING
-The objective of this specific slide is: [ ${slide.objective || "Feature spotlight"} ]. 
-Execute the visual layout based on this exact objective:
-- If "Hero / first impression": This is the hero slide. Maximum energy, dramatic lighting, device mockup centered or dynamically angled (e.g., 15-degree tilt) to hook the user instantly.
-- If "Core benefit": Highlight the single most important value. The layout should be balanced with the headline clearly communicating the benefit.
-- If "Feature spotlight": Focus on one specific UI capability. The device mockup must be significantly enlarged, zooming in on that feature.
-- If "Social proof": Introduce subtle, premium trust badges (stars, user avatars, "Used by 1M+" labels) if they fit the brand style.
-- If "Ease of use": Clean, spacious layout showing the simple UI flow. Minimal clutter, focus on intuitive navigation.
-- If "Transformation / before-after": Split or comparison layout showing the "before" (pain point) vs "after" (solution with app).
-- If "Emotional benefit": Atmospheric, mood-driven composition with cinematic lighting and soft focus backgrounds.
-- If "Productivity gain": Focus on speed and efficiency visuals. Numbers or checkboxes can be highlighted.
-- If "Learning outcome": Educational feel. Clear, structured information presentation.
-- If "Trust / credibility": Solid, secure feel. Use lock icons or security-related visual metaphors.
-- If "Premium feel": Ultra-minimal, high-end aesthetic. Large margins, elegant typography, luxury materials in backdrop.
-- If "Gamification": Energetic, fun elements like coins, sparks, or progress bars with glow effects.
-- If "CTA-like closing slide": Strong call-to-action. Bold typography, app icon integration, and a clear visual cue to download.
-- If "Value proposition": Direct and authoritative. The text takes priority over the mockup.
+=== SLIDE CONTEXT ===
+- Slide ${slide.slide_number} of ${totalSlides}
+- Objective: ${slide.objective || "Feature spotlight"}
+- Visual emphasis: ${slide.emphasis || "balanced"}
+- Importance: ${slide.importance || "high"}
+- Output format: ${aspectStr}
 
-VISUAL EMPHASIS MAPPING
-Focus the energy of the composition on: [ ${slide.emphasis || "UI focused"} ].
-- "UI focused": The smartphone device and the interface inside it should consume 60-70% of the canvas. The background should recede.
-- "text focused": The headline rules the canvas. Use massive, beautiful typography. The device can be partially cropped or pushed lower to make room for sweeping copy.
-- "balanced": Classic 50/50 split. Headline top, mockup bottom, or vice-versa. Symmetrical and stable.
-- "cinematic background": The background environment and lighting take precedence, wrapping the device in a dramatic, immersive mood.
-- "clean product showcase": Device mockup front and center, straight-on angle, minimal decorations. Let the product speak.
-- "mascot focused": If a mascot/character is provided, it should be prominent alongside the device.
-- "icon-driven": Use icons and visual elements to communicate features instead of heavy text.
+=== QUALITY REQUIREMENTS ===
+- This must look IDENTICAL in style to the reference template — same proportions, same visual weight
+- Text must be crisp, perfectly kerned, and readable
+- Match the EXACT proportions and spacing of the reference template
+- The result should be INDISTINGUISHABLE in quality from the reference
+- DO NOT write "Lorem Ipsum", "Slide X", or any placeholder text
+- Render the EXACT headline and subheadline strings provided above
 
-RAW ASSET INJECTION
-- You are provided a raw app screenshot tagged as: [ "${slide.raw_screen_tag || ""}" ].
-- IF A TAG IS PROVIDED: This raw screenshot MUST be composited INTO the blank screen of the 3D smartphone mockup.
-- IF NO TAG IS PROVIDED (empty string): This slide is a PURE TEXT / TYPOGRAPHIC slide. DO NOT render a smartphone device mockup. Focus 100% on the headline, subheadline, and background visual energy (icons, logos, or abstract brand elements).
+${!isFirstSlide && hasPreviousSlides ? `
+=== VISUAL CONTINUITY (CRITICAL) ===
+Previously generated slide(s) are also provided as reference images.
+CRITICAL: Match the exact same color palette, typography style, background treatment, and overall visual identity from the previous slides.
+This set must look like it was designed by ONE designer in ONE Figma file.
+The lighting model, gradient logic, device style, and background rendering MUST be pixel-perfect consistent.
+` : ""}
+${langDirective}${feedbackBlock}
 
-====================================================================
-SECTION 4: THE ANTI-HALLUCINATION & INTEGRITY PROTOCOL (CRITICAL)
-====================================================================
-1. ZERO SEMANTIC LEAKAGE (UI INTEGRITY):
-   - You MUST NOT invent, add, draw, or hallucinate any buttons, navigation bars, icons, text fields, or data inside the app UI that is not present in the provided raw reference image.
-   - The user's app UI is sacred. You are building marketing material AROUND it, not redesigning the app itself.
-   - If the raw screen has 3 buttons, the mockup MUST show exactly 3 buttons. 
+Generate the image now. Follow the template EXACTLY.
+`.trim();
 
-2. CANVAS CLEANLINESS:
-   - DO NOT render the Apple App Store UI, Google Play UI, phone bezels floating in space, status bars (wifi/battery) floating outside the phone, or URL bars on the main canvas.
-   - The canvas should contain ONLY: The background, the typographic copy, the 3D device mockup, and subtle floating elements ONLY if dictated by the template style.
-
-3. ASPECT RATIO PRESERVATION:
-   - When placing the raw screenshot into the device mockup screen, do NOT stretch, squash, or distort it. If the raw screen is too long, crop the bottom naturally within the bounds of the phone frame.
-   - Treat the raw screenshot as the source of truth: preserve layout geometry, icon positions, chart shapes, and UI spacing with maximum fidelity.
-
-4. TEMPLATE FIDELITY LOCK:
-   - The selected template is a hard layout contract. Reproduce its composition logic (headline zone, device framing, spacing rhythm, mood) and adapt only the app-specific content.
-   - Do not drift into a generic layout. If uncertain, prioritize template composition over creative variation.
-
-5. BRAND CHARACTER / MASCOT LOCK:
-   - If a mascot, logo, or distinct brand character is provided in the reference images, you MUST preserve its exact geometry, facial features, proportions, and color. 
-   - DO NOT mutate the mascot into a different style.
-   - The mascot must look identical across all slides.
-
-====================================================================
-SECTION 5: CONTINUITY & BATCH COHESION (THE CONSISTENCY ENGINE)
-====================================================================
-${consistency}
-
-CRITICAL EXECUTION RULE:
-If the user chose "STRICT", you MUST NOT change the background or phone frame between slides. If you are generating slide 2, it should look like a visual twin of slide 1 with only the screen content and text changing. Failure to maintain this will result in a 0 quality score.
-${templateStyle}
-
-=== OUTPUT QA REPORT (MANDATORY) ===
-Return a JSON object in TEXT modality only, with this exact schema:
-{"overall_score": number, "checks": {"headline_exact": boolean, "subheadline_exact": boolean, "no_placeholder": boolean, "ui_preserved": boolean, "template_fidelity": boolean, "pixel_fidelity": boolean, "contrast_ok": boolean}, "issues": string[]}
-
-${langDirective}${userDirective}
-
-FINAL REMINDER:
-You are generating a final, production-ready marketing asset. It must be visually flawless, mathematically balanced, and aggressively optimized for high conversion. Follow the TEMPLATE STYLE DIRECTIVE above — do NOT default to generic layouts. Execute.`.trim();
+  return prompt;
 }
+
+// ─────────────────────────────────────────────────────────────
+// Quality parsing
+// ─────────────────────────────────────────────────────────────
 
 function parseQualityScore(rawText: string): number | null {
   const trimmed = (rawText || "").trim();
@@ -347,21 +231,16 @@ function parseQualityScore(rawText: string): number | null {
   return null;
 }
 
-function hasPlaceholderLeak(slide: any, rawText: string): boolean {
-  const low = (rawText || "").toLowerCase();
-  if (!low) return false;
-  const forbidden = ["lorem ipsum", "your headline", "placeholder", "insert text", "sample text", "headline here"];
-  return forbidden.some((token) => low.includes(token));
-}
+// ─────────────────────────────────────────────────────────────
+// Rate limiting & idempotency
+// ─────────────────────────────────────────────────────────────
 
 const IPs = new Map<string, number[]>();
 function isRateLimited(ip: string): boolean {
   const now = Date.now();
-  const windowMs = 60000;
-  const maxRequests = 15;
   let requests = IPs.get(ip) || [];
-  requests = requests.filter(time => now - time < windowMs);
-  if (requests.length >= maxRequests) { IPs.set(ip, requests); return true; }
+  requests = requests.filter(time => now - time < 60000);
+  if (requests.length >= 15) { IPs.set(ip, requests); return true; }
   requests.push(now);
   IPs.set(ip, requests);
   return false;
@@ -369,12 +248,17 @@ function isRateLimited(ip: string): boolean {
 
 const idempotencyCache = new Set<string>();
 
+// ─────────────────────────────────────────────────────────────
+// Main handler
+// ─────────────────────────────────────────────────────────────
+
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
+    // ── Auth ──
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -392,8 +276,8 @@ serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
     const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
+
     if (!geminiApiKey || geminiApiKey.trim() === "") {
       return new Response(JSON.stringify({ error: "Configuration Error: AI Engine API Key is missing." }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -411,11 +295,11 @@ serve(async (req: Request) => {
     }
     const userId = userData.user.id;
 
+    // ── Parse request ──
     let projectId: string;
     let singleSlideId: string | undefined;
     let targetSlideNumber: number | undefined;
     let userFeedback: string | undefined;
-    let userPrompt: string | undefined;
     let forceRegenerate = false;
     let resumeGeneration = false;
     let idempotencyKey: string | undefined;
@@ -426,7 +310,6 @@ serve(async (req: Request) => {
       singleSlideId = body.single_slide_id;
       targetSlideNumber = body.target_slide_number;
       userFeedback = body.user_feedback;
-      userPrompt = body.user_prompt;
       forceRegenerate = body.force_regenerate === true;
       resumeGeneration = body.resume === true;
       idempotencyKey = body.idempotency_key;
@@ -455,6 +338,7 @@ serve(async (req: Request) => {
 
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
+    // ── Load project & slides ──
     const { data: project, error: projError } = await userClient.from("projects").select("*").eq("id", projectId).single();
     if (projError || !project) {
       return new Response(JSON.stringify({ error: "Project not found" }), {
@@ -469,6 +353,7 @@ serve(async (req: Request) => {
       });
     }
 
+    // ── Determine slides to generate ──
     if (!singleSlideId && project.status === "generating" && !forceRegenerate && !resumeGeneration) {
       const activeGenerating = allSlides.some((s: any) => s.status === "generating" && !s.image_url);
       if (activeGenerating) {
@@ -478,25 +363,15 @@ serve(async (req: Request) => {
       }
     }
 
-    // Determine which slide to generate — always "full" mode (one at a time, interactive)
     let candidateSlides = allSlides;
-
     if (singleSlideId) {
-      const singleSlide = allSlides.find((s: any) => s.id === singleSlideId);
-      if (!singleSlide) {
-        return new Response(JSON.stringify({ error: "Slide not found" }), {
-          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      candidateSlides = [singleSlide];
+      const found = allSlides.find((s: any) => s.id === singleSlideId);
+      if (!found) return new Response(JSON.stringify({ error: "Slide not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      candidateSlides = [found];
     } else if (targetSlideNumber) {
-      const targetSlide = allSlides.find((s: any) => s.slide_number === targetSlideNumber);
-      if (!targetSlide) {
-        return new Response(JSON.stringify({ error: "Target slide not found" }), {
-          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      candidateSlides = [targetSlide];
+      const found = allSlides.find((s: any) => s.slide_number === targetSlideNumber);
+      if (!found) return new Response(JSON.stringify({ error: "Target slide not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      candidateSlides = [found];
     }
 
     let slidesToGenerate = (singleSlideId || targetSlideNumber || forceRegenerate)
@@ -511,7 +386,7 @@ serve(async (req: Request) => {
       slidesToGenerate = candidateSlides.filter((slide: any) => !(slide.status === "completed" && slide.image_url));
     }
 
-    // Process ONLY ONE slide per invocation for the interactive workflow
+    // Interactive workflow: process ONE slide per invocation
     if (slidesToGenerate.length === 0) {
       return new Response(JSON.stringify({ error: "No slides to generate" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -521,16 +396,14 @@ serve(async (req: Request) => {
     slidesToGenerate.sort((a: any, b: any) => a.slide_number - b.slide_number);
     const invocationSlides = [slidesToGenerate[0]];
 
-    // Check credits
+    // ── Credit check ──
     const { data: profileData } = await adminClient.from("profiles").select("credits, plan").eq("id", userId).single();
     const currentCredits = profileData?.credits ?? 0;
-
     const billableSlides = invocationSlides.filter((slide: any) => {
       if (singleSlideId || forceRegenerate) return true;
       if (resumeGeneration && slide.status === "generating") return false;
       return true;
     });
-
     const totalCost = billableSlides.length * CREDIT_COST_PER_SLIDE;
 
     if (currentCredits < totalCost) {
@@ -539,60 +412,36 @@ serve(async (req: Request) => {
       });
     }
 
-    // Fetch reference assets from storage (DB rows first, then storage-folder fallback)
+    // ── Load reference assets from storage ──
     const { data: dbAssets } = await userClient.from("assets").select("storage_path, asset_type, tag").eq("project_id", projectId);
-
     let assets = (dbAssets || []) as Array<{ storage_path: string; asset_type: string; tag: string | null }>;
 
     if (assets.length === 0) {
       const slideTags: string[] = Array.from(new Set(allSlides.map((s: any) => s.raw_screen_tag).filter(Boolean))) as string[];
-
       const [screenList, referenceList, brandList] = await Promise.all([
         adminClient.storage.from("raw-uploads").list(`${userId}/${projectId}/screens`, { limit: 20, sortBy: { column: "name", order: "asc" } }),
         adminClient.storage.from("raw-uploads").list(`${userId}/${projectId}/references`, { limit: 10, sortBy: { column: "name", order: "asc" } }),
         adminClient.storage.from("raw-uploads").list(`${userId}/${projectId}/brand`, { limit: 10, sortBy: { column: "name", order: "asc" } }),
       ]);
 
-      const fallbackAssets: Array<{ storage_path: string; asset_type: string; tag: string | null }> = [];
-
+      const fallbackAssets: typeof assets = [];
       for (const [idx, file] of (screenList.data || []).entries()) {
         if (!file?.name) continue;
-        fallbackAssets.push({
-          storage_path: `${userId}/${projectId}/screens/${file.name}`,
-          asset_type: "raw_screen",
-          tag: slideTags[idx] || `screen-${idx + 1}`,
-        });
+        fallbackAssets.push({ storage_path: `${userId}/${projectId}/screens/${file.name}`, asset_type: "raw_screen", tag: slideTags[idx] || `screen-${idx + 1}` });
       }
-
       for (const file of referenceList.data || []) {
         if (!file?.name) continue;
-        fallbackAssets.push({
-          storage_path: `${userId}/${projectId}/references/${file.name}`,
-          asset_type: "reference",
-          tag: "reference",
-        });
+        fallbackAssets.push({ storage_path: `${userId}/${projectId}/references/${file.name}`, asset_type: "reference", tag: "reference" });
       }
-
       for (const file of brandList.data || []) {
         if (!file?.name) continue;
-        const inferredType = file.name.startsWith("logo-")
-          ? "logo"
-          : file.name.startsWith("icon-")
-            ? "icon"
-            : file.name.startsWith("mascot-")
-              ? "mascot"
-              : "reference";
-
-        fallbackAssets.push({
-          storage_path: `${userId}/${projectId}/brand/${file.name}`,
-          asset_type: inferredType,
-          tag: inferredType,
-        });
+        const inferredType = file.name.startsWith("logo-") ? "logo" : file.name.startsWith("icon-") ? "icon" : file.name.startsWith("mascot-") ? "mascot" : "reference";
+        fallbackAssets.push({ storage_path: `${userId}/${projectId}/brand/${file.name}`, asset_type: inferredType, tag: inferredType });
       }
-
       assets = fallbackAssets;
     }
 
+    // Download all reference images
     const referenceImages: { mimeType: string; data: string; tag?: string; assetType: string }[] = [];
     for (const asset of assets.slice(0, 12)) {
       try {
@@ -603,30 +452,26 @@ serve(async (req: Request) => {
         const ext = asset.storage_path.split(".").pop()?.toLowerCase() || "png";
         const mime = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
         referenceImages.push({ mimeType: mime, data: base64, tag: asset.tag || undefined, assetType: asset.asset_type });
-      } catch {
-        // skip broken references
-      }
+      } catch { /* skip */ }
     }
 
-    // CRITICAL: Fetch template preview image from the public templates bucket
-    let templatePreviewImage: { mimeType: string; data: string } | null = null;
+    // ── Load template preview image ──
+    let templateImage: { mimeType: string; data: string } | null = null;
     const templateKey = (project.template_id || "").toLowerCase().replace(/\s+/g, "-");
-    console.log(`[TEMPLATE] Looking for template image: "${templateKey}" in templates bucket`);
+    console.log(`[TEMPLATE] Looking for template: "${templateKey}"`);
+
     if (templateKey) {
       const possibleNames = [`${templateKey}.png`, `${templateKey}.jpg`, `${templateKey}.jpeg`, `${templateKey}.webp`];
       for (const name of possibleNames) {
         try {
           const { data: tmplData, error: tmplError } = await adminClient.storage.from("templates").download(name);
-          if (tmplError) {
-            console.log(`[TEMPLATE] ${name} not found: ${tmplError.message}`);
-            continue;
-          }
+          if (tmplError) continue;
           if (tmplData) {
             const ab = await tmplData.arrayBuffer();
             const b64 = safeBase64(ab);
             const ext = name.split(".").pop() || "png";
-            templatePreviewImage = { mimeType: ext === "jpg" || ext === "jpeg" ? "image/jpeg" : `image/${ext}`, data: b64 };
-            console.log(`[TEMPLATE] ✅ Loaded template image: ${name} (${Math.round(ab.byteLength / 1024)}KB)`);
+            templateImage = { mimeType: ext === "jpg" || ext === "jpeg" ? "image/jpeg" : `image/${ext}`, data: b64 };
+            console.log(`[TEMPLATE] ✅ Loaded: ${name} (${Math.round(ab.byteLength / 1024)}KB)`);
             break;
           }
         } catch (e: any) {
@@ -634,34 +479,43 @@ serve(async (req: Request) => {
         }
       }
     }
-    if (!templatePreviewImage) {
-      console.warn(`[TEMPLATE] ⚠️ No template image found for "${templateKey}". Generation will rely on text description only.`);
+
+    if (!templateImage) {
+      console.warn(`[TEMPLATE] ⚠️ No template image found for "${templateKey}".`);
     }
 
-    // Update project status
+    // ── Analyze template layout (ONCE) ──
+    const ai = new GoogleGenAI({ apiKey: geminiApiKey });
+    let templateLayout: SlideLayoutAnalysis | null = null;
+
+    if (templateImage) {
+      templateLayout = await analyzeTemplateSlide(ai, templateImage.data, templateImage.mimeType);
+    }
+
+    // ── Update project status ──
     if (!singleSlideId) {
       await adminClient.from("projects").update({ status: "generating" }).eq("id", projectId);
     }
 
+    // ── SSE Stream ──
     const encoder = new TextEncoder();
+    const deviceFormats = (project.device_formats as string[]) || ["iphone-6-5"];
+    const primaryFormat = deviceFormats[0] || "iphone-6-5";
+    const aspectRatio = primaryFormat.includes("ipad") ? "3:4" : "9:16";
+    const brandKit = project.brand_kit as any || {};
+
     const stream = new ReadableStream({
       async start(controller) {
         const sendEvent = (event: string, data: any) => {
           controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
         };
 
-        const ai = new GoogleGenAI({ apiKey: geminiApiKey });
-        const brandKit = project.brand_kit as any || {};
-
-        // Track previously generated images for context chaining
+        // Load previously generated slides for context chaining
         const previousSlideImages: { mimeType: string; data: string }[] = [];
-
         const contextSlides = (singleSlideId
           ? allSlides.filter((s: any) => s.id !== singleSlideId && s.status === "completed" && s.image_url)
           : allSlides.filter((s: any) => s.status === "completed" && s.image_url)
-        )
-          .sort((a: any, b: any) => a.slide_number - b.slide_number)
-          .slice(-9);
+        ).sort((a: any, b: any) => a.slide_number - b.slide_number).slice(-3);
 
         for (const contextSlide of contextSlides) {
           try {
@@ -669,153 +523,157 @@ serve(async (req: Request) => {
             const { data: contextData } = await adminClient.storage.from("generated-outputs").download(contextPath);
             if (!contextData) continue;
             const ab = await contextData.arrayBuffer();
-            const b64 = safeBase64(ab);
-            previousSlideImages.push({ mimeType: "image/png", data: b64 });
+            previousSlideImages.push({ mimeType: "image/png", data: safeBase64(ab) });
           } catch { /* ignore */ }
         }
 
         if (invocationSlides.length === 0) {
-          const { data: remainingSlides } = await adminClient
-            .from("project_slides").select("status,image_url").eq("project_id", projectId);
-          const pendingOrGenerating = (remainingSlides || []).filter(
-            (s: any) => !s.image_url && (s.status === "pending" || s.status === "generating")
-          );
-          const hasMore = pendingOrGenerating.length > 0;
-          await adminClient.from("projects").update({ status: hasMore ? "generating" : "completed" }).eq("id", projectId);
-          sendEvent("all-done", { projectId, hasMore, remaining: pendingOrGenerating.length });
+          const { data: remainingSlides } = await adminClient.from("project_slides").select("status,image_url").eq("project_id", projectId);
+          const pendingOrGenerating = (remainingSlides || []).filter((s: any) => !s.image_url && (s.status === "pending" || s.status === "generating"));
+          await adminClient.from("projects").update({ status: pendingOrGenerating.length > 0 ? "generating" : "completed" }).eq("id", projectId);
+          sendEvent("all-done", { projectId, hasMore: pendingOrGenerating.length > 0, remaining: pendingOrGenerating.length });
           controller.close();
           return;
         }
 
-        for (let i = 0; i < invocationSlides.length; i++) {
-          const slide = invocationSlides[i];
+        for (const slide of invocationSlides) {
           const displayNum = slide.slide_number;
-
           sendEvent("slide-start", { slideNumber: displayNum, total: allSlides.length });
           const slideStartMs = Date.now();
           await adminClient.from("project_slides").update({ status: "generating", attempt_count: (slide.attempt_count || 0) + 1 }).eq("id", slide.id);
 
           try {
-            const prompt = buildSlidePrompt(
-              { ...slide, total_slides: allSlides.length },
-              project,
-              brandKit,
-              project.consistency_level || "balanced",
-              userPrompt
-            );
-
-            let variantPrompt = prompt;
-
-            if (userFeedback) {
-              variantPrompt += `\n\n=== USER REDESIGN INSTRUCTION ===\nYou MUST incorporate the following feedback exactly: "${userFeedback}"`;
-            }
-
-            const buildContents = (promptText: string) => {
-              const parts: any[] = [{ text: promptText }];
-
-              // CRITICAL: Inject template preview image FIRST — this is the PRIMARY visual reference
-              if (templatePreviewImage) {
-                parts[0] = {
-                  text: `${promptText}\n\n====================================================================\nTEMPLATE REFERENCE IMAGE (THIS IS YOUR #1 PRIORITY)\n====================================================================\nThe image IMMEDIATELY FOLLOWING this text is the EXACT TEMPLATE you MUST replicate.\nYou are NOT creating a new design. You are ADAPTING this existing template.\n\nYOU MUST COPY FROM THIS IMAGE:\n- The EXACT background style (gradient, color, texture, pattern)\n- The EXACT layout composition (where the phone goes, where text goes)\n- The EXACT typography style (weight, size ratio, positioning)\n- The EXACT device mockup style (angle, shadow, reflection)\n- The EXACT spacing rhythm and visual hierarchy\n- The EXACT decorative elements (shapes, particles, glows)\n\nYOU MUST ONLY CHANGE:\n- The app screenshot inside the phone (use the user's raw screen)\n- The headline and subheadline text (use the provided copy)\n- Brand colors (if specified in the brand kit)\n\nTreat this template image as a Figma frame you're duplicating and swapping content into.\n====================================================================`,
-                };
-                parts.push({
-                  inlineData: { mimeType: templatePreviewImage.mimeType, data: templatePreviewImage.data }
-                });
-              }
-
-              const rawScreenReferences = referenceImages.filter((r) => r.assetType === "raw_screen");
-              const exactRawScreen = rawScreenReferences.find((r) => r.tag === slide.raw_screen_tag);
-              const fallbackRawScreen = rawScreenReferences[Math.min(displayNum - 1, Math.max(rawScreenReferences.length - 1, 0))] || rawScreenReferences[0];
-              const selectedRawScreen = exactRawScreen || fallbackRawScreen;
-
-              if (selectedRawScreen) {
-                parts.push({
-                  text: `=== RAW APP SCREEN (SOURCE OF TRUTH) ===\nUse this image as the exact UI source and preserve its pixel-level structure inside the device screen. Do not redesign internal app UI elements.\n=== END RAW APP SCREEN ===`,
-                });
-                parts.push({ inlineData: { mimeType: selectedRawScreen.mimeType, data: selectedRawScreen.data } });
-              }
-
-              // Add brand assets (logo, icon, mascot)
-              for (const img of referenceImages.filter((r) => ["logo", "icon", "mascot"].includes(r.tag || ""))) {
-                parts.push({ inlineData: { mimeType: img.mimeType, data: img.data } });
-              }
-
-              // Add non-raw reference visuals (up to 2) for atmosphere only
-              for (const img of referenceImages.filter((r) => r.assetType !== "raw_screen" && !["logo", "icon", "mascot"].includes(r.tag || "")).slice(0, 2)) {
-                parts.push({ inlineData: { mimeType: img.mimeType, data: img.data } });
-              }
-
-              // Add previously generated slides for continuity
-              if (previousSlideImages.length > 0) {
-                const recentSlides = previousSlideImages.slice(-9);
-                for (const prevImg of recentSlides) {
-                  parts.push({ inlineData: { mimeType: prevImg.mimeType, data: prevImg.data } });
-                }
-                // Prepend continuity context to the main text part
-                const mainTextIndex = parts.findIndex(p => p.text);
-                if (mainTextIndex >= 0) {
-                  parts[mainTextIndex] = {
-                    text: `${parts[mainTextIndex].text}\n\n=== CRITICAL CONTINUITY CONTEXT ===\nThe following ${recentSlides.length} image(s) represent the EXACT master aesthetic of the previous slide(s) in this specific marketing set. You MUST maintain ABSOLUTE, pixel-perfect visual continuity with them. Specifically: The lighting model, the gradient logic, the 3D phone device angle/style, the exact character modeling (if a mascot is present), and the specific background rendering approach must look identical, as if designed by the exact same human artist in a single Figma file. DO NOT DEVIATE.\n=== END CONTEXT ===`,
-                  };
-                }
-              }
-
-              // Limit total images to 14 max
-              let imgCount = 0;
-              for (let j = parts.length - 1; j >= 0; j--) {
-                if ((parts[j] as any).inlineData) {
-                  imgCount++;
-                  if (imgCount > 14) parts.splice(j, 1);
-                }
-              }
-
-              return parts;
+            // Build prompt using template analysis
+            const fallbackLayout: SlideLayoutAnalysis = {
+              hasDeviceMockup: true,
+              devicePosition: "center",
+              deviceScale: "large",
+              textPosition: "top",
+              headlineStyle: "bold-sans",
+              backgroundType: "gradient",
+              has3DElements: false,
+              hasMascot: false,
+              mascotDescription: null,
+              decorativeElements: [],
+              mood: "premium",
+              detailedComposition: "Standard centered layout with large phone mockup and headline text above.",
             };
 
-            const runAttempt = async (promptText: string) => {
-              // Determine aspect ratio from device formats
-              const deviceFormats = (project.device_formats as string[]) || ["iphone-6-5"];
-              const primaryFormat = deviceFormats[0] || "iphone-6-5";
-              const aspectRatio = primaryFormat.includes("ipad") ? "3:4" : "9:16";
+            const rawScreenReferences = referenceImages.filter((r) => r.assetType === "raw_screen");
+            const exactRawScreen = rawScreenReferences.find((r) => r.tag === slide.raw_screen_tag);
+            const fallbackRawScreen = rawScreenReferences[Math.min(displayNum - 1, Math.max(rawScreenReferences.length - 1, 0))] || rawScreenReferences[0];
+            const selectedRawScreen = slide.raw_screen_tag ? (exactRawScreen || fallbackRawScreen) : null;
 
-              const response = await ai.models.generateContent({
+            const prompt = buildSlidePrompt({
+              slide: { ...slide, total_slides: allSlides.length },
+              project,
+              brandKit,
+              layout: templateLayout || fallbackLayout,
+              isFirstSlide: displayNum === 1,
+              totalSlides: allSlides.length,
+              hasPreviousSlides: previousSlideImages.length > 0,
+              hasRawScreen: !!selectedRawScreen,
+              userFeedback,
+              deviceFormats,
+            });
+
+            // Build image parts for Gemini
+            const parts: any[] = [];
+
+            // PART 1: The prompt text
+            parts.push({ text: prompt });
+
+            // PART 2: Template image (PRIMARY VISUAL REFERENCE — MUST be first image)
+            if (templateImage) {
+              parts.push({
+                inlineData: { mimeType: templateImage.mimeType, data: templateImage.data },
+              });
+            }
+
+            // PART 3: Raw app screen (if tagged)
+            if (selectedRawScreen) {
+              parts.push({
+                inlineData: { mimeType: selectedRawScreen.mimeType, data: selectedRawScreen.data },
+              });
+            }
+
+            // PART 4: Brand assets (logo, icon, mascot)
+            for (const img of referenceImages.filter((r) => ["logo", "icon", "mascot"].includes(r.tag || "")).slice(0, 2)) {
+              parts.push({ inlineData: { mimeType: img.mimeType, data: img.data } });
+            }
+
+            // PART 5: Previously generated slides for continuity (max 2 most recent)
+            if (previousSlideImages.length > 0) {
+              // First generated slide (anchor) + most recent slide
+              const anchors = previousSlideImages.length > 1
+                ? [previousSlideImages[0], previousSlideImages[previousSlideImages.length - 1]]
+                : [previousSlideImages[0]];
+              for (const prevImg of anchors) {
+                parts.push({ inlineData: { mimeType: prevImg.mimeType, data: prevImg.data } });
+              }
+            }
+
+            // Enforce max 14 images
+            let imgCount = 0;
+            for (let j = parts.length - 1; j >= 0; j--) {
+              if ((parts[j] as any).inlineData) {
+                imgCount++;
+                if (imgCount > 14) parts.splice(j, 1);
+              }
+            }
+
+            console.log(`[GENERATE] Slide ${displayNum}: ${imgCount} images in context, template=${!!templateImage}, rawScreen=${!!selectedRawScreen}, prevSlides=${previousSlideImages.length}`);
+
+            // Call Nano Banana 2 (Gemini 3.1 Flash Image Preview)
+            const response = await ai.models.generateContent({
+              model: "gemini-3.1-flash-image-preview",
+              contents: parts,
+              config: {
+                responseModalities: ["TEXT", "IMAGE"],
+                imageConfig: { aspectRatio, imageSize: "2K" },
+                temperature: 0.15,
+                maxOutputTokens: 8192,
+              } as any,
+            });
+
+            let imageBase64 = "";
+            let text = "";
+            if (response.candidates && response.candidates[0]) {
+              for (const part of response.candidates[0].content!.parts!) {
+                if ((part as any).text) text += (part as any).text;
+                else if ((part as any).inlineData) imageBase64 = (part as any).inlineData.data;
+              }
+            }
+
+            // Auto-repair: retry once if no image or low quality
+            if (!imageBase64) {
+              console.warn(`[GENERATE] Slide ${displayNum}: No image on first attempt, retrying...`);
+              const retryResponse = await ai.models.generateContent({
                 model: "gemini-3.1-flash-image-preview",
-                contents: buildContents(promptText),
+                contents: [{ text: `${prompt}\n\nCRITICAL: You MUST generate an image. Return an App Store screenshot image.` }, ...(templateImage ? [{ inlineData: { mimeType: templateImage.mimeType, data: templateImage.data } }] : [])],
                 config: {
                   responseModalities: ["TEXT", "IMAGE"],
                   imageConfig: { aspectRatio, imageSize: "2K" },
-                  temperature: 0.2,
+                  temperature: 0.3,
                   maxOutputTokens: 8192,
                 } as any,
               });
-
-              let imageBase64 = "";
-              let text = "";
-              if (response.candidates && response.candidates[0]) {
-                for (const part of response.candidates[0].content!.parts!) {
-                  if ((part as any).text) text += (part as any).text;
-                  else if ((part as any).inlineData) imageBase64 = (part as any).inlineData.data;
+              if (retryResponse.candidates?.[0]) {
+                for (const part of retryResponse.candidates[0].content!.parts!) {
+                  if ((part as any).inlineData) imageBase64 = (part as any).inlineData.data;
+                  if ((part as any).text) text = (part as any).text;
                 }
               }
-
-              const qualityScore = parseQualityScore(text);
-              const placeholderLeak = hasPlaceholderLeak(slide, text);
-              return { imageBase64, text, qualityScore, placeholderLeak };
-            };
-
-            let attempt = await runAttempt(variantPrompt);
-
-            if (!attempt.imageBase64 || (attempt.qualityScore !== null && attempt.qualityScore < QUALITY_SCORE_MIN) || attempt.placeholderLeak) {
-              const repairPrompt = `${variantPrompt}\n\nREPAIR PASS (MANDATORY): improve readability, preserve exact headline/subheadline wording, remove placeholders, strengthen visual hierarchy, and return a higher QA score JSON.`;
-              attempt = await runAttempt(repairPrompt);
             }
 
-            if (!attempt.imageBase64) throw new Error("No image generated");
+            if (!imageBase64) throw new Error("No image generated after retry");
 
-            previousSlideImages.push({ mimeType: "image/png", data: attempt.imageBase64 });
+            // Add to context chain for next slide
+            previousSlideImages.push({ mimeType: "image/png", data: imageBase64 });
 
+            // Upload to storage
             const storagePath = `${userId}/${projectId}/slide-${displayNum}.png`;
-            const imageBytes = Uint8Array.from(atob(attempt.imageBase64), (c) => c.charCodeAt(0));
+            const imageBytes = Uint8Array.from(atob(imageBase64), (c) => c.charCodeAt(0));
             await adminClient.storage.from("generated-outputs").upload(storagePath, imageBytes, {
               contentType: "image/png", upsert: true,
             });
@@ -826,34 +684,28 @@ serve(async (req: Request) => {
               await adminClient.from("profiles").update({ credits: Math.max(0, freshProfile.credits - CREDIT_COST_PER_SLIDE) }).eq("id", userId);
             }
 
+            const qualityScore = parseQualityScore(text);
             const generationMs = Date.now() - slideStartMs;
             await adminClient.from("project_slides").update({
-              status: "completed", image_url: storagePath, quality_score: attempt.qualityScore,
+              status: "completed", image_url: storagePath, quality_score: qualityScore,
               generation_ms: generationMs, last_error: null,
             }).eq("id", slide.id);
 
             const { data: signedData } = await adminClient.storage.from("generated-outputs").createSignedUrl(storagePath, 60 * 60 * 2);
-            const displayUrl = signedData?.signedUrl || "";
-
             sendEvent("slide-done", {
-              slideNumber: displayNum, imageUrl: displayUrl, storagePath,
-              text: attempt.text, qualityScore: attempt.qualityScore,
+              slideNumber: displayNum, imageUrl: signedData?.signedUrl || "", storagePath,
+              qualityScore, generationMs,
             });
           } catch (error: any) {
-            console.error(`Error generating slide ${displayNum}:`, error);
+            console.error(`[GENERATE] Error slide ${displayNum}:`, error);
             await adminClient.from("project_slides").update({ status: "error", last_error: error.message || "Generation failed" }).eq("id", slide.id);
             sendEvent("slide-error", { slideNumber: displayNum, message: error.message || "Generation failed" });
           }
         }
 
-        // Determine if there are more slides pending
-        const { data: remainingSlides } = await adminClient
-          .from("project_slides").select("status,image_url").eq("project_id", projectId);
-
-        const pendingOrGenerating = (remainingSlides || []).filter(
-          (s: any) => !s.image_url && (s.status === "pending" || s.status === "generating")
-        );
-
+        // Check remaining slides
+        const { data: remainingSlides } = await adminClient.from("project_slides").select("status,image_url").eq("project_id", projectId);
+        const pendingOrGenerating = (remainingSlides || []).filter((s: any) => !s.image_url && (s.status === "pending" || s.status === "generating"));
         const hasMore = pendingOrGenerating.length > 0;
 
         if (!singleSlideId && !hasMore) {
