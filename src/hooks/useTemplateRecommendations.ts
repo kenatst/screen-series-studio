@@ -63,7 +63,6 @@ export function useTemplateRecommendations() {
           copilot_summary: data.copilot_summary || "",
         });
       } catch (e: any) {
-        console.error("Template recommendation error:", e);
         setError(e.message);
       } finally {
         setIsLoading(false);
