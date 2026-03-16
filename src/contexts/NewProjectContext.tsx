@@ -717,6 +717,11 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
     if (!user) { toast({ title: "Not authenticated", variant: "destructive" }); return; }
     setIsSaving(true);
     try {
+      // Refresh session to prevent stale JWT causing RLS violations
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) {
+        console.warn("[GENERATE] Session refresh failed, proceeding anyway:", refreshError.message);
+      }
       console.log("[GENERATE] Starting saveProjectAndSlides...");
       console.log("[GENERATE] slides count:", slides.length, "user:", user.id);
       const projectId = await saveProjectAndSlides();
