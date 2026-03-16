@@ -210,7 +210,7 @@ APP IDENTITY
 - Primary Business Goal: ${(project.config as any)?.primaryGoal || "Maximize install velocity and convey undeniable premium value."}
 
 PLATFORM CONSTRAINTS
-- Format: Strict 9:16 Portrait Aspect Ratio.
+${deviceConstraints}
 - Safe Zones: Text must remain comfortably within the inner 85% of the canvas to avoid clipping on smaller device screens.
 - Mockup Device: Render an ultra-realistic, modern flagship device. The bezel must be accurate, metallic/glass textures must reflect environment light, and the screen must not be obscured by glare.
 
