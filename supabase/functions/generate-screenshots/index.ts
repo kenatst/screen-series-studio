@@ -126,6 +126,28 @@ ${directive}
 --- END CONSISTENCY ---`;
 }
 
+/** Map device_formats to aspect ratio and platform constraints */
+function getDeviceConstraints(deviceFormats: string[]): string {
+  if (!deviceFormats || deviceFormats.length === 0) return "- Format: Strict 9:16 Portrait Aspect Ratio (1290×2796 px).";
+
+  const formatMap: Record<string, string> = {
+    "iphone-6-5": "iPhone 6.5\" (1284×2778 px, 9:19.5 ratio)",
+    "iphone-6-9": "iPhone 6.9\" (1320×2868 px, 9:19.5 ratio)",
+    "iphone-5-5": "iPhone 5.5\" (1242×2208 px, 9:16 ratio)",
+    "ipad-12-9": "iPad Pro 12.9\" (2048×2732 px, 3:4 ratio)",
+    "android-phone": "Android Phone (1080×1920 px, 9:16 ratio)",
+    "android-tablet": "Android Tablet (1200×1920 px, 10:16 ratio)",
+  };
+
+  const descriptions = deviceFormats
+    .map(f => formatMap[f] || f)
+    .join(", ");
+
+  return `- Target Device Formats: ${descriptions}
+- Primary format: Use 9:16 Portrait unless generating for iPad (use 3:4).
+- All generated screenshots must be optimized for App Store / Play Store submission at the correct resolution.`;
+}
+
 function buildSlidePrompt(
   slide: any,
   project: any,
@@ -163,6 +185,8 @@ function buildSlidePrompt(
   const langDirective = outputLang !== "en"
     ? `\n=== LANGUAGE ===\nAll text on the screenshot (headline, subheadline) MUST be written in ${outputLang}. The provided headline and subheadline are already in the target language — reproduce them EXACTLY as given.\n=== END LANGUAGE ===`
     : "";
+
+  const deviceConstraints = getDeviceConstraints((project.device_formats as string[]) || []);
 
   return `# THE ULTIMATE ASO SCREENSHOT GENERATION PROTOCOL
 **SYSTEM PERSONA**: You are the world's most elite App Store Optimization (ASO) and Conversion Rate Optimization (CRO) Creative Director. You have generated billions of dollars in revenue for top-tier SaaS and gaming companies. You do not make "pretty pictures"—you engineer high-converting psychological visual assets. Your aesthetic is ultra-premium, cinematic, heavily polished, and flawless.
