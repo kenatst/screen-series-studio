@@ -152,64 +152,63 @@ function buildSlidePrompt(params: {
   const aspectStr = primaryFormat.includes("ipad") ? "3:4 (iPad portrait)" : "9:16 (iPhone portrait)";
 
   const prompt = `
-You are a world-class App Store screenshot designer. Your SOLE task is to recreate the EXACT SAME visual design, layout, and composition as the reference template image provided, but with different app content.
+You are an elite-tier App Store screenshot designer — your work rivals the best studios on Dribbble and Behance. Your task: create ONE polished, publication-ready App Store screenshot.
+
+=== OUTPUT SPEC ===
+- Format: ${aspectStr}
+- Resolution: Ultra-crisp, Retina-quality, 2K
+- Style: Premium, editorial-grade App Store screenshot — NOT a wireframe, NOT a mockup concept
 
 === REFERENCE TEMPLATE (IMAGE #1) ===
-The FIRST image attached is your MASTER TEMPLATE. You must reproduce its EXACT spatial composition:
+You MUST reproduce the EXACT same visual style, layout proportions, and composition structure from the reference template image.
+Detailed analysis of the template layout:
 ${layout.detailedComposition}
 
-=== CRITICAL LAYOUT INSTRUCTIONS ===
-Reproduce the EXACT spatial composition of the reference template:
-- Device mockup: ${layout.hasDeviceMockup ? `YES — positioned ${layout.devicePosition}, scale ${layout.deviceScale}` : "NO device mockup in template — DO NOT add one"}
-- Text placement: ${layout.textPosition}
-- Headline style: ${layout.headlineStyle}, large and impactful
-- Background: ${layout.backgroundType} style${layout.decorativeElements.length > 0 ? ` with elements like: ${layout.decorativeElements.join(", ")}` : ""}
-- 3D elements: ${layout.has3DElements ? "YES — include 3D rendered decorative elements matching template" : "NO"}
-${layout.hasMascot ? `- Mascot/Character: YES — ${layout.mascotDescription}` : ""}
+COPY THESE EXACT PROPORTIONS:
+- Device mockup: ${layout.hasDeviceMockup ? `YES — ${layout.devicePosition} position, ${layout.deviceScale} scale` : "NO device — this is a text/typographic slide"}
+- Text zone: ${layout.textPosition} area
+- Typography: ${layout.headlineStyle} — large, bold, impactful
+- Background: ${layout.backgroundType}${layout.decorativeElements.length > 0 ? ` with decorative elements: ${layout.decorativeElements.join(", ")}` : ""}
+${layout.has3DElements ? "- 3D elements: YES — include matching 3D decorative objects" : ""}
+${layout.hasMascot ? `- Character/Mascot: YES — ${layout.mascotDescription}` : ""}
 - Overall mood: ${layout.mood}
 
-=== APP CONTENT TO USE ===
-- App name: "${appName}"
-- Category: "${config?.appCategory || "Not specified"}"
-- >>> HEADLINE TO RENDER: "${slide.headline || ""}" <<<
-- >>> SUBHEADLINE TO RENDER: "${slide.subheadline || ""}" <<<
-${brandBlock ? `\n=== BRAND IDENTITY ===\n${brandBlock}` : ""}
-- Color palette: ${brandKit?.colors?.length > 0 ? `Use ${brandKit.colors.join(", ")} as primary/accent colors, adapting to the template's composition style.` : "Derive colors from the template's palette, adjusting hue to match any brand colors visible in the raw app screenshot."}
+=== CONTENT (RENDER EXACTLY) ===
+App: "${appName}" | Category: ${config?.appCategory || "App"}
+Slide ${slide.slide_number}/${totalSlides} | Purpose: ${slide.objective || "Feature highlight"}
+
+>>> HEADLINE (render this EXACT text, large): "${slide.headline || ""}"
+>>> SUBHEADLINE (render below headline, smaller): "${slide.subheadline || ""}"
+${brandBlock ? `\n=== BRAND ===\n${brandBlock}` : ""}
+Color direction: ${brandKit?.colors?.length > 0 ? `Use ${brandKit.colors.join(", ")} as primary palette, adapting to the template's composition.` : "Derive a harmonious palette from the template, matched to any brand colors in the raw screenshot."}
 
 ${hasRawScreen ? `=== RAW APP SCREEN (IMAGE #2) ===
-The second image is an actual screenshot of the app. 
-This raw screenshot MUST be composited INTO the device screen of the mockup.
-- Preserve the EXACT pixel layout of the raw screen inside the phone frame
-- Do NOT redesign, rearrange, or add UI elements
-- If the screen is too tall, crop the bottom naturally within the phone frame` : `=== NO RAW SCREEN PROVIDED ===
-This is a PURE TEXT / TYPOGRAPHIC slide. ${layout.hasDeviceMockup ? "You may still include a phone mockup with a generic branded screen." : "Focus 100% on headline, subheadline, and background visual energy."}`}
+Composite this REAL app screenshot INTO the phone frame as-is.
+- Preserve EVERY pixel of the original UI — do NOT redesign, rearrange, or hallucinate new UI elements
+- Show the screen naturally inside the device frame, cropping bottom if needed
+- The phone frame must look photorealistic (realistic bezels, shadows, reflections)` : `=== NO RAW SCREEN ===
+${layout.hasDeviceMockup ? "Include a phone mockup with a clean, branded placeholder screen matching the app's color scheme." : "This is a PURE typographic/visual slide — focus all energy on headline impact and background design."}`}
 
-=== SLIDE CONTEXT ===
-- Slide ${slide.slide_number} of ${totalSlides}
-- Objective: ${slide.objective || "Feature spotlight"}
-- Visual emphasis: ${slide.emphasis || "balanced"}
-- Importance: ${slide.importance || "high"}
-- Output format: ${aspectStr}
+=== ABSOLUTE RULES ===
+1. Text MUST be pixel-perfect: crisp, well-kerned, no artifacts, no warping, no misspellings
+2. Render the EXACT headline and subheadline provided — zero placeholder text, zero lorem ipsum
+3. The final image must be INDISTINGUISHABLE from a professional design studio's output
+4. Background must be rich and polished — gradients, depth, subtle lighting effects
+5. Device frames must look photorealistic with proper shadows and reflections
+6. Visual emphasis: ${slide.emphasis || "balanced"}
 
-=== QUALITY REQUIREMENTS ===
-- This must look IDENTICAL in style to the reference template — same proportions, same visual weight
-- Text must be crisp, perfectly kerned, and readable
-- Match the EXACT proportions and spacing of the reference template
-- The result should be INDISTINGUISHABLE in quality from the reference
-- DO NOT write "Lorem Ipsum", "Slide X", or any placeholder text
-- Render the EXACT headline and subheadline strings provided above
-
-${!isFirstSlide && hasPreviousSlides ? `
-=== VISUAL CONTINUITY (CRITICAL) ===
-Previously generated slide(s) are also provided as reference images.
-CRITICAL: Match the exact same color palette, typography style, background treatment, and overall visual identity from the previous slides.
-This set must look like it was designed by ONE designer in ONE Figma file.
-The lighting model, gradient logic, device style, and background rendering MUST be pixel-perfect consistent.
-` : ""}
+${!isFirstSlide && hasPreviousSlides ? `=== VISUAL CONTINUITY (CRITICAL) ===
+Previously generated slides are attached as reference. You MUST match:
+- Exact same color palette and gradient logic
+- Same typography style and weight
+- Same device frame style and shadow treatment  
+- Same background rendering approach
+The entire set must look like ONE cohesive design from ONE designer.` : ""}
 ${langDirective}${feedbackBlock}
 
-Generate the image now. Follow the template EXACTLY.
+Generate the image now.
 `.trim();
+
 
   return prompt;
 }
@@ -631,7 +630,7 @@ serve(async (req: Request) => {
               config: {
                 responseModalities: ["TEXT", "IMAGE"],
                 imageConfig: { aspectRatio, imageSize: "2K" },
-                temperature: 0.15,
+                temperature: 0.4,
                 maxOutputTokens: 8192,
               } as any,
             });
