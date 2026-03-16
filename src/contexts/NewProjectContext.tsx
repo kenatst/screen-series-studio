@@ -719,6 +719,14 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
     try {
       // Refresh session to prevent stale JWT causing RLS violations
       await supabase.auth.refreshSession();
+      // Force-refresh session & verify user server-side to prevent stale JWT
+      const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
+      if (sessionError || !session) {
+        toast({ title: "Session expired", description: "Please log in again.", variant: "destructive" });
+        setIsSaving(false);
+        return;
+      }
+      console.log("[GENERATE] Session verified, uid:", session.user.id);
       const projectId = await saveProjectAndSlides();
       // Ensure status is set to generating so the generation page auto-starts
       await updateProject.mutateAsync({ id: projectId, status: 'generating' });
