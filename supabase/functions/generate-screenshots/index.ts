@@ -607,24 +607,34 @@ serve(async (req) => {
       }
     }
 
-    // Try to fetch template preview image from the public templates bucket
+    // CRITICAL: Fetch template preview image from the public templates bucket
     let templatePreviewImage: { mimeType: string; data: string } | null = null;
     const templateKey = (project.template_id || "").toLowerCase().replace(/\s+/g, "-");
+    console.log(`[TEMPLATE] Looking for template image: "${templateKey}" in templates bucket`);
     if (templateKey) {
-      // Try common naming patterns
       const possibleNames = [`${templateKey}.png`, `${templateKey}.jpg`, `${templateKey}.jpeg`, `${templateKey}.webp`];
       for (const name of possibleNames) {
         try {
-          const { data: tmplData } = await adminClient.storage.from("templates").download(name);
+          const { data: tmplData, error: tmplError } = await adminClient.storage.from("templates").download(name);
+          if (tmplError) {
+            console.log(`[TEMPLATE] ${name} not found: ${tmplError.message}`);
+            continue;
+          }
           if (tmplData) {
             const ab = await tmplData.arrayBuffer();
             const b64 = safeBase64(ab);
             const ext = name.split(".").pop() || "png";
-            templatePreviewImage = { mimeType: ext === "jpg" ? "image/jpeg" : `image/${ext}`, data: b64 };
+            templatePreviewImage = { mimeType: ext === "jpg" || ext === "jpeg" ? "image/jpeg" : `image/${ext}`, data: b64 };
+            console.log(`[TEMPLATE] ✅ Loaded template image: ${name} (${Math.round(ab.byteLength / 1024)}KB)`);
             break;
           }
-        } catch { /* skip */ }
+        } catch (e: any) {
+          console.error(`[TEMPLATE] Error downloading ${name}:`, e?.message);
+        }
       }
+    }
+    if (!templatePreviewImage) {
+      console.warn(`[TEMPLATE] ⚠️ No template image found for "${templateKey}". Generation will rely on text description only.`);
     }
 
     // Update project status
@@ -702,10 +712,10 @@ serve(async (req) => {
             const buildContents = (promptText: string) => {
               const parts: any[] = [{ text: promptText }];
 
-              // Inject template preview image FIRST so the AI sees the target style
+              // CRITICAL: Inject template preview image FIRST — this is the PRIMARY visual reference
               if (templatePreviewImage) {
                 parts[0] = {
-                  text: `${promptText}\n\n=== TEMPLATE REFERENCE IMAGE ===\nThe image immediately following this text is the TEMPLATE you must replicate in terms of layout, composition, spacing rhythm, color scheme, typography style, and overall mood.\n=== END TEMPLATE REFERENCE ===`,
+                  text: `${promptText}\n\n====================================================================\nTEMPLATE REFERENCE IMAGE (THIS IS YOUR #1 PRIORITY)\n====================================================================\nThe image IMMEDIATELY FOLLOWING this text is the EXACT TEMPLATE you MUST replicate.\nYou are NOT creating a new design. You are ADAPTING this existing template.\n\nYOU MUST COPY FROM THIS IMAGE:\n- The EXACT background style (gradient, color, texture, pattern)\n- The EXACT layout composition (where the phone goes, where text goes)\n- The EXACT typography style (weight, size ratio, positioning)\n- The EXACT device mockup style (angle, shadow, reflection)\n- The EXACT spacing rhythm and visual hierarchy\n- The EXACT decorative elements (shapes, particles, glows)\n\nYOU MUST ONLY CHANGE:\n- The app screenshot inside the phone (use the user's raw screen)\n- The headline and subheadline text (use the provided copy)\n- Brand colors (if specified in the brand kit)\n\nTreat this template image as a Figma frame you're duplicating and swapping content into.\n====================================================================`,
                 };
                 parts.push({
                   inlineData: { mimeType: templatePreviewImage.mimeType, data: templatePreviewImage.data }
@@ -762,12 +772,17 @@ serve(async (req) => {
             };
 
             const runAttempt = async (promptText: string) => {
+              // Determine aspect ratio from device formats
+              const deviceFormats = (project.device_formats as string[]) || ["iphone-6-5"];
+              const primaryFormat = deviceFormats[0] || "iphone-6-5";
+              const aspectRatio = primaryFormat.includes("ipad") ? "3:4" : "9:16";
+
               const response = await ai.models.generateContent({
                 model: "gemini-3.1-flash-image-preview",
                 contents: buildContents(promptText),
                 config: {
                   responseModalities: ["TEXT", "IMAGE"],
-                  imageConfig: { aspectRatio: "9:16", imageSize: "2K" },
+                  imageConfig: { aspectRatio, imageSize: "2K" },
                   temperature: 0.2,
                   maxOutputTokens: 8192,
                 } as any,
