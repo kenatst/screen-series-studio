@@ -772,12 +772,17 @@ serve(async (req) => {
             };
 
             const runAttempt = async (promptText: string) => {
+              // Determine aspect ratio from device formats
+              const deviceFormats = (project.device_formats as string[]) || ["iphone-6-5"];
+              const primaryFormat = deviceFormats[0] || "iphone-6-5";
+              const aspectRatio = primaryFormat.includes("ipad") ? "3:4" : "9:16";
+
               const response = await ai.models.generateContent({
                 model: "gemini-3.1-flash-image-preview",
                 contents: buildContents(promptText),
                 config: {
                   responseModalities: ["TEXT", "IMAGE"],
-                  imageConfig: { aspectRatio: "9:16", imageSize: "2K" },
+                  imageConfig: { aspectRatio, imageSize: "2K" },
                   temperature: 0.2,
                   maxOutputTokens: 8192,
                 } as any,
