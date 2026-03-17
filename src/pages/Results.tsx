@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  Download, RefreshCw, Globe, Loader2, Wand2, Send, Lock, Sparkles, ImageDown, ChevronLeft, ChevronRight, Coins, CheckCircle2, Smartphone, Tablet, Monitor
+  Download, RefreshCw, Globe, Loader2, Wand2, Send, Lock, Sparkles, ImageDown, ChevronLeft, ChevronRight, Coins, CheckCircle2, Smartphone, Tablet
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useProject, useProjectSlides } from "@/hooks/useProjects";
@@ -19,6 +19,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { useTranslation } from "react-i18next";
+import { resizeImageForDevice, DEVICE_DIMENSIONS } from "@/lib/image-resize";
 
 const isStoragePath = (value: string | null) => {
   if (!value) return false;
@@ -298,9 +299,11 @@ const Results = () => {
     try {
       const zip = new JSZip();
       const appLabel = project?.app_name || project?.name || 'export';
+      const dims = DEVICE_DIMENSIONS[primaryFormat];
+      const folderLabel = dims ? `${appLabel}-${primaryFormat}-${dims.width}x${dims.height}` : `${appLabel}-${primaryFormat}`;
 
-      // Original format slides
-      const originalFolder = zip.folder(`${appLabel}-${primaryFormat}`);
+      // Original format slides — resized to exact App Store dimensions
+      const originalFolder = zip.folder(folderLabel);
       let count = 0;
       if (originalFolder) {
         for (const slide of slides) {
@@ -309,9 +312,10 @@ const Results = () => {
           try {
             const res = await fetch(url);
             if (!res.ok) continue;
-            const blob = await res.blob();
-            const ext = blob.type.includes('png') ? 'png' : 'jpg';
-            originalFolder.file(`slide-${String(slide.slide_number).padStart(2, '0')}.${ext}`, blob);
+            let blob = await res.blob();
+            // Resize to exact App Store pixel dimensions
+            blob = await resizeImageForDevice(blob, primaryFormat);
+            originalFolder.file(`slide-${String(slide.slide_number).padStart(2, '0')}.png`, blob);
             count++;
           } catch { /* skip */ }
         }
@@ -320,13 +324,17 @@ const Results = () => {
       // Include resized format slides in separate subfolders
       for (const [fmt, fmtSlides] of Object.entries(resizedFormats)) {
         if (!fmtSlides?.length) continue;
-        const fmtFolder = zip.folder(`${appLabel}-${fmt}`);
+        const fmtDims = DEVICE_DIMENSIONS[fmt];
+        const fmtFolderLabel = fmtDims ? `${appLabel}-${fmt}-${fmtDims.width}x${fmtDims.height}` : `${appLabel}-${fmt}`;
+        const fmtFolder = zip.folder(fmtFolderLabel);
         if (!fmtFolder) continue;
         for (const slide of fmtSlides) {
           try {
             const res = await fetch(slide.imageUrl);
             if (!res.ok) continue;
-            const blob = await res.blob();
+            let blob = await res.blob();
+            // Resize to exact App Store pixel dimensions
+            blob = await resizeImageForDevice(blob, fmt);
             fmtFolder.file(`slide-${String(slide.slide_number).padStart(2, '0')}.png`, blob);
             count++;
           } catch { /* skip */ }
@@ -406,11 +414,13 @@ const Results = () => {
     );
   }
 
+  const primaryDims = DEVICE_DIMENSIONS[primaryFormat];
+
   return (
     <DashboardLayout>
-      <div className="p-4 md:p-8 max-w-6xl mx-auto">
+      <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-black tracking-tight text-foreground">{project.app_name || project.name}</h1>
             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
@@ -418,6 +428,11 @@ const Results = () => {
                 <CheckCircle2 className="h-3 w-3 mr-1" /> {t('results.slides', { count: slides.length })}
               </Badge>
               <Badge variant="outline" className="text-xs">{project.platform}</Badge>
+              {primaryDims && (
+                <Badge variant="outline" className="text-xs font-mono">
+                  <Smartphone className="h-3 w-3 mr-1" /> {primaryDims.width}&times;{primaryDims.height}px
+                </Badge>
+              )}
               <Badge variant="outline" className="text-xs">
                 <Coins className="h-3 w-3 mr-1" /> {userCredits} {t('generating.credits')}
               </Badge>
@@ -440,130 +455,122 @@ const Results = () => {
           </div>
         </motion.div>
 
-        {/* Main grid: slides gallery */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 mb-8">
-          {slides.map((slide, index) => {
-            const imgUrl = getImageUrl(slide);
-            const locked = isFreePlan && index > 0;
-
-            return (
-              <motion.div
-                key={slide.id}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.05 }}
-                onClick={() => setSelectedIndex(index)}
-                className={`relative aspect-[9/16] rounded-xl border-2 overflow-hidden cursor-pointer transition-all duration-200 group ${selectedIndex === index ? 'border-primary ring-2 ring-primary/30 shadow-glow' : 'border-border hover:border-primary/40'}`}
-              >
-                {imgUrl && !locked ? (
-                  <img src={imgUrl} alt={`Slide ${slide.slide_number}`} className="w-full h-full object-contain transition-transform group-hover:scale-105" loading="lazy" />
-                ) : (
-                  <div className="w-full h-full bg-muted flex items-center justify-center">
-                    {locked ? (
-                      <div className="flex flex-col items-center gap-1">
-                        <Lock className="h-5 w-5 text-muted-foreground" />
-                        <span className="text-[10px] text-muted-foreground font-bold">{t('common.upgrade')}</span>
-                      </div>
-                    ) : (
-                      <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
-                    )}
-                  </div>
-                )}
-                <div className="absolute bottom-1.5 left-1.5 bg-background/80 backdrop-blur-sm rounded-md px-1.5 py-0.5">
-                  <span className="text-[10px] font-black text-foreground">{slide.slide_number}</span>
-                </div>
-                {regeneratingSlideId === slide.id && (
-                  <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
-                    <Loader2 className="h-6 w-6 text-primary animate-spin" />
-                  </div>
-                )}
-              </motion.div>
-            );
-          })}
-        </div>
-
-        {/* Multi-format resize section */}
-        {additionalFormats.length > 0 && (
-          <div className="mb-8 rounded-2xl border border-border bg-card/50 backdrop-blur-sm p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-black text-foreground flex items-center gap-2">
-                <Monitor className="h-4 w-4 text-primary" /> Device Formats
-              </h3>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant={activeFormatTab === null ? 'default' : 'outline'}
-                size="sm"
-                className="rounded-lg text-xs"
-                onClick={() => setActiveFormatTab(null)}
-              >
-                <Smartphone className="h-3 w-3 mr-1" />
-                {FORMAT_LABELS[primaryFormat]?.label || primaryFormat} (original)
-              </Button>
-              {additionalFormats.map(fmt => {
-                const hasGenerated = !!resizedFormats[fmt]?.length;
-                const FormatIcon = FORMAT_LABELS[fmt]?.icon || Smartphone;
-                return (
-                  <div key={fmt} className="flex gap-1">
-                    {hasGenerated ? (
-                      <>
-                        <Button
-                          variant={activeFormatTab === fmt ? 'default' : 'outline'}
-                          size="sm"
-                          className="rounded-lg text-xs"
-                          onClick={() => setActiveFormatTab(fmt)}
-                        >
-                          <FormatIcon className="h-3 w-3 mr-1" />
-                          {FORMAT_LABELS[fmt]?.label || fmt}
-                        </Button>
-                        <Button
-                          variant="ghost" size="sm" className="rounded-lg text-xs h-8 px-2"
-                          onClick={() => handleDownloadFormat(fmt)}
-                        >
-                          <Download className="h-3 w-3" />
-                        </Button>
-                      </>
-                    ) : (
+        {/* Device Format Tabs + Gallery */}
+        <div className="rounded-2xl border border-border bg-card/50 backdrop-blur-sm overflow-hidden">
+          {/* Format tabs bar */}
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-muted/30 overflow-x-auto">
+            <Button
+              variant={activeFormatTab === null ? 'default' : 'ghost'}
+              size="sm"
+              className="rounded-lg text-xs shrink-0"
+              onClick={() => setActiveFormatTab(null)}
+            >
+              <Smartphone className="h-3.5 w-3.5 mr-1.5" />
+              {FORMAT_LABELS[primaryFormat]?.label || primaryFormat}
+              {primaryDims && <span className="ml-1 text-[10px] opacity-70">{primaryDims.width}&times;{primaryDims.height}</span>}
+            </Button>
+            {additionalFormats.map(fmt => {
+              const hasGenerated = !!resizedFormats[fmt]?.length;
+              const FormatIcon = FORMAT_LABELS[fmt]?.icon || Smartphone;
+              const fmtDims = DEVICE_DIMENSIONS[fmt];
+              return (
+                <div key={fmt} className="flex gap-1 shrink-0">
+                  {hasGenerated ? (
+                    <>
                       <Button
-                        variant="outline"
+                        variant={activeFormatTab === fmt ? 'default' : 'ghost'}
                         size="sm"
-                        className="rounded-lg text-xs border-dashed"
-                        onClick={() => handleResizeFormat(fmt)}
-                        disabled={isResizing}
+                        className="rounded-lg text-xs"
+                        onClick={() => setActiveFormatTab(fmt)}
                       >
-                        {isResizing ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <FormatIcon className="h-3 w-3 mr-1" />}
-                        Generate {FORMAT_LABELS[fmt]?.label || fmt}
-                        <Badge variant="outline" className="ml-1 text-[10px] px-1 py-0">{slides?.length || 0} cr</Badge>
+                        <FormatIcon className="h-3.5 w-3.5 mr-1.5" />
+                        {FORMAT_LABELS[fmt]?.label || fmt}
+                        {fmtDims && <span className="ml-1 text-[10px] opacity-70">{fmtDims.width}&times;{fmtDims.height}</span>}
                       </Button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Show resized slides when a format tab is active */}
-            {activeFormatTab && resizedFormats[activeFormatTab] && (
-              <div className="mt-4">
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                  {resizedFormats[activeFormatTab].map((slide) => (
-                    <div
-                      key={slide.slide_number}
-                      className={`relative rounded-xl border-2 border-border overflow-hidden ${activeFormatTab.includes('ipad') ? 'aspect-[3/4]' : 'aspect-[9/16]'}`}
+                      <Button variant="ghost" size="sm" className="rounded-lg text-xs h-8 w-8 p-0" onClick={() => handleDownloadFormat(fmt)}>
+                        <Download className="h-3 w-3" />
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-lg text-xs border-dashed"
+                      onClick={() => handleResizeFormat(fmt)}
+                      disabled={isResizing}
                     >
-                      <img src={slide.imageUrl} alt={`Slide ${slide.slide_number} - ${activeFormatTab}`} className="w-full h-full object-contain" loading="lazy" />
+                      {isResizing ? <Loader2 className="h-3 w-3 mr-1.5 animate-spin" /> : <FormatIcon className="h-3.5 w-3.5 mr-1.5" />}
+                      {FORMAT_LABELS[fmt]?.label || fmt}
+                      <Badge variant="outline" className="ml-1.5 text-[10px] px-1 py-0">{slides?.length || 0} cr</Badge>
+                    </Button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Slides gallery */}
+          <div className="p-4">
+            {activeFormatTab === null ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                {slides.map((slide, index) => {
+                  const imgUrl = getImageUrl(slide);
+                  const locked = isFreePlan && index > 0;
+                  return (
+                    <motion.div
+                      key={slide.id}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: index * 0.04 }}
+                      onClick={() => setSelectedIndex(index)}
+                      className={`relative ${primaryFormat.includes('ipad') ? 'aspect-[3/4]' : 'aspect-[9/16]'} rounded-xl border-2 overflow-hidden cursor-pointer transition-all duration-200 group ${selectedIndex === index ? 'border-primary ring-2 ring-primary/30 shadow-glow' : 'border-border/50 hover:border-primary/40'}`}
+                    >
+                      {imgUrl && !locked ? (
+                        <img src={imgUrl} alt={`Slide ${slide.slide_number}`} className="w-full h-full object-cover transition-transform group-hover:scale-[1.03]" loading="lazy" />
+                      ) : (
+                        <div className="w-full h-full bg-muted flex items-center justify-center">
+                          {locked ? (
+                            <div className="flex flex-col items-center gap-1">
+                              <Lock className="h-5 w-5 text-muted-foreground" />
+                              <span className="text-[10px] text-muted-foreground font-bold">{t('common.upgrade')}</span>
+                            </div>
+                          ) : (
+                            <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
+                          )}
+                        </div>
+                      )}
                       <div className="absolute bottom-1.5 left-1.5 bg-background/80 backdrop-blur-sm rounded-md px-1.5 py-0.5">
                         <span className="text-[10px] font-black text-foreground">{slide.slide_number}</span>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                      {regeneratingSlideId === slide.id && (
+                        <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
+                          <Loader2 className="h-6 w-6 text-primary animate-spin" />
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })}
               </div>
-            )}
+            ) : resizedFormats[activeFormatTab] ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                {resizedFormats[activeFormatTab].map((slide) => (
+                  <div
+                    key={slide.slide_number}
+                    className={`relative rounded-xl border-2 border-border/50 overflow-hidden ${activeFormatTab.includes('ipad') ? 'aspect-[3/4]' : 'aspect-[9/16]'}`}
+                  >
+                    <img src={slide.imageUrl} alt={`Slide ${slide.slide_number} - ${activeFormatTab}`} className="w-full h-full object-cover" loading="lazy" />
+                    <div className="absolute bottom-1.5 left-1.5 bg-background/80 backdrop-blur-sm rounded-md px-1.5 py-0.5">
+                      <span className="text-[10px] font-black text-foreground">{slide.slide_number}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </div>
-        )}
+        </div>
 
         {/* Selected slide detail */}
-        {selectedSlide && (
+        {selectedSlide && activeFormatTab === null && (
           <motion.div
             key={selectedSlide.id}
             initial={{ opacity: 0, y: 10 }}
@@ -572,10 +579,10 @@ const Results = () => {
           >
             <div className="flex flex-col md:flex-row gap-6">
               {/* Image preview */}
-              <div className="flex-shrink-0 relative">
-                <div className="w-full max-w-xs mx-auto md:mx-0 aspect-[9/16] rounded-xl overflow-hidden border border-border bg-muted">
+              <div className="flex-shrink-0 w-full md:w-64">
+                <div className={`w-full ${primaryFormat.includes('ipad') ? 'aspect-[3/4]' : 'aspect-[9/16]'} rounded-xl overflow-hidden border border-border bg-muted`}>
                   {selectedImageUrl && !isSlideLocked ? (
-                    <img src={selectedImageUrl} alt={`Slide ${selectedSlide.slide_number}`} className="w-full h-full object-contain" />
+                    <img src={selectedImageUrl} alt={`Slide ${selectedSlide.slide_number}`} className="w-full h-full object-cover" />
                   ) : isSlideLocked ? (
                     <div className="w-full h-full flex flex-col items-center justify-center gap-3 p-6 text-center">
                       <Lock className="h-10 w-10 text-muted-foreground" />
@@ -612,8 +619,13 @@ const Results = () => {
                 </div>
 
                 <div className="flex gap-2 flex-wrap">
-                  <Badge variant="outline" className="text-xs">{selectedSlide.objective}</Badge>
-                  <Badge variant="outline" className="text-xs">{selectedSlide.emphasis}</Badge>
+                  {selectedSlide.objective && <Badge variant="outline" className="text-xs">{selectedSlide.objective}</Badge>}
+                  {selectedSlide.emphasis && <Badge variant="outline" className="text-xs">{selectedSlide.emphasis}</Badge>}
+                  {primaryDims && (
+                    <Badge variant="secondary" className="text-xs font-mono">
+                      {primaryDims.width}&times;{primaryDims.height}px
+                    </Badge>
+                  )}
                 </div>
 
                 {/* Actions */}
@@ -623,11 +635,14 @@ const Results = () => {
                       <Button variant="ghost" size="sm" className="rounded-lg text-xs" onClick={async () => {
                         try {
                           const res = await fetch(selectedImageUrl);
-                          const blob = await res.blob();
+                          let blob = await res.blob();
+                          blob = await resizeImageForDevice(blob, primaryFormat);
                           const url = URL.createObjectURL(blob);
                           const a = document.createElement("a");
                           a.href = url;
-                          a.download = `${project.app_name || project.name}-slide-${selectedSlide.slide_number}.png`;
+                          const dims = DEVICE_DIMENSIONS[primaryFormat];
+                          const dimSuffix = dims ? `-${dims.width}x${dims.height}` : '';
+                          a.download = `${project.app_name || project.name}-slide-${selectedSlide.slide_number}${dimSuffix}.png`;
                           document.body.appendChild(a);
                           a.click();
                           document.body.removeChild(a);
@@ -635,6 +650,7 @@ const Results = () => {
                         } catch { toast({ title: t('results.downloadFailed'), variant: "destructive" }); }
                       }}>
                         <ImageDown className="mr-1.5 h-3.5 w-3.5" /> {t('results.saveSlide')}
+                        {primaryDims && <span className="ml-1 text-[10px] opacity-60">{primaryDims.width}&times;{primaryDims.height}</span>}
                       </Button>
                     )}
 
@@ -665,11 +681,9 @@ const Results = () => {
             </div>
           </motion.div>
         )}
-      </div>
 
-      {/* Saved Translations Section */}
-      {translationLanguages.length > 0 && (
-        <div className="p-4 md:p-8 max-w-6xl mx-auto -mt-4">
+        {/* Saved Translations Section */}
+        {translationLanguages.length > 0 && (
           <div className="rounded-2xl border border-border bg-card/50 backdrop-blur-sm p-4 md:p-6">
             <h3 className="text-lg font-black text-foreground flex items-center gap-2 mb-4">
               <Globe className="h-5 w-5 text-primary" /> Translations
@@ -716,20 +730,22 @@ const Results = () => {
                               const fmtKey = `${lang}|||${fmt}`;
                               const fmtTranslations = translationsByLangFormat[fmtKey] || [];
                               const isIpad = fmt.includes('ipad');
+                              const fmtDims = DEVICE_DIMENSIONS[fmt];
 
                               return (
                                 <div key={fmt}>
                                   {langFormats.length > 1 && (
                                     <div className="flex items-center gap-2 mb-2">
                                       <Badge variant="secondary" className="text-[10px] font-bold">{FORMAT_SHORT[fmt] || fmt}</Badge>
+                                      {fmtDims && <span className="text-[10px] text-muted-foreground font-mono">{fmtDims.width}&times;{fmtDims.height}</span>}
                                       <span className="text-[10px] text-muted-foreground">{fmtTranslations.length} slide(s)</span>
                                     </div>
                                   )}
-                                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
                                     {fmtTranslations.map(tr => (
-                                      <div key={tr.id} className={`relative group rounded-lg overflow-hidden border border-border ${isIpad ? 'aspect-[3/4]' : 'aspect-[9/16]'}`}>
+                                      <div key={tr.id} className={`relative group rounded-lg overflow-hidden border border-border/50 ${isIpad ? 'aspect-[3/4]' : 'aspect-[9/16]'}`}>
                                         {tr.signedUrl ? (
-                                          <img src={tr.signedUrl} alt={`Slide ${tr.slide_number} - ${lang} - ${fmt}`} className="w-full h-full object-contain" loading="lazy" />
+                                          <img src={tr.signedUrl} alt={`Slide ${tr.slide_number} - ${lang} - ${fmt}`} className="w-full h-full object-cover" loading="lazy" />
                                         ) : (
                                           <div className="w-full h-full bg-muted flex items-center justify-center">
                                             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -757,8 +773,8 @@ const Results = () => {
               })}
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       <TranslationsModal
         isOpen={isTranslationModalOpen}
