@@ -302,6 +302,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      credit_credits: {
+        Args: { p_amount: number; p_cap?: number; p_user_id: string }
+        Returns: number
+      }
+      debit_credits: {
+        Args: { p_amount: number; p_user_id: string }
+        Returns: number
+      }
       match_templates: {
         Args: {
           match_limit?: number
