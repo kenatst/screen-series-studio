@@ -140,13 +140,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [checkSubscription, fetchProfile]);
 
-  // More frequent sync to reduce perceived delay after checkout return
+  // Sync on focus to keep billing state fresh without constant background polling.
   useEffect(() => {
     if (!session?.user?.id) return;
-
-    const interval = setInterval(() => {
-      void checkSubscription(session.user.id);
-    }, 60_000);
 
     const onFocus = () => {
       void refreshProfile();
@@ -155,10 +151,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     window.addEventListener("focus", onFocus);
 
     return () => {
-      clearInterval(interval);
       window.removeEventListener("focus", onFocus);
     };
-  }, [session?.user?.id, checkSubscription, refreshProfile]);
+  }, [session?.user?.id, refreshProfile]);
 
   const signOut = async () => {
     await supabase.auth.signOut();

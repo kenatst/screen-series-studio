@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
+import { PLAN_DEFS } from "../_shared/billing.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,18 +12,11 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CREATE-CHECKOUT] ${step}${details ? ` - ${JSON.stringify(details)}` : ''}`);
 };
 
-/** Plan definitions — prices in cents (EUR) */
-const PLAN_DEFS: Record<string, { name: string; amount: number; description: string }> = {
-  starter: { name: "ShotApp Starter", amount: 4900, description: "50 credits/month, 1 workspace, HD export" },
-  pro: { name: "ShotApp Pro", amount: 9900, description: "200 credits/month, 3 workspaces, priority generation" },
-  unlimited: { name: "ShotApp Unlimited", amount: 39900, description: "1000 credits/month, unlimited projects" },
-};
-
 /**
  * Find or create a recurring EUR price for the given plan
  * inside the Stripe account linked to the current API key.
  */
-async function resolvePrice(stripe: Stripe, planId: string): Promise<string> {
+async function resolvePrice(stripe: Stripe, planId: keyof typeof PLAN_DEFS): Promise<string> {
   const def = PLAN_DEFS[planId];
   if (!def) throw new Error(`Unknown plan: ${planId}`);
 
@@ -35,6 +29,7 @@ async function resolvePrice(stripe: Stripe, planId: string): Promise<string> {
     product = await stripe.products.create({
       name: def.name,
       description: def.description,
+      metadata: { plan: planId },
     });
     logStep("Product created", { productId: product.id });
   } else {
@@ -58,6 +53,7 @@ async function resolvePrice(stripe: Stripe, planId: string): Promise<string> {
       unit_amount: def.amount,
       currency: "eur",
       recurring: { interval: "month" },
+      metadata: { plan: planId },
     });
     logStep("Price created", { priceId: price.id });
   } else {
@@ -85,7 +81,7 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated");
 
     const { plan, redirect_path } = await req.json();
-    if (!PLAN_DEFS[plan]) throw new Error(`Invalid plan: ${plan}`);
+    if (!PLAN_DEFS[plan as keyof typeof PLAN_DEFS]) throw new Error(`Invalid plan: ${plan}`);
 
     const stripeKey = Deno.env.get("STRIPE_TEST_SECRET") || "";
     if (!stripeKey) throw new Error("STRIPE_TEST_SECRET is not set");
@@ -96,7 +92,7 @@ serve(async (req) => {
     logStep("Using Stripe account", { accountId: account.id });
 
     // Resolve or create the price in THIS account
-    const priceId = await resolvePrice(stripe, plan);
+    const priceId = await resolvePrice(stripe, plan as keyof typeof PLAN_DEFS);
 
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     let customerId: string | undefined;
@@ -104,7 +100,7 @@ serve(async (req) => {
       customerId = customers.data[0].id;
     }
 
-    const origin = req.headers.get("origin");
+    const origin = req.headers.get("origin") || Deno.env.get("SITE_URL") || "https://shotapp.ai";
     const successPath = redirect_path || "/dashboard/settings";
     const successUrl = `${origin}${successPath}${successPath.includes('?') ? '&' : '?'}checkout=success`;
 

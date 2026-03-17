@@ -20,7 +20,7 @@ export const LandingFooter = forwardRef<HTMLElement>((_, ref) => {
                     {t('footer.ctaSubtitle')}
                 </p>
                 <Link to="/project/new">
-                    <Button className="bg-white text-black hover:bg-white/90 font-bold text-lg h-14 px-10 rounded-full shadow-[0_0_40px_-5px_rgba(255,255,255,0.3)] transition-all hover:scale-105">
+                    <Button className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold text-lg h-14 px-10 rounded-full shadow-glow transition-all hover:scale-105">
                         {t('footer.ctaButton')}
                     </Button>
                 </Link>
@@ -34,8 +34,8 @@ export const LandingFooter = forwardRef<HTMLElement>((_, ref) => {
                         <span className="text-sm font-medium text-muted-foreground">&copy; {new Date().getFullYear()} ShotApp AI. {t('footer.rights')}</span>
                     </div>
                     <div className="flex gap-6 text-sm text-foreground/40">
-                        <a href="/privacy" className="hover:text-foreground transition-colors">{t('footer.privacy')}</a>
-                        <a href="/terms" className="hover:text-foreground transition-colors">{t('footer.terms')}</a>
+                        <Link to="/privacy" className="hover:text-foreground transition-colors">{t('footer.privacy')}</Link>
+                        <Link to="/terms" className="hover:text-foreground transition-colors">{t('footer.terms')}</Link>
                     </div>
                 </div>
             </div>

@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
+import { creditCreditsAtomic, debitCreditsAtomic } from "../_shared/credits.ts";
+import { arrayBufferToBase64, base64ToUint8Array } from "../_shared/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,16 +15,6 @@ const FORMAT_CONFIG: Record<string, { label: string; aspectRatio: string; suffix
   "iphone-6-9": { label: '6.9" iPhone', aspectRatio: "9:16", suffix: "6-9", width: 1320, height: 2868 },
   "ipad-12-9": { label: '12.9" iPad', aspectRatio: "3:4", suffix: "ipad", width: 2048, height: 2732 },
 };
-
-function safeBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  const chunks: string[] = [];
-  const chunkSize = 8192;
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    chunks.push(String.fromCharCode(...bytes.subarray(i, Math.min(i + chunkSize, bytes.length))));
-  }
-  return btoa(chunks.join(""));
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -99,13 +91,21 @@ serve(async (req) => {
     const { GoogleGenAI } = await import("https://esm.sh/@google/genai@1.44.0");
     const ai = new GoogleGenAI({ apiKey: geminiApiKey });
 
-    const resizedSlides: { slide_number: number; imageUrl: string; format: string }[] = [];
-    let creditsDeducted = 0;
+    const resizedSlides: { slide_number: number; imageUrl: string; format: string; storage_path: string }[] = [];
+    let insufficientCreditsDuringRun = false;
     const appName = project.app_name || project.name || "App";
     const isIpad = target_format.includes("ipad");
 
     for (const slide of completedSlides) {
+      let reservedCredit = false;
       try {
+        const reserved = await debitCreditsAtomic(adminClient as any, userId, CREDIT_COST_PER_SLIDE);
+        if (reserved === null) {
+          insufficientCreditsDuringRun = true;
+          break;
+        }
+        reservedCredit = true;
+
         // Download original slide
         let storagePath: string;
         if (slide.image_url!.startsWith("http")) {
@@ -121,7 +121,7 @@ serve(async (req) => {
         }
 
         const arrayBuffer = await fileData.arrayBuffer();
-        const imageBase64 = safeBase64(arrayBuffer);
+        const imageBase64 = arrayBufferToBase64(arrayBuffer);
 
         const resizePrompt = isIpad
           ? `Adapt this iPhone App Store screenshot to an iPad 12.9" format (3:4 portrait aspect ratio).
@@ -130,7 +130,7 @@ Target pixel dimensions: ${formatConfig.width} × ${formatConfig.height} pixels.
 CRITICAL RULES:
 - KEEP the exact same design: same colors, typography, layout proportions, device mockup style
 - ADAPT the composition for the wider 3:4 aspect ratio — expand the background naturally, reposition elements to fill the wider canvas
-- If there's a phone mockup, replace it with an iPad mockup showing the same screen content
+- If there's a phone mockup, replace it with an iPad mockup and keep the same relative position and visual weight on canvas
 - Keep ALL text exactly as-is: headline "${slide.headline || ""}", subheadline "${slide.subheadline || ""}"
 - Maintain the same visual quality, gradients, shadows, and decorative elements
 - Scale text and UI elements appropriately for the ${formatConfig.width}×${formatConfig.height} resolution
@@ -179,11 +179,7 @@ CRITICAL RULES:
 
         // Upload resized image
         const resizedPath = `${userId}/${project_id}/slide-${slide.slide_number}-${formatConfig.suffix}.png`;
-        const raw = atob(newImageBase64);
-        const imageBytes = new Uint8Array(raw.length);
-        for (let j = 0; j < raw.length; j++) {
-          imageBytes[j] = raw.charCodeAt(j);
-        }
+        const imageBytes = base64ToUint8Array(newImageBase64);
 
         await adminClient.storage.from("generated-outputs").upload(resizedPath, imageBytes, {
           contentType: "image/png",
@@ -196,19 +192,27 @@ CRITICAL RULES:
           slide_number: slide.slide_number,
           imageUrl: signedData?.signedUrl || "",
           format: target_format,
+          storage_path: resizedPath,
         });
 
-        // Deduct credit
-        creditsDeducted += 1;
-        const newCredits = Math.max(0, currentCredits - creditsDeducted);
-        await adminClient.from("profiles").update({ credits: newCredits }).eq("id", userId);
-
       } catch (err: any) {
+        if (reservedCredit) {
+          try {
+            await creditCreditsAtomic(adminClient as any, userId, CREDIT_COST_PER_SLIDE);
+          } catch (refundError) {
+            console.error(`Refund failed for slide ${slide.slide_number}:`, refundError);
+          }
+        }
         console.error(`Resize error for slide ${slide.slide_number}:`, err?.message || err);
       }
     }
 
-    return new Response(JSON.stringify({ slides: resizedSlides, format: target_format }), {
+    return new Response(JSON.stringify({
+      slides: resizedSlides,
+      format: target_format,
+      partial: insufficientCreditsDuringRun,
+      message: insufficientCreditsDuringRun ? "Stopped early because credits ran out." : undefined,
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: any) {

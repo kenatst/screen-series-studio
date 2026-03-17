@@ -13,6 +13,7 @@ import { getMaxSlides } from "@/lib/plans";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { UploadedScreen } from "@/components/project/SortableSlide";
+import { validateWizardStep } from "@/lib/wizard-validation";
 
 export interface BrandAsset {
   type: 'logo' | 'icon' | 'mascot';
@@ -163,6 +164,7 @@ interface NewProjectContextType {
   // Save
   isSaving: boolean;
   lastSavedAt: Date | null;
+  validateStep: (step?: number) => string | null;
   handleSaveDraft: () => Promise<void>;
   handleGenerate: () => Promise<void>;
   getFinalProjectName: () => string;
@@ -723,6 +725,16 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
 
   const handleGenerate = async () => {
     if (!user) { toast({ title: "Not authenticated", variant: "destructive" }); return; }
+    const preflightError =
+      validateWizardStep({ step: 1, appName, uploadedScreensCount: uploadedScreens.length, slides }) ||
+      validateWizardStep({ step: 3, appName, uploadedScreensCount: uploadedScreens.length, slides }) ||
+      validateWizardStep({ step: 6, appName, uploadedScreensCount: uploadedScreens.length, slides });
+
+    if (preflightError) {
+      toast({ title: "Missing required information", description: preflightError, variant: "destructive" });
+      return;
+    }
+
     setIsSaving(true);
     try {
       // Force-refresh session & verify user server-side to prevent stale JWT
@@ -732,7 +744,6 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
         setIsSaving(false);
         return;
       }
-      console.log("[GENERATE] Session verified, uid:", session.user.id);
       const projectId = await saveProjectAndSlides();
       // Ensure status is set to generating so the generation page auto-starts
       await updateProject.mutateAsync({ id: projectId, status: 'generating' });
@@ -745,6 +756,9 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
 
   const next = () => setCurrentStep(s => Math.min(s + 1, 7));
   const prev = () => setCurrentStep(s => Math.max(s - 1, 1));
+  const validateStep = (step = currentStep): string | null => {
+    return validateWizardStep({ step, appName, uploadedScreensCount: uploadedScreens.length, slides });
+  };
 
   return (
     <NewProjectContext.Provider value={{
@@ -768,7 +782,7 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
       consistencyLevel, setConsistencyLevel, sensors, handleDragEnd,
       handleAutoFillSlides, updateSlide, removeSlide, addSlide, getScreenOptions, maxSlides,
       generationMode,
-      isSaving, lastSavedAt, handleSaveDraft, handleGenerate, getFinalProjectName,
+      isSaving, lastSavedAt, validateStep, handleSaveDraft, handleGenerate, getFinalProjectName,
       profile,
     }}>
       {children}

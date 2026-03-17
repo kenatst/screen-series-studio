@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,11 +20,8 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { useTranslation } from "react-i18next";
 import { resizeImageForDevice, DEVICE_DIMENSIONS } from "@/lib/image-resize";
-
-const isStoragePath = (value: string | null) => {
-  if (!value) return false;
-  return !value.startsWith("http://") && !value.startsWith("https://");
-};
+import { isStoragePath, resolveSignedUrl } from "@/lib/storage-utils";
+import { DEVICE_FORMAT_LABELS, FORMAT_SUFFIX, LANGUAGE_LABELS } from "@/lib/localization";
 
 interface SavedTranslation {
   id: string;
@@ -37,25 +34,16 @@ interface SavedTranslation {
   signedUrl?: string;
 }
 
-const LANGUAGE_LABELS: Record<string, string> = {
-  French: 'French (Fran\u00e7ais)',
-  Spanish: 'Spanish (Espa\u00f1ol)',
-  German: 'German (Deutsch)',
-  Japanese: 'Japanese (\u65e5\u672c\u8a9e)',
-  Portuguese: 'Portuguese (Portugu\u00eas)',
-  Chinese: 'Chinese (\u4e2d\u6587)',
-  Korean: 'Korean (\ud55c\uad6d\uc5b4)',
-  Italian: 'Italian (Italiano)',
-  Arabic: 'Arabic (\u0627\u0644\u0639\u0631\u0628\u064a\u0629)',
-  Russian: 'Russian (\u0420\u0443\u0441\u0441\u043a\u0438\u0439)',
-  Turkish: 'Turkish (T\u00fcrk\u00e7e)',
-  Hindi: 'Hindi (\u0939\u093f\u0928\u094d\u0926\u0940)',
-};
+interface ResizedFormatSlide {
+  slide_number: number;
+  imageUrl: string;
+  storagePath: string;
+}
 
 const Results = () => {
   const navigate = useNavigate();
   const { projectId } = useParams();
-  const { profile, refreshProfile } = useAuth();
+  const { profile, refreshProfile, user } = useAuth();
   const { toast } = useToast();
   const { t } = useTranslation();
 
@@ -73,34 +61,66 @@ const Results = () => {
   const [savedTranslations, setSavedTranslations] = useState<SavedTranslation[]>([]);
   const [expandedLang, setExpandedLang] = useState<string | null>(null);
   const [isResizing, setIsResizing] = useState(false);
-  const [resizedFormats, setResizedFormats] = useState<Record<string, { slide_number: number; imageUrl: string }[]>>({});
+  const [resizedFormats, setResizedFormats] = useState<Record<string, ResizedFormatSlide[]>>({});
   const [activeFormatTab, setActiveFormatTab] = useState<string | null>(null);
+  const resolvedImagesRef = useRef<Record<string, string>>({});
 
   const userPlan = (profile?.plan || 'free') as any;
   const userCredits = profile?.credits ?? 0;
   const { handleUpgrade: billingUpgrade, isOpeningPortal } = useBilling();
   const [showWatermarkWarning, setShowWatermarkWarning] = useState(false);
 
+  useEffect(() => {
+    resolvedImagesRef.current = resolvedImages;
+  }, [resolvedImages]);
+
   // Resolve storage paths to signed URLs
   const resolveImages = useCallback(async () => {
     if (!slides?.length) return;
-    const toResolve = slides.filter(s => s.image_url && isStoragePath(s.image_url) && !resolvedImages[s.id]);
+    const toResolve = slides.filter(
+      (slide) => slide.image_url && isStoragePath(slide.image_url) && !resolvedImagesRef.current[slide.id],
+    );
     if (toResolve.length === 0) return;
 
-    const newResolved: Record<string, string> = {};
-    await Promise.all(toResolve.map(async (slide) => {
-      try {
-        const { data } = await supabase.storage.from("generated-outputs").createSignedUrl(slide.image_url!, 60 * 60 * 2);
-        if (data?.signedUrl) newResolved[slide.id] = data.signedUrl;
-      } catch { /* skip */ }
-    }));
+    const resolvedEntries = await Promise.all(
+      toResolve.map(async (slide) => {
+        const signed = await resolveSignedUrl("generated-outputs", slide.image_url);
+        if (!signed) return null;
+        return [slide.id, signed] as const;
+      }),
+    );
 
+    const newResolved = Object.fromEntries(resolvedEntries.filter(Boolean) as Array<readonly [string, string]>);
     if (Object.keys(newResolved).length > 0) {
-      setResolvedImages(prev => ({ ...prev, ...newResolved }));
+      setResolvedImages((prev) => ({ ...prev, ...newResolved }));
     }
-  }, [slides, resolvedImages]);
+  }, [slides]);
 
-  useEffect(() => { resolveImages(); }, [resolveImages]);
+  useEffect(() => {
+    void resolveImages();
+  }, [resolveImages]);
+
+  const refreshResizedFormatUrls = useCallback(async () => {
+    const entries = Object.entries(resizedFormats);
+    if (entries.length === 0) return;
+
+    const refreshed = await Promise.all(
+      entries.map(async ([format, slidesForFormat]) => {
+        const refreshedSlides = await Promise.all(
+          slidesForFormat.map(async (slide) => {
+            const signed = await resolveSignedUrl("generated-outputs", slide.storagePath);
+            return {
+              ...slide,
+              imageUrl: signed || slide.imageUrl,
+            };
+          }),
+        );
+        return [format, refreshedSlides] as const;
+      }),
+    );
+
+    setResizedFormats(Object.fromEntries(refreshed));
+  }, [resizedFormats]);
 
   // Fetch saved translations from DB
   const fetchSavedTranslations = useCallback(async () => {
@@ -115,19 +135,39 @@ const Results = () => {
       if (error || !data) return;
 
       // Resolve signed URLs for all translations
-      const withUrls = await Promise.all(data.map(async (tr: any) => {
-        try {
-          const { data: signed } = await supabase.storage.from('generated-outputs').createSignedUrl(tr.storage_path, 60 * 60 * 2);
-          return { ...tr, signedUrl: signed?.signedUrl || '' };
-        } catch {
-          return { ...tr, signedUrl: '' };
-        }
-      }));
+      const withUrls = await Promise.all(
+        data.map(async (tr: any) => ({
+          ...tr,
+          signedUrl: (await resolveSignedUrl("generated-outputs", tr.storage_path)) || "",
+        })),
+      );
       setSavedTranslations(withUrls);
     } catch { /* ignore */ }
   }, [projectId]);
 
-  useEffect(() => { fetchSavedTranslations(); }, [fetchSavedTranslations]);
+  useEffect(() => {
+    void fetchSavedTranslations();
+  }, [fetchSavedTranslations]);
+
+  const refreshSignedAssets = useCallback(async () => {
+    setResolvedImages({});
+    await Promise.all([fetchSavedTranslations(), refreshResizedFormatUrls()]);
+  }, [fetchSavedTranslations, refreshResizedFormatUrls]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      void refreshSignedAssets();
+    }, 90 * 60 * 1000);
+    return () => window.clearInterval(interval);
+  }, [refreshSignedAssets]);
+
+  useEffect(() => {
+    const onFocus = () => {
+      void refreshSignedAssets();
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [refreshSignedAssets]);
 
   const handleDownloadTranslation = async (tr: SavedTranslation) => {
     if (!tr.signedUrl) return;
@@ -155,23 +195,29 @@ const Results = () => {
     const zip = new JSZip();
     const langSlug = lang.toLowerCase().replace(/[^a-z]/g, '');
     const appLabel = project?.app_name || 'export';
-    const formats = [...new Set(langTranslations.map(t => t.device_format || 'iphone-6-5'))];
+    const formats = [...new Set(langTranslations.map((t) => t.device_format || "iphone-6-5"))];
+    await Promise.all(
+      formats.map(async (fmt) => {
+        const fmtSlug = fmt.replace(/[^a-z0-9-]/g, "");
+        const folderName = formats.length > 1 ? `${appLabel}-${langSlug}-${fmtSlug}` : `${appLabel}-${langSlug}`;
+        const folder = zip.folder(folderName);
+        if (!folder) return;
 
-    for (const fmt of formats) {
-      const fmtSlug = fmt.replace(/[^a-z0-9-]/g, '');
-      const folderName = formats.length > 1 ? `${appLabel}-${langSlug}-${fmtSlug}` : `${appLabel}-${langSlug}`;
-      const folder = zip.folder(folderName);
-      if (!folder) continue;
+        const fmtTranslations = langTranslations.filter((t) => (t.device_format || "iphone-6-5") === fmt);
+        const files = await Promise.all(
+          fmtTranslations.map(async (tr) => {
+            const res = await fetch(tr.signedUrl!);
+            if (!res.ok) return null;
+            const blob = await res.blob();
+            return { slide: tr.slide_number, blob };
+          }),
+        );
 
-      const fmtTranslations = langTranslations.filter(t => (t.device_format || 'iphone-6-5') === fmt);
-      for (const tr of fmtTranslations) {
-        try {
-          const res = await fetch(tr.signedUrl!);
-          const blob = await res.blob();
-          folder.file(`slide-${String(tr.slide_number).padStart(2, '0')}-${langSlug}.png`, blob);
-        } catch { /* skip */ }
-      }
-    }
+        files.filter(Boolean).forEach((file) => {
+          folder.file(`slide-${String(file!.slide).padStart(2, "0")}-${langSlug}.png`, file!.blob);
+        });
+      }),
+    );
 
     const content = await zip.generateAsync({ type: 'blob' });
     saveAs(content, `${appLabel}-${langSlug}.zip`);
@@ -189,25 +235,62 @@ const Results = () => {
   const translationLanguages = [...new Set(savedTranslations.map(tr => tr.target_language))];
 
   const FORMAT_SHORT: Record<string, string> = {
-    'iphone-6-5': '6.5"',
-    'iphone-6-9': '6.9"',
-    'ipad-12-9': '12.9" iPad',
+    "iphone-6-5": '6.5"',
+    "iphone-6-9": '6.9"',
+    "ipad-12-9": '12.9" iPad',
   };
 
   const FORMAT_LABELS: Record<string, { label: string; icon: typeof Smartphone }> = {
-    'iphone-6-5': { label: '6.5"', icon: Smartphone },
-    'iphone-6-9': { label: '6.9"', icon: Smartphone },
-    'ipad-12-9': { label: '12.9" iPad', icon: Tablet },
+    "iphone-6-5": { label: DEVICE_FORMAT_LABELS["iphone-6-5"], icon: Smartphone },
+    "iphone-6-9": { label: DEVICE_FORMAT_LABELS["iphone-6-9"], icon: Smartphone },
+    "ipad-12-9": { label: DEVICE_FORMAT_LABELS["ipad-12-9"], icon: Tablet },
   };
 
   const projectFormats = (project?.device_formats as string[]) || ['iphone-6-5'];
   const primaryFormat = projectFormats[0] || 'iphone-6-5';
   const additionalFormats = projectFormats.filter(f => f !== primaryFormat);
 
+  const resolvePersistedFormat = useCallback(async (format: string): Promise<ResizedFormatSlide[]> => {
+    if (!projectId || !slides?.length || !user?.id) return [];
+    const suffix = FORMAT_SUFFIX[format];
+    if (!suffix) return [];
+
+    const resolved = await Promise.all(
+      slides.map(async (slide) => {
+        const storagePath = `${user.id}/${projectId}/slide-${slide.slide_number}-${suffix}.png`;
+        const signed = await resolveSignedUrl("generated-outputs", storagePath);
+        if (!signed) return null;
+        return {
+          slide_number: slide.slide_number,
+          imageUrl: signed,
+          storagePath,
+        };
+      }),
+    );
+
+    return resolved.filter(Boolean) as ResizedFormatSlide[];
+  }, [projectId, slides, user?.id]);
+
+  useEffect(() => {
+    const persistedFormats = (project?.config as any)?.resized_formats as string[] | undefined;
+    if (!persistedFormats?.length) return;
+    const missingFormats = persistedFormats.filter((format) => !resizedFormats[format]);
+    if (missingFormats.length === 0) return;
+
+    void (async () => {
+      const loaded = await Promise.all(
+        missingFormats.map(async (format) => [format, await resolvePersistedFormat(format)] as const),
+      );
+      const entries = loaded.filter(([, slidesForFormat]) => slidesForFormat.length > 0);
+      if (entries.length === 0) return;
+      setResizedFormats((prev) => ({ ...prev, ...Object.fromEntries(entries) }));
+    })();
+  }, [project?.config, resolvePersistedFormat, resizedFormats]);
+
   const handleResizeFormat = async (targetFormat: string) => {
     if (!projectId || isResizing) return;
     const slideCount = slides?.length || 0;
-    if (!checkCredits(slideCount * CREDIT_COSTS.regenerateSlide)) return;
+    if (!checkCredits(slideCount * CREDIT_COSTS.resizeSlide)) return;
 
     setIsResizing(true);
     try {
@@ -232,9 +315,28 @@ const Results = () => {
 
       const result = await response.json();
       if (result.slides?.length > 0) {
-        setResizedFormats(prev => ({ ...prev, [targetFormat]: result.slides }));
+        const resized = result.slides.map((slide: any) => ({
+          slide_number: slide.slide_number,
+          imageUrl: slide.imageUrl,
+          storagePath: slide.storage_path,
+        })) as ResizedFormatSlide[];
+
+        setResizedFormats(prev => ({ ...prev, [targetFormat]: resized }));
         setActiveFormatTab(targetFormat);
         toast({ title: `${FORMAT_LABELS[targetFormat]?.label || targetFormat} format generated!`, description: `${result.slides.length} slide(s) resized.` });
+        const existingConfig = (project?.config as any) || {};
+        const existingFormats = (existingConfig.resized_formats as string[] | undefined) || [];
+        if (!existingFormats.includes(targetFormat)) {
+          await supabase
+            .from("projects")
+            .update({
+              config: {
+                ...existingConfig,
+                resized_formats: [...existingFormats, targetFormat],
+              },
+            })
+            .eq("id", projectId);
+        }
         await refreshProfile();
       }
     } catch (err: any) {
@@ -356,10 +458,15 @@ const Results = () => {
   const handleRegenerateAll = async () => {
     const totalCost = (slides?.length || 0) * CREDIT_COSTS.regenerateSlide;
     if (!checkCredits(totalCost)) return;
+    if (!window.confirm(t("results.regenAllConfirm", { cost: totalCost }))) return;
     setIsRegenerating(true);
     try {
       if (!projectId) return;
-      await supabase.from('projects').update({ status: 'generating' }).eq('id', projectId);
+      const existingConfig = (project?.config as any) || {};
+      await supabase.from('projects').update({
+        status: 'generating',
+        config: { ...existingConfig, resized_formats: [] },
+      }).eq('id', projectId);
       await supabase.from('project_slides').update({ status: 'pending', image_url: null }).eq('project_id', projectId);
       navigate(`/project/${projectId}/generating`);
     } catch {
@@ -686,7 +793,7 @@ const Results = () => {
         {translationLanguages.length > 0 && (
           <div className="rounded-2xl border border-border bg-card/50 backdrop-blur-sm p-4 md:p-6">
             <h3 className="text-lg font-black text-foreground flex items-center gap-2 mb-4">
-              <Globe className="h-5 w-5 text-primary" /> Translations
+              <Globe className="h-5 w-5 text-primary" /> {t("results.translations")}
             </h3>
             <div className="space-y-3">
               {translationLanguages.map(lang => {
@@ -782,7 +889,11 @@ const Results = () => {
         projectId={projectId || ''}
         deviceFormats={projectFormats}
         generatedFormats={Object.keys(resizedFormats).filter(f => resizedFormats[f]?.length > 0)}
-        onSuccess={() => { refetchSlides(); refreshProfile(); fetchSavedTranslations(); }}
+        onSuccess={() => {
+          void refetchSlides();
+          void refreshProfile();
+          void refreshSignedAssets();
+        }}
       />
 
       <Dialog open={showWatermarkWarning} onOpenChange={setShowWatermarkWarning}>

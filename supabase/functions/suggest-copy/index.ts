@@ -1,4 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
+import { creditCreditsAtomic, debitCreditsAtomic } from "../_shared/credits.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,7 +23,7 @@ serve(async (req) => {
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    const userClient = (await import("https://esm.sh/@supabase/supabase-js@2.98.0")).createClient(supabaseUrl, supabaseAnonKey, {
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: userData } = await userClient.auth.getUser();
@@ -30,7 +32,7 @@ serve(async (req) => {
     }
 
     // Optional: Charge credits for suggestions or just verify existence
-    const adminClient = (await import("https://esm.sh/@supabase/supabase-js@2.98.0")).createClient(supabaseUrl, supabaseServiceKey);
+    const adminClient = createClient(supabaseUrl, supabaseServiceKey);
     const { data: profile } = await adminClient.from("profiles").select("credits").eq("id", userData.user.id).single();
     if ((profile?.credits ?? 0) < 1) {
       return new Response(JSON.stringify({ error: "Insufficient credits" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -137,38 +139,46 @@ serve(async (req) => {
       });
     }
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        tools: [toolDef],
-        tool_choice: toolChoice,
-      }),
-    });
-
-    if (!aiResponse.ok) {
-      const status = aiResponse.status;
-      if (status === 429) return new Response(JSON.stringify({ error: "Rate limited, try again later" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      if (status === 402) return new Response(JSON.stringify({ error: "Payment required" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      const errText = await aiResponse.text();
-      console.error("AI error:", status, errText);
-      throw new Error("AI request failed");
+    const reservedCredits = await debitCreditsAtomic(adminClient as any, userData.user.id, 1);
+    if (reservedCredits === null) {
+      return new Response(JSON.stringify({ error: "Insufficient credits" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const aiData = await aiResponse.json();
-    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
-    const result = toolCall ? JSON.parse(toolCall.function.arguments) : {};
+    let result = {};
+    try {
+      const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          tools: [toolDef],
+          tool_choice: toolChoice,
+        }),
+      });
 
-    // Deduct 1 credit after successful AI response
-    await adminClient.from("profiles").update({ credits: (profile?.credits ?? 1) - 1 }).eq("id", userData.user.id);
+      if (!aiResponse.ok) {
+        const status = aiResponse.status;
+        if (status === 429) return new Response(JSON.stringify({ error: "Rate limited, try again later" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (status === 402) return new Response(JSON.stringify({ error: "Payment required" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        const errText = await aiResponse.text();
+        console.error("AI error:", status, errText);
+        throw new Error("AI request failed");
+      }
+
+      const aiData = await aiResponse.json();
+      const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+      result = toolCall ? JSON.parse(toolCall.function.arguments) : {};
+    } catch (aiError) {
+      await creditCreditsAtomic(adminClient as any, userData.user.id, 1);
+      throw aiError;
+    }
 
     return new Response(JSON.stringify({ type, result }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

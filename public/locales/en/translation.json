@@ -78,7 +78,8 @@
         "projectArchived": "Project archived",
         "projectRestored": "Project restored",
         "archiveConfirm": "Are you sure you want to archive this project?",
-        "updated": "Updated"
+        "updated": "Updated",
+        "expires": "expires"
     },
     "login": {
         "appName": "ShotApp AI",
@@ -102,6 +103,11 @@
         "confirmationSent": "We sent you a confirmation link.",
         "enterEmailFirst": "Enter your email first",
         "resetSent": "Password reset link sent."
+        ,
+        "humanCheckLabel": "Human verification",
+        "humanCheckPlaceholder": "What is {{a}} + {{b}}?",
+        "humanCheckFailed": "Human verification failed",
+        "suspiciousSignup": "Please wait a moment and try again."
     },
     "settings": {
         "title": "Settings",
@@ -112,7 +118,9 @@
         "generation": "Generation",
         "regeneration": "Regeneration",
         "translation": "Translation",
+        "suggestions": "AI Suggestions",
         "perSlide": "/ slide",
+        "perRequest": "/ request",
         "upgradePrompt": "Upgrade to a paid plan for more credits.",
         "manageSub": "Manage subscription",
         "upgradePlan": "Upgrade plan",
@@ -142,6 +150,10 @@
         "accountDeleted": "Account deleted",
         "accountDeletedDesc": "Your account and all data have been permanently removed.",
         "deletionFailed": "Deletion failed"
+        ,
+        "active": "Active",
+        "email": "Email",
+        "plan": "Plan"
     },
     "generating": {
         "title": "Consistency Engine",
@@ -200,6 +212,29 @@
         "watermarkTitle": "Export with watermark",
         "watermarkDesc": "Free plan exports include a watermark. Upgrade for clean HD exports.",
         "downloadAnyway": "Download anyway"
+        ,
+        "regenAllConfirm": "Regenerate all slides? This will cost {{cost}} credits."
+        ,
+        "translations": "Translations"
+    },
+    "translations": {
+        "title": "1-Click Batch Localization",
+        "subtitle": "Translate all slides at once. Costs 1 credit per slide.",
+        "selectLanguage": "Select target language",
+        "deviceSizes": "Device sizes to translate",
+        "original": "original",
+        "formatsSelectedCost": "{{count}} format(s) selected - costs 1 credit per slide per format",
+        "translatingTo": "Translating all slides to {{language}}...",
+        "translatingBatch": "Translating batch...",
+        "translateAll": "Translate All Slides{{sizes}}",
+        "resultSummary": "{{count}} slide(s) translated to {{language}}",
+        "downloadAll": "Download All",
+        "done": "Done",
+        "failed": "Translation failed",
+        "unknownError": "Unknown error",
+        "noSlidesTranslated": "No slides were translated. Make sure generated slides exist.",
+        "toastSuccessTitle": "Translation to {{language}} completed!",
+        "toastSuccessDesc": "{{slides}} slide(s) translated across {{formats}} format(s)."
     },
     "newProject": {
         "steps": {
@@ -361,6 +396,15 @@
             "colorful": "Colorful",
             "neutral": "Neutral",
             "all": "All"
+        },
+        "categories": {
+            "all": "All",
+            "business": "Business",
+            "entertainment": "Entertainment",
+            "education": "Education",
+            "lifestyle": "Lifestyle",
+            "luxury": "Luxury",
+            "media": "Media"
         }
     },
     "notFound": {

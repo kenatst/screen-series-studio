@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
 import { GoogleGenAI } from "https://esm.sh/@google/genai@1.44.0";
+import { creditCreditsAtomic, debitCreditsAtomic } from "../_shared/credits.ts";
+import { arrayBufferToBase64, base64ToUint8Array } from "../_shared/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -23,16 +25,6 @@ const DEVICE_DIMENSIONS: Record<string, { width: number; height: number; label: 
 // ─────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────
-
-function safeBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  const chunks: string[] = [];
-  const chunkSize = 8192;
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    chunks.push(String.fromCharCode(...bytes.subarray(i, Math.min(i + chunkSize, bytes.length))));
-  }
-  return btoa(chunks.join(""));
-}
 
 // ─────────────────────────────────────────────────────────────
 // Template Layout Analysis Types
@@ -128,8 +120,43 @@ IMPORTANT:
 
     const cleaned = text.replace(/```json\n?|```/g, "").trim();
     const parsed = JSON.parse(cleaned);
-    console.log(`[ANALYSIS] ✅ Template set analysis complete: ${parsed.totalSlides} slides detected, style: ${(parsed.overallStyle || "").slice(0, 100)}...`);
-    return parsed as TemplateSetAnalysis;
+
+    const slides = Array.isArray(parsed?.slides) ? parsed.slides : [];
+    const totalSlidesFromPayload = Number(parsed?.totalSlides);
+    const normalizedTotalSlides = Number.isFinite(totalSlidesFromPayload) && totalSlidesFromPayload > 0
+      ? Math.round(totalSlidesFromPayload)
+      : slides.length;
+
+    const normalizedSlides = slides
+      .slice(0, normalizedTotalSlides || slides.length)
+      .map((slide: any, index: number) => ({
+        ...slide,
+        slidePosition: Number(slide?.slidePosition) > 0 ? Number(slide.slidePosition) : index + 1,
+      }));
+
+    const analysis: TemplateSetAnalysis = {
+      totalSlides: normalizedSlides.length || 1,
+      overallStyle: parsed?.overallStyle || "Clean, professional App Store screenshot design with centered phone mockup.",
+      colorPalette: parsed?.colorPalette || "Gradient background with accent colors",
+      slides: normalizedSlides.length > 0 ? normalizedSlides : [{
+        slidePosition: 1,
+        hasDeviceMockup: true,
+        devicePosition: "center",
+        deviceScale: "large",
+        textPosition: "top",
+        headlineStyle: "bold-sans",
+        backgroundType: "gradient",
+        has3DElements: false,
+        hasMascot: false,
+        mascotDescription: null,
+        decorativeElements: [],
+        mood: "premium",
+        detailedComposition: "Standard centered layout with large phone mockup and headline text above.",
+      }],
+    };
+
+    console.log(`[ANALYSIS] ✅ Template set analysis complete: ${analysis.totalSlides} slides detected, style: ${(analysis.overallStyle || "").slice(0, 100)}...`);
+    return analysis;
   } catch (e: any) {
     console.error("[ANALYSIS] ❌ Template set analysis failed:", e?.message);
     return {
@@ -362,10 +389,18 @@ function isRateLimited(ip: string): boolean {
   if (requests.length >= 15) { IPs.set(ip, requests); return true; }
   requests.push(now);
   IPs.set(ip, requests);
+  if (IPs.size > 1000) {
+    for (const [key, times] of IPs) {
+      if (times.length === 0 || now - times[times.length - 1] > 60000) {
+        IPs.delete(key);
+      }
+    }
+  }
   return false;
 }
 
-const idempotencyCache = new Set<string>();
+const IDEMPOTENCY_TTL_MS = 60_000;
+const idempotencyCache = new Map<string, number>();
 
 // ─────────────────────────────────────────────────────────────
 // Main handler
@@ -440,13 +475,19 @@ serve(async (req: Request) => {
     }
 
     if (idempotencyKey) {
+      const now = Date.now();
+      for (const [key, timestamp] of idempotencyCache) {
+        if (now - timestamp > IDEMPOTENCY_TTL_MS) {
+          idempotencyCache.delete(key);
+        }
+      }
+
       if (idempotencyCache.has(idempotencyKey)) {
         return new Response(JSON.stringify({ error: "Duplicate request detected in progress" }), {
           status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      idempotencyCache.add(idempotencyKey);
-      setTimeout(() => idempotencyCache.delete(idempotencyKey!), 60000);
+      idempotencyCache.set(idempotencyKey, now);
     }
 
     if (!projectId) {
@@ -516,7 +557,7 @@ serve(async (req: Request) => {
     const invocationSlides = [slidesToGenerate[0]];
 
     // ── Credit check ──
-    const { data: profileData } = await adminClient.from("profiles").select("credits, plan").eq("id", userId).single();
+    const { data: profileData } = await adminClient.from("profiles").select("credits").eq("id", userId).single();
     const currentCredits = profileData?.credits ?? 0;
     const billableSlides = invocationSlides.filter((slide: any) => {
       if (singleSlideId || forceRegenerate) return true;
@@ -567,7 +608,7 @@ serve(async (req: Request) => {
         const { data: fileData } = await adminClient.storage.from("raw-uploads").download(asset.storage_path);
         if (!fileData) continue;
         const arrayBuffer = await fileData.arrayBuffer();
-        const base64 = safeBase64(arrayBuffer);
+        const base64 = arrayBufferToBase64(arrayBuffer);
         const ext = asset.storage_path.split(".").pop()?.toLowerCase() || "png";
         const mime = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
         referenceImages.push({ mimeType: mime, data: base64, tag: asset.tag || undefined, assetType: asset.asset_type });
@@ -587,7 +628,7 @@ serve(async (req: Request) => {
           if (tmplError) continue;
           if (tmplData) {
             const ab = await tmplData.arrayBuffer();
-            const b64 = safeBase64(ab);
+            const b64 = arrayBufferToBase64(ab);
             const ext = name.split(".").pop() || "png";
             templateImage = { mimeType: ext === "jpg" || ext === "jpeg" ? "image/jpeg" : `image/${ext}`, data: b64 };
             console.log(`[TEMPLATE] ✅ Loaded: ${name} (${Math.round(ab.byteLength / 1024)}KB)`);
@@ -606,10 +647,30 @@ serve(async (req: Request) => {
     // ── Analyze FULL template set (extracts per-slide layouts from composite) ──
     const ai = new GoogleGenAI({ apiKey: geminiApiKey });
     let templateSetAnalysis: TemplateSetAnalysis | null = null;
+    const projectConfig = (project.config as any) || {};
+    const cachedTemplateAnalysis = projectConfig?.template_analysis;
 
-    if (templateImage) {
+    if (
+      cachedTemplateAnalysis?.template_id === templateKey &&
+      cachedTemplateAnalysis?.analysis &&
+      Array.isArray(cachedTemplateAnalysis.analysis.slides)
+    ) {
+      templateSetAnalysis = cachedTemplateAnalysis.analysis as TemplateSetAnalysis;
+      console.log(`[TEMPLATE] ♻️ Reusing cached template analysis for "${templateKey}"`);
+    } else if (templateImage) {
       templateSetAnalysis = await analyzeTemplateSet(ai, templateImage.data, templateImage.mimeType);
       console.log(`[TEMPLATE] Template has ${templateSetAnalysis.totalSlides} slides. Project needs ${allSlides.length} slides.`);
+
+      await adminClient.from("projects").update({
+        config: {
+          ...projectConfig,
+          template_analysis: {
+            template_id: templateKey,
+            analyzed_at: new Date().toISOString(),
+            analysis: templateSetAnalysis,
+          },
+        },
+      }).eq("id", projectId);
     }
 
     // ── Update project status ──
@@ -643,7 +704,7 @@ serve(async (req: Request) => {
             const { data: contextData } = await adminClient.storage.from("generated-outputs").download(contextPath);
             if (!contextData) continue;
             const ab = await contextData.arrayBuffer();
-            previousSlideImages.push({ mimeType: "image/png", data: safeBase64(ab) });
+            previousSlideImages.push({ mimeType: "image/png", data: arrayBufferToBase64(ab) });
           } catch { /* ignore */ }
         }
 
@@ -658,11 +719,21 @@ serve(async (req: Request) => {
 
         for (const slide of invocationSlides) {
           const displayNum = slide.slide_number;
+          const shouldBillSlide = Boolean(singleSlideId || forceRegenerate || !(resumeGeneration && slide.status === "generating"));
+          let creditReserved = false;
           sendEvent("slide-start", { slideNumber: displayNum, total: allSlides.length });
           const slideStartMs = Date.now();
           await adminClient.from("project_slides").update({ status: "generating", attempt_count: (slide.attempt_count || 0) + 1 }).eq("id", slide.id);
 
           try {
+            if (shouldBillSlide) {
+              const remaining = await debitCreditsAtomic(adminClient as any, userId, CREDIT_COST_PER_SLIDE);
+              if (remaining === null) {
+                throw new Error("Insufficient credits to generate this slide.");
+              }
+              creditReserved = true;
+            }
+
             // ── Resolve which template slide to target ──
             const templateSlideCount = templateSetAnalysis?.totalSlides || 0;
             const isBeyondTemplate = displayNum > templateSlideCount;
@@ -741,12 +812,12 @@ serve(async (req: Request) => {
               }
             }
 
-            // Enforce max 14 images
+            // Enforce a strict context cap to stay under model input limits.
             let imgCount = 0;
             for (let j = parts.length - 1; j >= 0; j--) {
               if ((parts[j] as any).inlineData) {
                 imgCount++;
-                if (imgCount > 14) parts.splice(j, 1);
+                if (imgCount > 10) parts.splice(j, 1);
               }
             }
 
@@ -773,12 +844,17 @@ serve(async (req: Request) => {
               }
             }
 
-            // Auto-repair: retry once if no image or low quality
-            if (!imageBase64) {
-              console.warn(`[GENERATE] Slide ${displayNum}: No image on first attempt, retrying...`);
+            const firstPassQuality = parseQualityScore(text);
+
+            // Auto-repair: retry once if no image or low quality score available.
+            if (!imageBase64 || (firstPassQuality !== null && firstPassQuality < 70)) {
+              console.warn(`[GENERATE] Slide ${displayNum}: Retrying (hasImage=${Boolean(imageBase64)}, quality=${firstPassQuality ?? "n/a"})`);
               const retryResponse = await ai.models.generateContent({
                 model: "gemini-3.1-flash-image-preview",
-                contents: [{ text: `${prompt}\n\nCRITICAL: You MUST generate an image. Return an App Store screenshot image.` }, ...(templateImage ? [{ inlineData: { mimeType: templateImage.mimeType, data: templateImage.data } }] : [])],
+                contents: [
+                  ...parts,
+                  { text: "CRITICAL REFINEMENT: improve readability, spacing precision, and overall polish while preserving exact requested text." },
+                ],
                 config: {
                   responseModalities: ["TEXT", "IMAGE"],
                   imageConfig: { aspectRatio, imageSize: "2K" },
@@ -801,16 +877,10 @@ serve(async (req: Request) => {
 
             // Upload to storage
             const storagePath = `${userId}/${projectId}/slide-${displayNum}.png`;
-            const imageBytes = Uint8Array.from(atob(imageBase64), (c) => c.charCodeAt(0));
+            const imageBytes = base64ToUint8Array(imageBase64);
             await adminClient.storage.from("generated-outputs").upload(storagePath, imageBytes, {
               contentType: "image/png", upsert: true,
             });
-
-            // Deduct credit AFTER successful generation
-            const { data: freshProfile } = await adminClient.from("profiles").select("credits").eq("id", userId).single();
-            if (freshProfile) {
-              await adminClient.from("profiles").update({ credits: Math.max(0, freshProfile.credits - CREDIT_COST_PER_SLIDE) }).eq("id", userId);
-            }
 
             const qualityScore = parseQualityScore(text);
             const generationMs = Date.now() - slideStartMs;
@@ -825,6 +895,13 @@ serve(async (req: Request) => {
               qualityScore, generationMs,
             });
           } catch (error: any) {
+            if (creditReserved) {
+              try {
+                await creditCreditsAtomic(adminClient as any, userId, CREDIT_COST_PER_SLIDE);
+              } catch (refundError) {
+                console.error(`[GENERATE] Refund failed for slide ${displayNum}:`, refundError);
+              }
+            }
             console.error(`[GENERATE] Error slide ${displayNum}:`, error);
             await adminClient.from("project_slides").update({ status: "error", last_error: error.message || "Generation failed" }).eq("id", slide.id);
             sendEvent("slide-error", { slideNumber: displayNum, message: error.message || "Generation failed" });

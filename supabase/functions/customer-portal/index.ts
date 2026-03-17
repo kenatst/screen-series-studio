@@ -43,7 +43,7 @@ serve(async (req) => {
     if (customers.data.length === 0) throw new Error("No Stripe customer found for this user");
 
     const customerId = customers.data[0].id;
-    const origin = req.headers.get("origin") || "https://id-preview--52a74d6d-b018-4225-a250-f84888a02bc6.lovable.app";
+    const origin = req.headers.get("origin") || Deno.env.get("SITE_URL") || "https://shotapp.ai";
 
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customerId,

@@ -1,35 +1,44 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
+import { creditsCapForPlan, PLAN_CREDITS, PRODUCT_NAME_TO_PLAN, toPlanId } from "../_shared/billing.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-/** Map product name → plan id */
-const PRODUCT_NAME_TO_PLAN: Record<string, string> = {
-  "ShotApp Starter": "starter",
-  "ShotApp Pro": "pro",
-  "ShotApp Unlimited": "unlimited",
-};
-
-const PLAN_CREDITS: Record<string, number> = {
-  free: 3,
-  starter: 50,
-  pro: 200,
-  unlimited: 1000,
-};
-
 const logStep = (step: string, details?: any) => {
   console.log(`[STRIPE-WEBHOOK] ${step}${details ? ` - ${JSON.stringify(details)}` : ''}`);
 };
 
-/** Resolve plan name from a Stripe price's product */
-async function resolvePlanFromPrice(stripe: Stripe, priceId: string): Promise<string> {
-  const price = await stripe.prices.retrieve(priceId, { expand: ["product"] });
-  const product = price.product as Stripe.Product;
-  return PRODUCT_NAME_TO_PLAN[product.name] || "starter";
+async function resolvePlanFromSubscriptionItem(
+  stripe: Stripe,
+  item: Stripe.SubscriptionItem | undefined,
+): Promise<"free" | "starter" | "pro" | "unlimited"> {
+  if (!item) return "free";
+
+  const price = item.price;
+  const fromPriceMetadata = toPlanId(price.metadata?.plan);
+  if (fromPriceMetadata !== "free") return fromPriceMetadata;
+
+  const product = price.product;
+  if (product && typeof product !== "string") {
+    const fromProductMetadata = toPlanId(product.metadata?.plan);
+    if (fromProductMetadata !== "free") return fromProductMetadata;
+    return PRODUCT_NAME_TO_PLAN[product.name] ?? "starter";
+  }
+
+  if (typeof product === "string") {
+    const hydratedPrice = await stripe.prices.retrieve(price.id, { expand: ["product"] });
+    if (hydratedPrice.product && typeof hydratedPrice.product !== "string") {
+      const fromHydratedMetadata = toPlanId(hydratedPrice.product.metadata?.plan);
+      if (fromHydratedMetadata !== "free") return fromHydratedMetadata;
+      return PRODUCT_NAME_TO_PLAN[hydratedPrice.product.name] ?? "starter";
+    }
+  }
+
+  return "starter";
 }
 
 serve(async (req) => {
@@ -72,17 +81,15 @@ serve(async (req) => {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
         const userId = session.metadata?.user_id;
-        const plan = session.metadata?.plan;
+        const plan = toPlanId(session.metadata?.plan);
         const customerId = session.customer as string;
 
-        if (userId && plan) {
-          const credits = PLAN_CREDITS[plan] || 3;
+        if (userId && plan !== "free") {
           await supabase.from("profiles").update({
             plan,
             stripe_customer_id: customerId,
-            credits,
           }).eq("id", userId);
-          logStep("Plan updated + credits granted via checkout", { userId, plan, credits, customerId });
+          logStep("Plan linked via checkout.session.completed", { userId, plan, customerId });
         }
         break;
       }
@@ -102,18 +109,32 @@ serve(async (req) => {
 
         const { data: prof } = await supabase
           .from("profiles")
-          .select("id")
+          .select("id, credits")
           .eq("stripe_customer_id", customerId)
           .single();
 
         if (prof) {
-          const sub = await stripe.subscriptions.list({ customer: customerId, status: "active", limit: 1 });
+          const sub = await stripe.subscriptions.list({
+            customer: customerId,
+            status: "active",
+            limit: 1,
+            expand: ["data.items.data.price.product"],
+          });
           if (sub.data.length > 0) {
-            const priceId = sub.data[0].items.data[0]?.price?.id;
-            const activePlan = await resolvePlanFromPrice(stripe, priceId);
-            const credits = PLAN_CREDITS[activePlan] || 50;
-            await supabase.from("profiles").update({ plan: activePlan, credits }).eq("id", prof.id);
-            logStep("Plan synced + credits refilled on invoice.paid", { userId: prof.id, plan: activePlan, credits });
+            const activePlan = await resolvePlanFromSubscriptionItem(stripe, sub.data[0].items.data[0]);
+            const monthlyCredits = PLAN_CREDITS[activePlan] || PLAN_CREDITS.free;
+            const cap = creditsCapForPlan(activePlan);
+            const nextCredits = Math.min((prof.credits ?? 0) + monthlyCredits, cap);
+            await supabase
+              .from("profiles")
+              .update({ plan: activePlan, credits: nextCredits })
+              .eq("id", prof.id);
+            logStep("Credits topped up on invoice.paid", {
+              userId: prof.id,
+              plan: activePlan,
+              monthlyCredits,
+              nextCredits,
+            });
           }
         }
         break;
@@ -141,21 +162,17 @@ serve(async (req) => {
               .single();
 
             if (profileByEmail) {
-              const priceId = subscription.items.data[0]?.price?.id;
-              const plan = isActive ? await resolvePlanFromPrice(stripe, priceId) : "free";
-              const credits = PLAN_CREDITS[plan] || 3;
-              await supabase.from("profiles").update({ plan, stripe_customer_id: customerId, credits }).eq("id", profileByEmail.id);
-              logStep("Plan updated via email lookup", { userId: profileByEmail.id, plan, credits });
+              const plan = isActive ? await resolvePlanFromSubscriptionItem(stripe, subscription.items.data[0]) : "free";
+              await supabase.from("profiles").update({ plan, stripe_customer_id: customerId }).eq("id", profileByEmail.id);
+              logStep("Plan updated via email lookup", { userId: profileByEmail.id, plan });
             }
           }
           break;
         }
 
-        const priceId = subscription.items.data[0]?.price?.id;
-        const plan = isActive ? await resolvePlanFromPrice(stripe, priceId) : "free";
-        const credits = PLAN_CREDITS[plan] || 3;
-        await supabase.from("profiles").update({ plan, credits }).eq("id", profile.id);
-        logStep("Plan updated", { userId: profile.id, plan, credits, status: subscription.status });
+        const plan = isActive ? await resolvePlanFromSubscriptionItem(stripe, subscription.items.data[0]) : "free";
+        await supabase.from("profiles").update({ plan }).eq("id", profile.id);
+        logStep("Plan updated", { userId: profile.id, plan, status: subscription.status });
         break;
       }
 
@@ -170,7 +187,7 @@ serve(async (req) => {
           .single();
 
         if (profile) {
-          await supabase.from("profiles").update({ plan: "free", credits: 3 }).eq("id", profile.id);
+          await supabase.from("profiles").update({ plan: "free" }).eq("id", profile.id);
           logStep("Payment failed, downgraded to free", { customerId, userId: profile.id });
         } else {
           logStep("Payment failed, no profile found", { customerId });

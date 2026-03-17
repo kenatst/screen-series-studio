@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
+import { PRODUCT_NAME_TO_PLAN, toPlanId } from "../_shared/billing.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,24 +12,28 @@ const logStep = (step: string, details?: unknown) => {
   console.log(`[CHECK-SUBSCRIPTION] ${step}${details ? ` - ${JSON.stringify(details)}` : ""}`);
 };
 
-const PRODUCT_NAME_TO_PLAN: Record<string, "starter" | "pro" | "unlimited"> = {
-  "ShotApp Starter": "starter",
-  "ShotApp Pro": "pro",
-  "ShotApp Unlimited": "unlimited",
-};
-
-const PLAN_CREDITS: Record<string, number> = {
-  free: 3,
-  starter: 50,
-  pro: 200,
-  unlimited: 1000,
-};
-
 const safeIsoFromUnixSeconds = (value: unknown): string | null => {
   if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return null;
   const date = new Date(value * 1000);
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 };
+
+function resolvePlanFromPriceItem(priceItem: Stripe.SubscriptionItem | undefined): "free" | "starter" | "pro" | "unlimited" {
+  if (!priceItem) return "free";
+  const price = priceItem.price;
+
+  const planFromPriceMetadata = toPlanId(price.metadata?.plan);
+  if (planFromPriceMetadata !== "free") return planFromPriceMetadata;
+
+  const product = price.product;
+  if (product && typeof product !== "string") {
+    const planFromProductMetadata = toPlanId(product.metadata?.plan);
+    if (planFromProductMetadata !== "free") return planFromProductMetadata;
+    return PRODUCT_NAME_TO_PLAN[product.name] ?? "starter";
+  }
+
+  return "starter";
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -89,6 +94,7 @@ serve(async (req) => {
       customer: customerId,
       status: "active",
       limit: 1,
+      expand: ["data.items.data.price.product"],
     });
 
     if (subscriptions.data.length === 0) {
@@ -119,15 +125,11 @@ serve(async (req) => {
       });
     }
 
-    const productId = priceItem.price.product as string;
-    const product = await stripe.products.retrieve(productId);
-    const resolvedPlan = PRODUCT_NAME_TO_PLAN[product.name] ?? "starter";
+    const resolvedPlan = resolvePlanFromPriceItem(priceItem);
 
-    const monthlyCredits = PLAN_CREDITS[resolvedPlan] ?? 3;
-    // Only grant full credits when the plan actually changes (upgrade/downgrade)
-    // Do NOT touch credits on routine checks — let the generation engine handle deductions
-    const planChanged = currentPlan !== resolvedPlan;
-    const nextCredits = planChanged ? monthlyCredits : currentCredits;
+    // Billing credits are handled by webhook events (invoice.paid) to avoid double grants.
+    // This endpoint only syncs plan identity and subscription end metadata.
+    const nextCredits = currentCredits;
 
     const subscriptionEnd = safeIsoFromUnixSeconds(subscription.current_period_end);
 

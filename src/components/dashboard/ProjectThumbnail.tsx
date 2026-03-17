@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useProjectSlides } from "@/hooks/useProjects";
+import { isStoragePath, resolveSignedUrl } from "@/lib/storage-utils";
 
 /** Shows the app logo (from uploaded brand assets) or falls back to first slide thumbnail */
 export const ProjectThumbnail = ({ projectId }: { projectId: string }) => {
@@ -43,6 +44,18 @@ export const ProjectThumbnail = ({ projectId }: { projectId: string }) => {
         staleTime: 1000 * 60 * 30, // 30 minutes cache to prevent flickering
     });
 
+    const firstSlide = slides?.[0];
+    const { data: firstSlideUrl } = useQuery({
+        queryKey: ["project-slide-thumb", projectId, firstSlide?.id, firstSlide?.image_url],
+        enabled: !!firstSlide?.image_url,
+        queryFn: async () => {
+            if (!firstSlide?.image_url) return null;
+            if (!isStoragePath(firstSlide.image_url)) return firstSlide.image_url;
+            return resolveSignedUrl("generated-outputs", firstSlide.image_url);
+        },
+        staleTime: 1000 * 60 * 90,
+    });
+
     if (logoUrl) {
         return (
             <img
@@ -53,11 +66,10 @@ export const ProjectThumbnail = ({ projectId }: { projectId: string }) => {
         );
     }
 
-    const firstSlide = slides?.[0];
-    if (firstSlide?.image_url) {
+    if (firstSlideUrl) {
         return (
             <img
-                src={firstSlide.image_url}
+                src={firstSlideUrl}
                 alt="Project thumbnail"
                 className="w-full h-full object-cover"
             />

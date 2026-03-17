@@ -23,16 +23,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useProject, useProjectSlides } from "@/hooks/useProjects";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { isStoragePath, resolveSignedUrl } from "@/lib/storage-utils";
 
-const phases = [
-  { label: "Analyzing brand identity", icon: "🎨" },
-  { label: "Processing visual references", icon: "🖼️" },
-  { label: "Building creative direction", icon: "✨" },
-  { label: "Planning slide compositions", icon: "📐" },
-  { label: "Rendering slide visuals", icon: "🔥" },
-  { label: "Harmonizing set consistency", icon: "🎯" },
-  { label: "All slides generated", icon: "✅" },
-];
+const phaseIcons = ["🎨", "🖼️", "✨", "📐", "🔥", "🎯", "✅"];
 
 const fadeUp = {
   hidden: { opacity: 0, y: 10 },
@@ -41,11 +34,6 @@ const fadeUp = {
 
 type SlideUiStatus = "pending" | "generating" | "completed" | "error";
 type SlideSnapshot = { slide_number: number; status: string; image_url: string | null };
-
-const isStoragePath = (value: string | null) => {
-  if (!value) return false;
-  return !value.startsWith("http://") && !value.startsWith("https://");
-};
 
 const normalizeStatus = (status: string, imageUrl: string | null): SlideUiStatus => {
   if (imageUrl || status === "completed") return "completed";
@@ -136,8 +124,7 @@ const Generating = () => {
     if (!isStoragePath(imageUrl)) return imageUrl;
     const cached = signedUrlCacheRef.current[imageUrl];
     if (cached) return cached;
-    const { data } = await supabase.storage.from("generated-outputs").createSignedUrl(imageUrl, 60 * 60 * 2);
-    const signedUrl = data?.signedUrl || null;
+    const signedUrl = await resolveSignedUrl("generated-outputs", imageUrl);
     if (signedUrl) signedUrlCacheRef.current[imageUrl] = signedUrl;
     return signedUrl;
   }, []);
@@ -316,7 +303,7 @@ const Generating = () => {
       if (e.name === "AbortError") return "busy";
       return { error: `Request failed: ${e?.message || "Network/CORS error"}` };
     }
-  }, [projectId]);
+  }, [projectId, refreshProfile]);
 
   const processQueue = useCallback(async (accessToken: string, initialResume: boolean, targetSlide?: number, userFeedback?: string) => {
     const result = await startGenerationStream(accessToken, initialResume, targetSlide, userFeedback);
@@ -363,10 +350,9 @@ const Generating = () => {
       await processQueue(session.access_token, shouldAutoStart);
     };
 
-    const timer = window.setTimeout(bootstrap, 500);
+    void bootstrap();
     return () => {
       if (warmupIntervalRef.current) window.clearInterval(warmupIntervalRef.current);
-      window.clearTimeout(timer);
       stopPolling();
       requestAbortRef.current?.abort();
     };
@@ -433,8 +419,8 @@ const Generating = () => {
               <span className="text-xs text-muted-foreground font-medium">{t('generating.credits')}</span>
             </div>
             <div className="hidden md:flex items-center gap-2">
-              <span className="text-sm font-bold text-primary">{phases[currentPhase]?.icon}</span>
-              <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{phases[currentPhase]?.label}</span>
+              <span className="text-sm font-bold text-primary">{phaseIcons[currentPhase]}</span>
+              <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{t(`generating.phases.${currentPhase}`)}</span>
               <span className="text-sm font-black ml-2">{progress}%</span>
             </div>
             <AlertDialog>

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
-import { getPlanById, PLANS, CREDIT_COSTS } from "@/lib/plans";
+import { getPlanById, CREDIT_COSTS } from "@/lib/plans";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useSearchParams } from "react-router-dom";
@@ -42,7 +42,7 @@ const Settings_Page = () => {
       toast({ title: t('settings.paymentSuccess'), description: t('settings.subActive') });
       setTimeout(() => { checkSubscription(); refreshProfile(); }, 2000);
     }
-  }, [searchParams]);
+  }, [checkSubscription, refreshProfile, searchParams, t, toast]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -125,7 +125,7 @@ const Settings_Page = () => {
               <span className="text-xl text-muted-foreground font-bold">{t('settings.creditsRemaining')}</span>
             </div>
 
-            <div className="grid sm:grid-cols-3 gap-4 mb-6">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               <div className="rounded-xl bg-card/90 border border-border p-4">
                 <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">{t('settings.generation')}</p>
                 <p className="text-lg font-black text-foreground">{CREDIT_COSTS.generateSlide} cr. <span className="text-sm font-medium text-muted-foreground">{t('settings.perSlide')}</span></p>
@@ -137,6 +137,10 @@ const Settings_Page = () => {
               <div className="rounded-xl bg-card/90 border border-border p-4">
                 <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">{t('settings.translation')}</p>
                 <p className="text-lg font-black text-foreground">{CREDIT_COSTS.translateSlide} cr. <span className="text-sm font-medium text-muted-foreground">{t('settings.perSlide')}</span></p>
+              </div>
+              <div className="rounded-xl bg-card/90 border border-border p-4">
+                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">{t('settings.suggestions')}</p>
+                <p className="text-lg font-black text-foreground">{CREDIT_COSTS.suggestCopy} cr. <span className="text-sm font-medium text-muted-foreground">{t('settings.perRequest')}</span></p>
               </div>
             </div>
 
@@ -157,7 +161,7 @@ const Settings_Page = () => {
               <div className="flex items-center gap-3 mb-2">
                 <Crown className="h-6 w-6 text-primary" />
                 <h2 className="text-2xl font-black tracking-tight text-foreground">{plan.name}</h2>
-                <Badge className="bg-primary/20 text-primary border-primary/30 text-xs font-bold uppercase">Active</Badge>
+                <Badge className="bg-primary/20 text-primary border-primary/30 text-xs font-bold uppercase">{t('settings.active')}</Badge>
               </div>
               <p className="text-muted-foreground">{plan.description}</p>
             </div>
@@ -207,11 +211,11 @@ const Settings_Page = () => {
           </div>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Email</span>
+              <span className="text-sm text-muted-foreground">{t('settings.email')}</span>
               <span className="text-sm font-medium text-foreground">{user?.email}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Plan</span>
+              <span className="text-sm text-muted-foreground">{t('settings.plan')}</span>
               <Badge className="bg-primary/20 text-primary border-primary/30 text-xs">{plan.name}</Badge>
             </div>
             <div className="flex justify-between">

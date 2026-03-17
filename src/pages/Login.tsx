@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +21,22 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [honeyPot, setHoneyPot] = useState("");
+  const [humanAnswer, setHumanAnswer] = useState("");
+  const formLoadedAt = useRef(Date.now());
+  const challenge = useMemo(() => {
+    const a = Math.floor(Math.random() * 8) + 2;
+    const b = Math.floor(Math.random() * 8) + 2;
+    return { a, b, sum: a + b };
+  }, []);
+
+  useEffect(() => {
+    if (isSignUp) {
+      formLoadedAt.current = Date.now();
+      setHumanAnswer("");
+      setHoneyPot("");
+    }
+  }, [isSignUp]);
 
   if (loading) {
     return (
@@ -39,6 +55,17 @@ const Login = () => {
     setSubmitting(true);
     try {
       if (isSignUp) {
+        if (honeyPot.trim().length > 0) {
+          toast({ title: t('login.checkEmail'), description: t('login.confirmationSent') });
+          return;
+        }
+        if (Date.now() - formLoadedAt.current < 1200) {
+          throw new Error(t('login.suspiciousSignup'));
+        }
+        if (Number(humanAnswer) !== challenge.sum) {
+          throw new Error(t('login.humanCheckFailed'));
+        }
+
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -51,8 +78,8 @@ const Login = () => {
         if (error) throw error;
         navigate("/dashboard");
       }
-    } catch (err: any) {
-      toast({ title: t('common.error'), description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: t('common.error'), description: err instanceof Error ? err.message : t('common.error'), variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
@@ -66,8 +93,8 @@ const Login = () => {
       if (result?.error) {
         toast({ title: t('common.error'), description: String(result.error), variant: "destructive" });
       }
-    } catch (err: any) {
-      toast({ title: t('common.error'), description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: t('common.error'), description: err instanceof Error ? err.message : t('common.error'), variant: "destructive" });
     }
   };
 
@@ -114,6 +141,32 @@ const Login = () => {
           </div>
 
           <form onSubmit={handleEmailAuth} className="space-y-4">
+            {isSignUp && (
+              <>
+                <input
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={honeyPot}
+                  onChange={(e) => setHoneyPot(e.target.value)}
+                  className="hidden"
+                  aria-hidden="true"
+                />
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
+                    {t('login.humanCheckLabel')}
+                  </label>
+                  <Input
+                    type="number"
+                    value={humanAnswer}
+                    onChange={(e) => setHumanAnswer(e.target.value)}
+                    placeholder={t('login.humanCheckPlaceholder', { a: challenge.a, b: challenge.b })}
+                    className="h-12 bg-muted/50 border-border rounded-xl"
+                    required
+                  />
+                </div>
+              </>
+            )}
             <div className="space-y-2">
               <label htmlFor="login-email" className="text-sm font-bold text-muted-foreground uppercase tracking-wider">{t('login.email')}</label>
               <div className="relative">
@@ -143,8 +196,8 @@ const Login = () => {
                         });
                         if (error) throw error;
                         toast({ title: t('login.checkEmail'), description: t('login.resetSent') });
-                      } catch (err: any) {
-                        toast({ title: t('common.error'), description: err.message, variant: "destructive" });
+                      } catch (err: unknown) {
+                        toast({ title: t('common.error'), description: err instanceof Error ? err.message : t('common.error'), variant: "destructive" });
                       } finally {
                         setSubmitting(false);
                       }

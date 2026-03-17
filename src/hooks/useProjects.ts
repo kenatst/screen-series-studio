@@ -7,16 +7,6 @@ type ProjectInsert = Database["public"]["Tables"]["projects"]["Insert"];
 type ProjectSlide = Database["public"]["Tables"]["project_slides"]["Row"];
 type ProjectSlideInsert = Database["public"]["Tables"]["project_slides"]["Insert"];
 
-/**
- * Checks if a string looks like a storage path (not a full URL).
- * Storage paths look like: "userId/projectId/slide-1.png"
- * Signed URLs start with "https://"
- */
-function isStoragePath(value: string | null): boolean {
-  if (!value) return false;
-  return !value.startsWith("http://") && !value.startsWith("https://");
-}
-
 export function useProjects() {
   return useQuery({
     queryKey: ["projects"],
@@ -51,7 +41,7 @@ export function useProjectSlides(projectId: string | undefined) {
   return useQuery({
     queryKey: ["project-slides", projectId],
     enabled: !!projectId,
-    staleTime: 1000 * 60 * 5, // 5 min cache
+    staleTime: 1000 * 30,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("project_slides")
@@ -59,26 +49,7 @@ export function useProjectSlides(projectId: string | undefined) {
         .eq("project_id", projectId!)
         .order("slide_number", { ascending: true });
       if (error) throw error;
-
-      const slides = data as ProjectSlide[];
-
-      // Resolve storage paths to signed URLs (2h expiry, cached by RQ)
-      const slidesWithUrls = await Promise.all(
-        slides.map(async (slide) => {
-          if (slide.image_url && isStoragePath(slide.image_url)) {
-            const { data: signedData } = await supabase.storage
-              .from("generated-outputs")
-              .createSignedUrl(slide.image_url, 60 * 60 * 2);
-            return {
-              ...slide,
-              image_url: signedData?.signedUrl || slide.image_url,
-            };
-          }
-          return slide;
-        })
-      );
-
-      return slidesWithUrls as ProjectSlide[];
+      return data as ProjectSlide[];
     },
   });
 }

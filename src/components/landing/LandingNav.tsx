@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { Globe, Menu, X, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const LANGUAGES = [
     { code: 'en', label: 'English', flag: '🇺🇸' },
@@ -133,13 +134,14 @@ export const LandingNav = () => {
 
                     <div className="hidden md:flex items-center gap-3">
                         <LanguageSwitcher />
+                        <ThemeToggle />
                         <Link to="/login" className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-md">
                             <span className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer px-2 py-1">
                                 {t('nav.login')}
                             </span>
                         </Link>
                         <Link to="/login">
-                            <Button className="bg-white text-black hover:bg-white/90 font-semibold shadow-glow rounded-full px-6 h-10">
+                            <Button className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold shadow-glow rounded-full px-6 h-10">
                                 {t('nav.start')}
                             </Button>
                         </Link>
@@ -177,7 +179,10 @@ export const LandingNav = () => {
                                 </a>
                             ))}
                             <div className="w-full h-px bg-white/10 my-2" />
-                            <LanguageSwitcher />
+                            <div className="flex items-center gap-3">
+                                <LanguageSwitcher />
+                                <ThemeToggle />
+                            </div>
                             <Link to="/login" className="w-full" onClick={() => setMobileMenuOpen(false)}>
                                 <Button variant="outline" className="w-full text-foreground border-border h-14 text-lg">
                                     {t('nav.login')}

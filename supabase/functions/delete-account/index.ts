@@ -6,6 +6,54 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+async function listAllObjectPaths(
+  client: ReturnType<typeof createClient>,
+  bucket: string,
+  prefix: string,
+): Promise<string[]> {
+  const paths: string[] = [];
+  let offset = 0;
+
+  while (true) {
+    const { data, error } = await client.storage.from(bucket).list(prefix, {
+      limit: 100,
+      offset,
+      sortBy: { column: "name", order: "asc" },
+    });
+
+    if (error || !data?.length) break;
+
+    for (const item of data) {
+      const currentPath = `${prefix}/${item.name}`;
+      if ((item as any).id === null) {
+        const nested = await listAllObjectPaths(client, bucket, currentPath);
+        paths.push(...nested);
+      } else {
+        paths.push(currentPath);
+      }
+    }
+
+    if (data.length < 100) break;
+    offset += data.length;
+  }
+
+  return paths;
+}
+
+async function removeInChunks(
+  client: ReturnType<typeof createClient>,
+  bucket: string,
+  objectPaths: string[],
+): Promise<void> {
+  const chunkSize = 100;
+  for (let i = 0; i < objectPaths.length; i += chunkSize) {
+    const chunk = objectPaths.slice(i, i + chunkSize);
+    if (chunk.length > 0) {
+      await client.storage.from(bucket).remove(chunk);
+    }
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -43,22 +91,13 @@ serve(async (req) => {
 
     // 1. Delete user's storage files
     try {
-      const { data: uploads } = await adminClient.storage.from("raw-uploads").list(userId);
-      if (uploads?.length) {
-        await adminClient.storage.from("raw-uploads").remove(uploads.map(f => `${userId}/${f.name}`));
-      }
+      const rawUploadPaths = await listAllObjectPaths(adminClient, "raw-uploads", userId);
+      await removeInChunks(adminClient, "raw-uploads", rawUploadPaths);
     } catch { /* ignore */ }
 
     try {
-      const { data: projects } = await adminClient.from("projects").select("id").eq("user_id", userId);
-      if (projects) {
-        for (const proj of projects) {
-          const { data: outputs } = await adminClient.storage.from("generated-outputs").list(`${userId}/${proj.id}`);
-          if (outputs?.length) {
-            await adminClient.storage.from("generated-outputs").remove(outputs.map(f => `${userId}/${proj.id}/${f.name}`));
-          }
-        }
-      }
+      const outputPaths = await listAllObjectPaths(adminClient, "generated-outputs", userId);
+      await removeInChunks(adminClient, "generated-outputs", outputPaths);
     } catch { /* ignore */ }
 
     // 2. Delete user from auth (cascades to profiles, projects, etc. via FK)

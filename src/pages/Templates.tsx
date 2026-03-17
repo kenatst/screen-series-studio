@@ -103,7 +103,7 @@ const Templates = () => {
                   className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all duration-300 ${selectedCategory === c ? 'bg-primary/20 text-primary border-primary shadow-glow' : 'bg-secondary text-muted-foreground border-border hover:border-primary/40 hover:text-foreground'
                     }`}
                 >
-                  {c}
+                  {t(`templates.categories.${c.toLowerCase()}`)}
                 </button>
               ))}
             </div>

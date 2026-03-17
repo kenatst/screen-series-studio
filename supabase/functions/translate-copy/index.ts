@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
+import { creditCreditsAtomic, debitCreditsAtomic } from "../_shared/credits.ts";
+import { arrayBufferToBase64, base64ToUint8Array } from "../_shared/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,18 +9,6 @@ const corsHeaders = {
 };
 
 const CREDIT_COST_PER_SLIDE = 1;
-
-/** Chunked base64 encoding that doesn't blow the stack */
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  const chunks: string[] = [];
-  const chunkSize = 8192;
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    const slice = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
-    chunks.push(String.fromCharCode(...slice));
-  }
-  return btoa(chunks.join(""));
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -114,11 +104,19 @@ serve(async (req) => {
     const ai = new GoogleGenAI({ apiKey: geminiApiKey || apiKey });
 
     const translatedSlides: { slide_number: number; imageUrl: string }[] = [];
-    let creditsDeducted = 0;
+    let insufficientCreditsDuringRun = false;
 
     // Process all slides in batch
     for (const slide of completedSlides) {
+      let reservedCredit = false;
       try {
+        const reserved = await debitCreditsAtomic(adminClient as any, userId, CREDIT_COST_PER_SLIDE);
+        if (reserved === null) {
+          insufficientCreditsDuringRun = true;
+          break;
+        }
+        reservedCredit = true;
+
         // Resolve storage path based on device format
         let storagePath: string;
         if (isPrimary) {
@@ -151,6 +149,9 @@ CRITICAL RULES:
 - Keep the tone calm, minimal, and reassuring.
 - Preserve all UI elements, icons, and graphics exactly as they are.
 - Maintain text at a scale appropriate for the ${fmtConfig.width}×${fmtConfig.height} resolution.
+- Preserve punctuation, numbers, and brand names exactly.
+- If ${target_language} is RTL (for example Arabic), render all translated text in correct RTL direction while keeping the same visual alignment blocks.
+- For CJK languages, avoid unnecessary spacing and keep line breaks natural for that script.
 - The output must be a complete image identical to the input except with translated text.`;
 
         const contents: any[] = [
@@ -187,11 +188,7 @@ CRITICAL RULES:
         const translatedPath = `${userId}/${project_id}/slide-${slide.slide_number}${formatTag}-${langCode}.png`;
 
         // Chunked decode
-        const raw = atob(newImageBase64);
-        const imageBytes = new Uint8Array(raw.length);
-        for (let j = 0; j < raw.length; j++) {
-          imageBytes[j] = raw.charCodeAt(j);
-        }
+        const imageBytes = base64ToUint8Array(newImageBase64);
 
         await adminClient.storage.from("generated-outputs").upload(translatedPath, imageBytes, {
           contentType: "image/png",
@@ -216,16 +213,23 @@ CRITICAL RULES:
           device_format: activeFormat,
         });
 
-        // Deduct 1 credit per successful slide
-        creditsDeducted += 1;
-        const newCredits = Math.max(0, currentCredits - creditsDeducted);
-        await adminClient.from("profiles").update({ credits: newCredits }).eq("id", userId);
       } catch (err: any) {
+        if (reservedCredit) {
+          try {
+            await creditCreditsAtomic(adminClient as any, userId, CREDIT_COST_PER_SLIDE);
+          } catch (refundError) {
+            console.error(`Refund failed for slide ${slide.slide_number}:`, refundError);
+          }
+        }
         console.error(`Translation error for slide ${slide.slide_number}:`, err?.message || err);
       }
     }
 
-    return new Response(JSON.stringify({ translations: translatedSlides }), {
+    return new Response(JSON.stringify({
+      translations: translatedSlides,
+      partial: insufficientCreditsDuringRun,
+      message: insufficientCreditsDuringRun ? "Stopped early because credits ran out." : undefined,
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: any) {
