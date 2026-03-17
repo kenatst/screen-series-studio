@@ -502,6 +502,10 @@ serve(async (req: Request) => {
               contentType: "image/png", upsert: true,
             });
 
+            // Deduct credit AFTER successful generation
+            // Atomic credit deduction — prevents race conditions
+            await adminClient.rpc('deduct_credits', { p_user_id: userId, p_amount: CREDIT_COST_PER_SLIDE });
+
             const qualityScore = parseQualityScore(text);
             const generationMs = Date.now() - slideStartMs;
             await adminClient.from("project_slides").update({

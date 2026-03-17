@@ -6,6 +6,17 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import Landing from "./pages/Landing";
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import NewProject from "./pages/NewProject";
+import Generating from "./pages/Generating";
+import Results from "./pages/Results";
+import Templates from "./pages/Templates";
+import NotFound from "./pages/NotFound";
+import Settings from "./pages/Settings";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 import { PageErrorBoundary } from "@/components/errors/PageErrorBoundary";
 import { Loader2 } from "lucide-react";
 
@@ -60,6 +71,20 @@ const App = () => (
       <TooltipProvider>
         <BrowserRouter>
           <RouteAwareToasters />
+          <Routes>
+            <Route path="/" element={<Landing />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/dashboard/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            <Route path="/project/new" element={<ProtectedRoute><NewProject /></ProtectedRoute>} />
+            <Route path="/project/:projectId/generating" element={<ProtectedRoute><Generating /></ProtectedRoute>} />
+            <Route path="/project/:projectId/results" element={<ProtectedRoute><Results /></ProtectedRoute>} />
+            <Route path="/project/:projectId/planner" element={<ProtectedRoute><NewProject /></ProtectedRoute>} />
+            <Route path="/templates" element={<ProtectedRoute><Templates /></ProtectedRoute>} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
           <Suspense fallback={<RouteFallback />}>
             <Routes>
               <Route path="/" element={<Landing />} />

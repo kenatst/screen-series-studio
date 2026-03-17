@@ -171,6 +171,9 @@ serve(async (req) => {
         }),
       });
 
+    // Deduct 1 credit after successful AI response
+    // Atomic credit deduction
+    await adminClient.rpc('deduct_credits', { p_user_id: userData.user.id, p_amount: 1 });
       if (!aiResponse.ok) {
         const status = aiResponse.status;
         if (status === 429) {
