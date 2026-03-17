@@ -160,6 +160,7 @@ export type Database = {
       project_translations: {
         Row: {
           created_at: string
+          device_format: string
           id: string
           project_id: string
           slide_number: number
@@ -170,6 +171,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          device_format?: string
           id?: string
           project_id: string
           slide_number: number
@@ -180,6 +182,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          device_format?: string
           id?: string
           project_id?: string
           slide_number?: number
