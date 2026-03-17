@@ -67,6 +67,7 @@ interface NewProjectContextType {
   setCurrentStep: (step: number) => void;
   next: () => void;
   prev: () => void;
+  canProceedToNext: (step?: number) => boolean;
 
   // Project info
   projectName: string;
@@ -191,7 +192,7 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
   const maxSlides = getMaxSlides(profile?.plan || 'free');
 
   // Core state
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStepState] = useState(1);
   const [slideCount, setSlideCount] = useState(Math.min(5, maxSlides));
   const [slides, setSlides] = useState<SlideItem[]>(
     maxSlides === 1 ? defaultStorylines['5-slide'].slice(0, 1) : defaultStorylines['5-slide']
@@ -273,7 +274,7 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
     if (urlStep) {
       const stepNum = parseInt(urlStep);
       if (!isNaN(stepNum) && stepNum >= 1 && stepNum <= 7) {
-        setCurrentStep(stepNum);
+        setCurrentStepState(stepNum);
       }
     }
   }, [editProjectId, existingProject, hydrated, searchParams]);
@@ -754,15 +755,40 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const next = () => setCurrentStep(s => Math.min(s + 1, 7));
-  const prev = () => setCurrentStep(s => Math.max(s - 1, 1));
   const validateStep = (step = currentStep): string | null => {
     return validateWizardStep({ step, appName, uploadedScreensCount: uploadedScreens.length, slides });
   };
 
+  const canProceedToNext = (step = currentStep): boolean => validateStep(step) === null;
+
+  const setCurrentStep = (step: number) => {
+    const boundedStep = Math.min(7, Math.max(1, step));
+    if (boundedStep <= currentStep) {
+      setCurrentStepState(boundedStep);
+      return;
+    }
+
+    // Validate every prior step before allowing forward navigation or deep-link step jumps.
+    for (let priorStep = 1; priorStep < boundedStep; priorStep += 1) {
+      if (!canProceedToNext(priorStep)) {
+        return;
+      }
+    }
+
+    setCurrentStepState(boundedStep);
+  };
+
+  const next = () => {
+    if (!canProceedToNext(currentStep)) return;
+    setCurrentStepState((step) => Math.min(step + 1, 7));
+  };
+
+  const prev = () => setCurrentStepState((step) => Math.max(step - 1, 1));
+
   return (
     <NewProjectContext.Provider value={{
       currentStep, setCurrentStep, next, prev,
+      canProceedToNext,
       projectName, setProjectName, appName, setAppName, platform, setPlatform,
       appCategory, setAppCategory, targetAudience, setTargetAudience,
       primaryGoal, setPrimaryGoal, outputLanguage, setOutputLanguage,
