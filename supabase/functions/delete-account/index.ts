@@ -41,7 +41,7 @@ async function listAllObjectPaths(
 }
 
 async function removeInChunks(
-  client: ReturnType<typeof createClient>,
+  client: any,
   bucket: string,
   objectPaths: string[],
 ): Promise<void> {
