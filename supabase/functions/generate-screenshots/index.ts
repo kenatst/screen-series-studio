@@ -240,11 +240,7 @@ ${slideLayout.hasDeviceMockup ? "Include a phone mockup with a generic branded s
 Slide ${slide.slide_number} of ${totalSlides} | Objective: ${slide.objective || "Feature spotlight"} | Emphasis: ${slide.emphasis || "balanced"} | Format: ${aspectStr}
 
 ${!isFirstSlide && hasPreviousSlides ? `=== VISUAL CONTINUITY (CRITICAL) ===
-Previously generated slides from THIS SET are attached after the template.
-- LAYOUT: Follow template slide #${slideLayout.slidePosition}'s structure
-- VISUAL IDENTITY: Match the exact colors, typography, device frames from the previous slides
-- ONE designer, ONE Figma file, ONE session
-Previously generated slides from THIS SET are also attached after the template and raw screen.
+Previously generated slides from THIS SET are attached after the template and raw screen.
 - LAYOUT: Follow the template slide #${slideLayout.slidePosition}'s composition (IMAGE #1)
 - VISUAL IDENTITY: Match the exact color palette, typography, device frames, background treatment, and lighting from the previously generated slides
 - Think of it as: ONE designer, ONE Figma file, ONE session — each slide has a different layout but shares the same visual DNA
