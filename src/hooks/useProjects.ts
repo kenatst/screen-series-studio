@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import type { Database } from "@/integrations/supabase/types";
 
 type Project = Database["public"]["Tables"]["projects"]["Row"];
@@ -86,15 +85,24 @@ export function useProjectSlides(projectId: string | undefined) {
 
 export function useCreateProject() {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (project: Omit<ProjectInsert, "user_id">) => {
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
+
+      if (authError || !user) {
+        throw new Error("You must be logged in to generate screenshots");
+      }
+
       const { data, error } = await supabase
         .from("projects")
-        .insert({ ...project, user_id: user!.id })
+        .insert({ ...project, user_id: user.id })
         .select()
         .single();
+
       if (error) throw error;
       return data as Project;
     },

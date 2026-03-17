@@ -587,18 +587,26 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
       const safeFileName = sanitizeFileNameForStorage(file.name);
       let storagePath = `${userId}/${projectId}/${folder}/${prefix}-${safeFileName}`;
 
-      const { error } = await supabase.storage.from('raw-uploads').upload(storagePath, file, { upsert: true });
+      const { error } = await supabase.storage.from('raw-uploads').upload(storagePath, file, { upsert: false });
 
-      if (error && /invalid key/i.test(error.message || '')) {
-        const ext = safeFileName.includes('.') ? safeFileName.split('.').pop() : '';
-        const retryName = `${prefix}-${crypto.randomUUID()}${ext ? `.${ext}` : ''}`;
-        storagePath = `${userId}/${projectId}/${folder}/${retryName}`;
+      if (!error) return storagePath;
 
-        const { error: retryError } = await supabase.storage.from('raw-uploads').upload(storagePath, file, { upsert: true });
-        if (retryError) throw retryError;
-      } else if (error) {
-        throw error;
-      }
+      const msg = (error.message || '').toLowerCase();
+      const statusCode = Number((error as any).statusCode ?? 0);
+      const isPermissionError =
+        msg.includes('row-level security') ||
+        msg.includes('permission denied') ||
+        statusCode === 401 ||
+        statusCode === 403;
+
+      if (isPermissionError) throw error;
+
+      const ext = safeFileName.includes('.') ? safeFileName.split('.').pop() : '';
+      const retryName = `${prefix}-${crypto.randomUUID()}${ext ? `.${ext}` : ''}`;
+      storagePath = `${userId}/${projectId}/${folder}/${retryName}`;
+
+      const { error: retryError } = await supabase.storage.from('raw-uploads').upload(storagePath, file, { upsert: false });
+      if (retryError) throw retryError;
 
       return storagePath;
     };
@@ -717,8 +725,6 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
     if (!user) { toast({ title: "Not authenticated", variant: "destructive" }); return; }
     setIsSaving(true);
     try {
-      // Refresh session to prevent stale JWT causing RLS violations
-      await supabase.auth.refreshSession();
       // Force-refresh session & verify user server-side to prevent stale JWT
       const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
       if (sessionError || !session) {

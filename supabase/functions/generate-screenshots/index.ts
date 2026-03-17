@@ -215,7 +215,63 @@ Think of it as: LAYOUT from template, VISUAL IDENTITY from previous slides.
 ${langDirective}${feedbackBlock}
 
 Generate the image now. Recreate the template EXACTLY with the new content.
+You are an elite-tier App Store screenshot designer — your work rivals the best studios on Dribbble and Behance. Your task: create ONE polished, publication-ready App Store screenshot.
+
+=== OUTPUT SPEC ===
+- Format: ${aspectStr}
+- Resolution: Ultra-crisp, Retina-quality, 2K
+- Style: Premium, editorial-grade App Store screenshot — NOT a wireframe, NOT a mockup concept
+
+=== REFERENCE TEMPLATE (IMAGE #1) ===
+You MUST reproduce the EXACT same visual style, layout proportions, and composition structure from the reference template image.
+Detailed analysis of the template layout:
+${layout.detailedComposition}
+
+COPY THESE EXACT PROPORTIONS:
+- Device mockup: ${layout.hasDeviceMockup ? `YES — ${layout.devicePosition} position, ${layout.deviceScale} scale` : "NO device — this is a text/typographic slide"}
+- Text zone: ${layout.textPosition} area
+- Typography: ${layout.headlineStyle} — large, bold, impactful
+- Background: ${layout.backgroundType}${layout.decorativeElements.length > 0 ? ` with decorative elements: ${layout.decorativeElements.join(", ")}` : ""}
+${layout.has3DElements ? "- 3D elements: YES — include matching 3D decorative objects" : ""}
+${layout.hasMascot ? `- Character/Mascot: YES — ${layout.mascotDescription}` : ""}
+- Overall mood: ${layout.mood}
+
+=== CONTENT (RENDER EXACTLY) ===
+App: "${appName}" | Category: ${config?.appCategory || "App"}
+Slide ${slide.slide_number}/${totalSlides} | Purpose: ${slide.objective || "Feature highlight"}
+
+>>> HEADLINE (render this EXACT text, large): "${slide.headline || ""}"
+>>> SUBHEADLINE (render below headline, smaller): "${slide.subheadline || ""}"
+${brandBlock ? `\n=== BRAND ===\n${brandBlock}` : ""}
+Color direction: ${brandKit?.colors?.length > 0 ? `Use ${brandKit.colors.join(", ")} as primary palette, adapting to the template's composition.` : "Derive a harmonious palette from the template, matched to any brand colors in the raw screenshot."}
+
+${hasRawScreen ? `=== RAW APP SCREEN (IMAGE #2) ===
+Composite this REAL app screenshot INTO the phone frame as-is.
+- Preserve EVERY pixel of the original UI — do NOT redesign, rearrange, or hallucinate new UI elements
+- Show the screen naturally inside the device frame, cropping bottom if needed
+- The phone frame must look photorealistic (realistic bezels, shadows, reflections)` : `=== NO RAW SCREEN ===
+${layout.hasDeviceMockup ? "Include a phone mockup with a clean, branded placeholder screen matching the app's color scheme." : "This is a PURE typographic/visual slide — focus all energy on headline impact and background design."}`}
+
+=== ABSOLUTE RULES ===
+1. Text MUST be pixel-perfect: crisp, well-kerned, no artifacts, no warping, no misspellings
+2. Render the EXACT headline and subheadline provided — zero placeholder text, zero lorem ipsum
+3. The final image must be INDISTINGUISHABLE from a professional design studio's output
+4. Background must be rich and polished — gradients, depth, subtle lighting effects
+5. Device frames must look photorealistic with proper shadows and reflections
+6. Visual emphasis: ${slide.emphasis || "balanced"}
+
+${!isFirstSlide && hasPreviousSlides ? `=== VISUAL CONTINUITY (CRITICAL) ===
+Previously generated slides are attached as reference. You MUST match:
+- Exact same color palette and gradient logic
+- Same typography style and weight
+- Same device frame style and shadow treatment  
+- Same background rendering approach
+The entire set must look like ONE cohesive design from ONE designer.` : ""}
+${langDirective}${feedbackBlock}
+
+Generate the image now.
 `.trim();
+
 
   return prompt;
 }
@@ -694,7 +750,7 @@ serve(async (req: Request) => {
               config: {
                 responseModalities: ["TEXT", "IMAGE"],
                 imageConfig: { aspectRatio, imageSize: "2K" },
-                temperature: 0.15,
+                temperature: 0.4,
                 maxOutputTokens: 8192,
               } as any,
             });

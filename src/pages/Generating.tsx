@@ -463,7 +463,7 @@ const Generating = () => {
 
           {/* Central Active Slide */}
           <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1} className="flex-1 flex flex-col items-center justify-center relative min-h-0">
-            <div className={`relative w-full max-w-sm aspect-[9/19.5] max-h-[70vh] rounded-[2rem] border-2 flex flex-col items-center justify-center transition-all duration-700 overflow-hidden shadow-2xl ${centralStatus === "completed" ? "border-primary/50 bg-card/90 shadow-glow" : centralStatus === "generating" ? "border-primary/40 bg-primary/5 scale-[1.02] backdrop-blur-xl ring-4 ring-primary/20" : centralStatus === "error" ? "border-destructive/40 bg-destructive/5" : "border-border bg-card/90 opacity-50 backdrop-blur-sm"}`}>
+            <div className={`relative w-full max-w-xs sm:max-w-sm aspect-[9/16] rounded-[2rem] border-2 flex flex-col items-center justify-center transition-all duration-700 overflow-hidden shadow-2xl ${centralStatus === "completed" ? "border-primary/50 bg-card/90 shadow-glow" : centralStatus === "generating" ? "border-primary/40 bg-primary/5 scale-[1.02] backdrop-blur-xl ring-4 ring-primary/20" : centralStatus === "error" ? "border-destructive/40 bg-destructive/5" : "border-border bg-card/90 opacity-50 backdrop-blur-sm"}`}>
               {centralImage && <img src={centralImage} alt={t('generating.slide', { number: actualIndex + 1 })} className="absolute inset-0 w-full h-full object-cover" />}
               {!centralImage && centralStatus === "generating" && (
                 <>
@@ -502,7 +502,7 @@ const Generating = () => {
               const image = slideImages[i];
               const isActive = (activeSlideNumber === i + 1);
               return (
-                <div key={i} className={`group flex-shrink-0 relative w-20 xl:w-full aspect-[9/19.5] rounded-xl border-2 flex flex-col items-center justify-center cursor-pointer transition-all duration-500 overflow-hidden shadow-sm hover:shadow-lg hover:scale-[1.02] ${status === "completed" ? "border-primary/50 bg-card/90" : status === "generating" ? "border-primary bg-primary/5 backdrop-blur-md animate-[pulse_2.6s_ease-in-out_infinite]" : "border-border bg-card/50 opacity-60 hover:opacity-100"} ${isActive ? 'ring-4 ring-primary ring-offset-2 ring-offset-background z-10' : ''}`}
+                <div key={i} className={`group flex-shrink-0 relative w-16 xl:w-full aspect-[9/16] rounded-xl border-2 flex flex-col items-center justify-center cursor-pointer transition-all duration-500 overflow-hidden shadow-sm hover:shadow-lg hover:scale-[1.02] ${status === "completed" ? "border-primary/50 bg-card/90" : status === "generating" ? "border-primary bg-primary/5 backdrop-blur-md animate-[pulse_2.6s_ease-in-out_infinite]" : "border-border bg-card/50 opacity-60 hover:opacity-100"} ${isActive ? 'ring-4 ring-primary ring-offset-2 ring-offset-background z-10' : ''}`}
                   onClick={() => { setActiveSlideNumber(i + 1); if (status === "completed") setReviewSlideNumber(i + 1); }}>
                   {image ? <img src={image} alt={`Tmb ${i + 1}`} className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105" loading="lazy" /> : null}
                   {status === "generating" || (status === "pending" && isDispatching && (i + 1 === activeSlideNumber || activeSlideNumber === null)) ? (
