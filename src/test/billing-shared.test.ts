@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PLAN_CREDITS, creditsCapForPlan, toPlanId } from "../../supabase/functions/_shared/billing";
+import { PLAN_CREDITS, creditsCapForPlan, getConfiguredPriceId, toPlanId } from "../../supabase/functions/_shared/billing";
 
 describe("shared billing helpers", () => {
   it("maps unknown plans to free", () => {
@@ -20,5 +20,11 @@ describe("shared billing helpers", () => {
     expect(creditsCapForPlan("starter")).toBe(PLAN_CREDITS.starter * 2);
     expect(creditsCapForPlan("pro")).toBe(PLAN_CREDITS.pro * 2);
     expect(creditsCapForPlan("unlimited")).toBe(PLAN_CREDITS.unlimited * 2);
+  });
+
+  it("returns null configured prices when Deno env is unavailable", () => {
+    expect(getConfiguredPriceId("starter")).toBeNull();
+    expect(getConfiguredPriceId("pro")).toBeNull();
+    expect(getConfiguredPriceId("unlimited")).toBeNull();
   });
 });

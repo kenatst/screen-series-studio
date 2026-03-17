@@ -29,3 +29,20 @@ export function toPlanId(value: string | null | undefined): PlanId {
 export function creditsCapForPlan(plan: PlanId): number {
   return PLAN_CREDITS[plan] * 2;
 }
+
+type PaidPlanId = Exclude<PlanId, "free">;
+
+export function getConfiguredPriceId(plan: PaidPlanId): string | null {
+  const denoEnvGet = (globalThis as { Deno?: { env?: { get?: (key: string) => string | undefined } } }).Deno?.env?.get;
+  if (!denoEnvGet) return null;
+
+  const keyByPlan: Record<PaidPlanId, string> = {
+    starter: "STRIPE_PRICE_STARTER",
+    pro: "STRIPE_PRICE_PRO",
+    unlimited: "STRIPE_PRICE_UNLIMITED",
+  };
+
+  const raw = denoEnvGet(keyByPlan[plan]);
+  const value = raw?.trim();
+  return value ? value : null;
+}

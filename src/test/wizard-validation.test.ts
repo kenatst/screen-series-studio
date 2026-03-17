@@ -10,7 +10,7 @@ describe("validateWizardStep", () => {
       slides: [{ headline: "Headline" }],
     });
 
-    expect(result).toBe("App name is required.");
+    expect(result).toBe("appNameRequired");
   });
 
   it("requires at least one uploaded screen on step 3", () => {
@@ -21,7 +21,7 @@ describe("validateWizardStep", () => {
       slides: [{ headline: "Headline" }],
     });
 
-    expect(result).toBe("Upload at least one raw screen before continuing.");
+    expect(result).toBe("rawScreenRequired");
   });
 
   it("requires headlines on review step", () => {
@@ -32,7 +32,7 @@ describe("validateWizardStep", () => {
       slides: [{ headline: "Ready" }, { headline: "" }],
     });
 
-    expect(result).toBe("Every slide needs at least a headline before review.");
+    expect(result).toBe("headlineRequired");
   });
 
   it("passes when requirements are met", () => {

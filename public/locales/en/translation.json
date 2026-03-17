@@ -264,7 +264,38 @@
         "saved": "Saved",
         "saveDraft": "Save draft",
         "back": "Back",
-        "continue": "Continue"
+        "continue": "Continue",
+        "validation": {
+            "missingInfo": "Missing required information",
+            "appNameRequired": "App name is required.",
+            "rawScreenRequired": "Upload at least one raw screen before continuing.",
+            "headlineRequired": "Every slide needs at least a headline before review."
+        },
+        "messages": {
+            "limitReachedTitle": "Limit reached",
+            "limitReachedDesc": "Max {{max}} slides for your plan.",
+            "noAssetsTitle": "No assets",
+            "noAssetsDesc": "Upload screenshots or brand assets first.",
+            "colorsDetectedTitle": "Colors detected",
+            "colorsDetectedDesc": "{{count}} dominant colors extracted from your assets.",
+            "noColorsTitle": "No colors found",
+            "noColorsDesc": "Could not extract meaningful colors.",
+            "missingInfoTitle": "Missing info",
+            "missingInfoDesc": "Fill in app name and description first (Step 2).",
+            "notAuthenticated": "Not authenticated",
+            "autoFillSuccessTitle": "Slides auto-filled!",
+            "autoFillSuccessDesc": "AI-generated headlines based on your app info.",
+            "autoFillFailedTitle": "Auto-fill failed",
+            "autoFillFailedDesc": "Try again or fill manually.",
+            "draftSavedTitle": "Draft saved",
+            "draftSavedDesc": "Project \"{{name}}\" saved.",
+            "saveFailedTitle": "Save failed",
+            "saveFailedDesc": "Could not save draft.",
+            "sessionExpiredTitle": "Session expired",
+            "sessionExpiredDesc": "Please log in again.",
+            "generateFailedDesc": "Failed to create project: {{reason}}",
+            "unknownError": "Unknown error"
+        }
     },
     "step": {
         "project": {

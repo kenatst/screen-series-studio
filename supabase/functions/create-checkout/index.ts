@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
-import { PLAN_DEFS } from "../_shared/billing.ts";
+import { getConfiguredPriceId, PLAN_DEFS } from "../_shared/billing.ts";
 import { getStripeSecretKey, resolveSiteOrigin } from "../_shared/stripe.ts";
 
 const corsHeaders = {
@@ -13,6 +13,23 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CREATE-CHECKOUT] ${step}${details ? ` - ${JSON.stringify(details)}` : ''}`);
 };
 
+const PRICE_CACHE_TTL_MS = 10 * 60 * 1000;
+const runtimePriceCache = new Map<string, { priceId: string; cachedAt: number }>();
+
+const getCachedPriceId = (planId: keyof typeof PLAN_DEFS): string | null => {
+  const cached = runtimePriceCache.get(planId);
+  if (!cached) return null;
+  if (Date.now() - cached.cachedAt > PRICE_CACHE_TTL_MS) {
+    runtimePriceCache.delete(planId);
+    return null;
+  }
+  return cached.priceId;
+};
+
+const setCachedPriceId = (planId: keyof typeof PLAN_DEFS, priceId: string) => {
+  runtimePriceCache.set(planId, { priceId, cachedAt: Date.now() });
+};
+
 /**
  * Find or create a recurring EUR price for the given plan
  * inside the Stripe account linked to the current API key.
@@ -20,6 +37,49 @@ const logStep = (step: string, details?: any) => {
 async function resolvePrice(stripe: Stripe, planId: keyof typeof PLAN_DEFS): Promise<string> {
   const def = PLAN_DEFS[planId];
   if (!def) throw new Error(`Unknown plan: ${planId}`);
+
+  const cachedPriceId = getCachedPriceId(planId);
+  if (cachedPriceId) {
+    try {
+      const cachedPrice = await stripe.prices.retrieve(cachedPriceId);
+      if (
+        cachedPrice.active &&
+        cachedPrice.currency === "eur" &&
+        cachedPrice.unit_amount === def.amount &&
+        cachedPrice.recurring?.interval === "month"
+      ) {
+        return cachedPrice.id;
+      }
+    } catch {
+      runtimePriceCache.delete(planId);
+    }
+  }
+
+  const configuredPriceId = getConfiguredPriceId(planId);
+  if (configuredPriceId) {
+    try {
+      const configuredPrice = await stripe.prices.retrieve(configuredPriceId);
+      if (
+        configuredPrice.active &&
+        configuredPrice.currency === "eur" &&
+        configuredPrice.unit_amount === def.amount &&
+        configuredPrice.recurring?.interval === "month"
+      ) {
+        setCachedPriceId(planId, configuredPrice.id);
+        return configuredPrice.id;
+      }
+      logStep("Configured Stripe price mismatch, falling back to discovery", {
+        planId,
+        configuredPriceId,
+      });
+    } catch (error: any) {
+      logStep("Configured Stripe price unavailable, falling back to discovery", {
+        planId,
+        configuredPriceId,
+        message: error?.message,
+      });
+    }
+  }
 
   // 1. Search for an existing active product by name
   const products = await stripe.products.list({ limit: 100, active: true });
@@ -61,6 +121,7 @@ async function resolvePrice(stripe: Stripe, planId: keyof typeof PLAN_DEFS): Pro
     logStep("Found existing price", { priceId: price.id });
   }
 
+  setCachedPriceId(planId, price.id);
   return price.id;
 }
 

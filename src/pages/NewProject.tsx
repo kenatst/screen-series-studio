@@ -12,6 +12,7 @@ import { StepStyle } from "@/components/new-project/StepStyle";
 import { StepPlanner } from "@/components/new-project/StepPlanner";
 import { StepReview } from "@/components/new-project/StepReview";
 import { useToast } from "@/hooks/use-toast";
+import type { WizardValidationError } from "@/lib/wizard-validation";
 
 const stepKeys = ['project', 'appInfo', 'screens', 'brandKit', 'style', 'planner', 'review'] as const;
 
@@ -22,13 +23,14 @@ const WizardContent = () => {
 
   const steps = stepKeys.map((key, i) => ({ id: i + 1, label: t(`newProject.steps.${key}`) }));
   const nextValidationError = validateStep();
+  const getValidationMessage = (error: WizardValidationError | null) => (error ? t(`newProject.validation.${error}`) : null);
 
   const handleNext = () => {
     const error = nextValidationError;
     if (error) {
       toast({
         title: t("common.error"),
-        description: error,
+        description: getValidationMessage(error) ?? undefined,
         variant: "destructive",
       });
       return;
@@ -47,7 +49,7 @@ const WizardContent = () => {
                 if (step.id > currentStep) {
                   const error = validateStep();
                   if (error) {
-                    toast({ title: t("common.error"), description: error, variant: "destructive" });
+                    toast({ title: t("common.error"), description: getValidationMessage(error) ?? undefined, variant: "destructive" });
                     return;
                   }
                 }
@@ -116,7 +118,7 @@ const WizardContent = () => {
         ) : null}
       </div>
       {currentStep < 7 && nextValidationError && (
-        <p className="mt-3 text-xs text-destructive font-medium text-right">{nextValidationError}</p>
+        <p className="mt-3 text-xs text-destructive font-medium text-right">{getValidationMessage(nextValidationError)}</p>
       )}
     </div>
   );

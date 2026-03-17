@@ -13,7 +13,8 @@ import { getMaxSlides } from "@/lib/plans";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { UploadedScreen } from "@/components/project/SortableSlide";
-import { validateWizardStep } from "@/lib/wizard-validation";
+import i18n from "@/i18n";
+import { validateWizardStep, type WizardValidationError } from "@/lib/wizard-validation";
 
 export interface BrandAsset {
   type: 'logo' | 'icon' | 'mascot';
@@ -165,7 +166,7 @@ interface NewProjectContextType {
   // Save
   isSaving: boolean;
   lastSavedAt: Date | null;
-  validateStep: (step?: number) => string | null;
+  validateStep: (step?: number) => WizardValidationError | null;
   handleSaveDraft: () => Promise<void>;
   handleGenerate: () => Promise<void>;
   getFinalProjectName: () => string;
@@ -269,15 +270,9 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
       setBrandFont(brandKit.fontFamily || '');
     }
 
-    // Restore step if provided in URL
-    const urlStep = searchParams.get('step');
-    if (urlStep) {
-      const stepNum = parseInt(urlStep);
-      if (!isNaN(stepNum) && stepNum >= 1 && stepNum <= 7) {
-        setCurrentStepState(stepNum);
-      }
-    }
-  }, [editProjectId, existingProject, hydrated, searchParams]);
+    // Always re-open drafts at step 1 so required-step gating remains enforced.
+    setCurrentStepState(1);
+  }, [editProjectId, existingProject, hydrated]);
 
   // Hydrate slides from DB
   useEffect(() => {
@@ -387,7 +382,11 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
 
   const addSlide = () => {
     if (slides.length >= maxSlides) {
-      toast({ title: "Limit reached", description: `Max ${maxSlides} slides for your plan.`, variant: "destructive" });
+      toast({
+        title: i18n.t("newProject.messages.limitReachedTitle"),
+        description: i18n.t("newProject.messages.limitReachedDesc", { max: maxSlides }),
+        variant: "destructive",
+      });
       return;
     }
     const newSlide: SlideItem = {
@@ -496,7 +495,11 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
 
   const handleAutoDetectColors = async () => {
     if (uploadedScreens.length === 0 && brandAssets.length === 0) {
-      toast({ title: "No assets", description: "Upload screenshots or brand assets first.", variant: "destructive" });
+      toast({
+        title: i18n.t("newProject.messages.noAssetsTitle"),
+        description: i18n.t("newProject.messages.noAssetsDesc"),
+        variant: "destructive",
+      });
       return;
     }
     const sources = [...uploadedScreens.map(s => s.preview), ...brandAssets.map(a => a.preview)].slice(0, 4);
@@ -508,21 +511,35 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
     const unique = [...new Set(allColors)].slice(0, 5);
     if (unique.length > 0) {
       setBrandColors(unique);
-      toast({ title: "Colors detected", description: `${unique.length} dominant colors extracted from your assets.` });
+      toast({
+        title: i18n.t("newProject.messages.colorsDetectedTitle"),
+        description: i18n.t("newProject.messages.colorsDetectedDesc", { count: unique.length }),
+      });
     } else {
-      toast({ title: "No colors found", description: "Could not extract meaningful colors.", variant: "destructive" });
+      toast({
+        title: i18n.t("newProject.messages.noColorsTitle"),
+        description: i18n.t("newProject.messages.noColorsDesc"),
+        variant: "destructive",
+      });
     }
   };
 
   const handleAutoFillSlides = async () => {
     if (!appName && !appDescription) {
-      toast({ title: "Missing info", description: "Fill in app name and description first (Step 2).", variant: "destructive" });
+      toast({
+        title: i18n.t("newProject.messages.missingInfoTitle"),
+        description: i18n.t("newProject.messages.missingInfoDesc"),
+        variant: "destructive",
+      });
       return;
     }
     setIsAutoFilling(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { toast({ title: "Not authenticated", variant: "destructive" }); return; }
+      if (!session) {
+        toast({ title: i18n.t("newProject.messages.notAuthenticated"), variant: "destructive" });
+        return;
+      }
       const response = await supabase.functions.invoke('suggest-copy', {
         body: { type: 'storylines', appName, appDescription: appDescription || shortDescription, slideCount, platform },
       });
@@ -534,10 +551,17 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
           if (!ai) return s;
           return { ...s, headline: ai.headline || s.headline, subheadline: ai.subheadline || s.subheadline, objective: ai.objective || s.objective };
         }));
-        toast({ title: "Slides auto-filled!", description: "AI-generated headlines based on your app info." });
+        toast({
+          title: i18n.t("newProject.messages.autoFillSuccessTitle"),
+          description: i18n.t("newProject.messages.autoFillSuccessDesc"),
+        });
       }
     } catch (e) {
-      toast({ title: "Auto-fill failed", description: "Try again or fill manually.", variant: "destructive" });
+      toast({
+        title: i18n.t("newProject.messages.autoFillFailedTitle"),
+        description: i18n.t("newProject.messages.autoFillFailedDesc"),
+        variant: "destructive",
+      });
     } finally {
       setIsAutoFilling(false);
     }
@@ -710,29 +734,46 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
   };
 
   const handleSaveDraft = async () => {
-    if (!user) { toast({ title: "Not authenticated", variant: "destructive" }); return; }
+    if (!user) {
+      toast({ title: i18n.t("newProject.messages.notAuthenticated"), variant: "destructive" });
+      return;
+    }
     setIsSaving(true);
     try {
       await supabase.auth.refreshSession();
       await saveProjectAndSlides();
       setLastSavedAt(new Date());
-      toast({ title: "Draft saved ✓", description: `Project "${getFinalProjectName()}" saved.` });
+      toast({
+        title: i18n.t("newProject.messages.draftSavedTitle"),
+        description: i18n.t("newProject.messages.draftSavedDesc", { name: getFinalProjectName() }),
+      });
     } catch (e) {
-      toast({ title: "Save failed", description: "Could not save draft.", variant: "destructive" });
+      toast({
+        title: i18n.t("newProject.messages.saveFailedTitle"),
+        description: i18n.t("newProject.messages.saveFailedDesc"),
+        variant: "destructive",
+      });
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleGenerate = async () => {
-    if (!user) { toast({ title: "Not authenticated", variant: "destructive" }); return; }
+    if (!user) {
+      toast({ title: i18n.t("newProject.messages.notAuthenticated"), variant: "destructive" });
+      return;
+    }
     const preflightError =
       validateWizardStep({ step: 1, appName, uploadedScreensCount: uploadedScreens.length, slides }) ||
       validateWizardStep({ step: 3, appName, uploadedScreensCount: uploadedScreens.length, slides }) ||
       validateWizardStep({ step: 6, appName, uploadedScreensCount: uploadedScreens.length, slides });
 
     if (preflightError) {
-      toast({ title: "Missing required information", description: preflightError, variant: "destructive" });
+      toast({
+        title: i18n.t("newProject.validation.missingInfo"),
+        description: i18n.t(`newProject.validation.${preflightError}`),
+        variant: "destructive",
+      });
       return;
     }
 
@@ -741,7 +782,11 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
       // Force-refresh session & verify user server-side to prevent stale JWT
       const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
       if (sessionError || !session) {
-        toast({ title: "Session expired", description: "Please log in again.", variant: "destructive" });
+        toast({
+          title: i18n.t("newProject.messages.sessionExpiredTitle"),
+          description: i18n.t("newProject.messages.sessionExpiredDesc"),
+          variant: "destructive",
+        });
         setIsSaving(false);
         return;
       }
@@ -750,12 +795,18 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
       await updateProject.mutateAsync({ id: projectId, status: 'generating' });
       navigate(`/project/${projectId}/generating`);
     } catch (e: any) {
-      toast({ title: "Error", description: `Failed to create project: ${e?.message || 'Unknown error'}`, variant: "destructive" });
+      toast({
+        title: i18n.t("common.error"),
+        description: i18n.t("newProject.messages.generateFailedDesc", {
+          reason: e?.message || i18n.t("newProject.messages.unknownError"),
+        }),
+        variant: "destructive",
+      });
       setIsSaving(false);
     }
   };
 
-  const validateStep = (step = currentStep): string | null => {
+  const validateStep = (step = currentStep): WizardValidationError | null => {
     return validateWizardStep({ step, appName, uploadedScreensCount: uploadedScreens.length, slides });
   };
 

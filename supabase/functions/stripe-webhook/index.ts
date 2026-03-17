@@ -82,32 +82,32 @@ serve(async (req) => {
 
   logStep("Event received", { type: event.type, id: event.id });
 
-  const { error: claimEventError } = await supabase
-    .from("stripe_webhook_events")
-    .insert({
-      event_id: event.id,
-      event_type: event.type,
-    });
-
-  if (claimEventError) {
-    if ((claimEventError as any).code === "23505") {
-      logStep("Duplicate event ignored", { id: event.id, type: event.type });
-      return new Response(JSON.stringify({ received: true, duplicate: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    }
-    throw new Error(`Could not claim event: ${claimEventError.message}`);
-  }
-
-  // Best-effort retention cleanup for old idempotency rows.
-  const retentionThreshold = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-  await supabase
-    .from("stripe_webhook_events")
-    .delete()
-    .lt("processed_at", retentionThreshold);
-
   try {
+    const { error: claimEventError } = await supabase
+      .from("stripe_webhook_events")
+      .insert({
+        event_id: event.id,
+        event_type: event.type,
+      });
+
+    if (claimEventError) {
+      if ((claimEventError as any).code === "23505") {
+        logStep("Duplicate event ignored", { id: event.id, type: event.type });
+        return new Response(JSON.stringify({ received: true, duplicate: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+      throw new Error(`Could not claim event: ${claimEventError.message}`);
+    }
+
+    // Best-effort retention cleanup for old idempotency rows.
+    const retentionThreshold = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    await supabase
+      .from("stripe_webhook_events")
+      .delete()
+      .lt("processed_at", retentionThreshold);
+
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
@@ -239,7 +239,7 @@ serve(async (req) => {
     }
 
     return new Response(JSON.stringify({ received: true }), {
-      headers: { "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error: any) {
@@ -250,6 +250,9 @@ serve(async (req) => {
         .eq("event_id", event.id);
     }
     logStep("ERROR processing event", { message: error.message });
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+    });
   }
 });

@@ -57,6 +57,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const { data, error } = await supabase.functions.invoke("check-subscription");
       if (error) {
+        await fetchProfile(targetUserId);
+        console.error("[AUTH] check-subscription failed:", error.message);
         return;
       }
 
@@ -68,9 +70,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }));
       }
     } catch {
-      // silently fail
+      await fetchProfile(targetUserId);
+      console.error("[AUTH] check-subscription request failed");
     }
-  }, [session?.user?.id]);
+  }, [session?.user?.id, fetchProfile]);
 
   const refreshProfile = useCallback(async () => {
     const userId = session?.user?.id;
