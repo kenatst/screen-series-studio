@@ -18,4 +18,18 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ["react", "react-dom", "react-router-dom"],
+          query: ["@tanstack/react-query", "@supabase/supabase-js"],
+          i18n: ["i18next", "react-i18next", "i18next-browser-languagedetector", "i18next-http-backend"],
+          motion: ["framer-motion"],
+          dnd: ["@dnd-kit/core", "@dnd-kit/sortable", "@dnd-kit/utilities"],
+          zip: ["jszip", "file-saver"],
+        },
+      },
+    },
+  },
 }));

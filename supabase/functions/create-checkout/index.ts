@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
+import { getConfiguredPriceId, PLAN_DEFS } from "../_shared/billing.ts";
+import { getStripeSecretKey, resolveSiteOrigin } from "../_shared/stripe.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,20 +13,73 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CREATE-CHECKOUT] ${step}${details ? ` - ${JSON.stringify(details)}` : ''}`);
 };
 
-/** Plan definitions — prices in cents (EUR) */
-const PLAN_DEFS: Record<string, { name: string; amount: number; description: string }> = {
-  starter: { name: "ShotApp Starter", amount: 4900, description: "50 credits/month, 1 workspace, HD export" },
-  pro: { name: "ShotApp Pro", amount: 9900, description: "200 credits/month, 3 workspaces, priority generation" },
-  unlimited: { name: "ShotApp Unlimited", amount: 39900, description: "1000 credits/month, unlimited projects" },
+const PRICE_CACHE_TTL_MS = 10 * 60 * 1000;
+const runtimePriceCache = new Map<string, { priceId: string; cachedAt: number }>();
+
+const getCachedPriceId = (planId: keyof typeof PLAN_DEFS): string | null => {
+  const cached = runtimePriceCache.get(planId);
+  if (!cached) return null;
+  if (Date.now() - cached.cachedAt > PRICE_CACHE_TTL_MS) {
+    runtimePriceCache.delete(planId);
+    return null;
+  }
+  return cached.priceId;
+};
+
+const setCachedPriceId = (planId: keyof typeof PLAN_DEFS, priceId: string) => {
+  runtimePriceCache.set(planId, { priceId, cachedAt: Date.now() });
 };
 
 /**
  * Find or create a recurring EUR price for the given plan
  * inside the Stripe account linked to the current API key.
  */
-async function resolvePrice(stripe: Stripe, planId: string): Promise<string> {
+async function resolvePrice(stripe: Stripe, planId: keyof typeof PLAN_DEFS): Promise<string> {
   const def = PLAN_DEFS[planId];
   if (!def) throw new Error(`Unknown plan: ${planId}`);
+
+  const cachedPriceId = getCachedPriceId(planId);
+  if (cachedPriceId) {
+    try {
+      const cachedPrice = await stripe.prices.retrieve(cachedPriceId);
+      if (
+        cachedPrice.active &&
+        cachedPrice.currency === "eur" &&
+        cachedPrice.unit_amount === def.amount &&
+        cachedPrice.recurring?.interval === "month"
+      ) {
+        return cachedPrice.id;
+      }
+    } catch {
+      runtimePriceCache.delete(planId);
+    }
+  }
+
+  const configuredPriceId = getConfiguredPriceId(planId);
+  if (configuredPriceId) {
+    try {
+      const configuredPrice = await stripe.prices.retrieve(configuredPriceId);
+      if (
+        configuredPrice.active &&
+        configuredPrice.currency === "eur" &&
+        configuredPrice.unit_amount === def.amount &&
+        configuredPrice.recurring?.interval === "month"
+      ) {
+        setCachedPriceId(planId, configuredPrice.id);
+        return configuredPrice.id;
+      }
+      logStep("Configured Stripe price mismatch, falling back to discovery", {
+        planId,
+        configuredPriceId,
+      });
+    } catch (error: any) {
+      logStep("Configured Stripe price unavailable, falling back to discovery", {
+        planId,
+        configuredPriceId,
+        message: error?.message,
+      });
+    }
+  }
 
   // 1. Search for an existing active product by name
   const products = await stripe.products.list({ limit: 100, active: true });
@@ -35,6 +90,7 @@ async function resolvePrice(stripe: Stripe, planId: string): Promise<string> {
     product = await stripe.products.create({
       name: def.name,
       description: def.description,
+      metadata: { plan: planId },
     });
     logStep("Product created", { productId: product.id });
   } else {
@@ -58,12 +114,14 @@ async function resolvePrice(stripe: Stripe, planId: string): Promise<string> {
       unit_amount: def.amount,
       currency: "eur",
       recurring: { interval: "month" },
+      metadata: { plan: planId },
     });
     logStep("Price created", { priceId: price.id });
   } else {
     logStep("Found existing price", { priceId: price.id });
   }
 
+  setCachedPriceId(planId, price.id);
   return price.id;
 }
 
@@ -85,10 +143,10 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated");
 
     const { plan, redirect_path } = await req.json();
-    if (!PLAN_DEFS[plan]) throw new Error(`Invalid plan: ${plan}`);
+    if (!PLAN_DEFS[plan as keyof typeof PLAN_DEFS]) throw new Error(`Invalid plan: ${plan}`);
 
-    const stripeKey = Deno.env.get("STRIPE_TEST_SECRET") || "";
-    if (!stripeKey) throw new Error("STRIPE_TEST_SECRET is not set");
+    const stripeKey = getStripeSecretKey();
+    if (!stripeKey) throw new Error("Stripe secret is not set (STRIPE_SECRET_KEY or STRIPE_TEST_SECRET)");
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
     // Log which Stripe account we're using
@@ -96,7 +154,7 @@ serve(async (req) => {
     logStep("Using Stripe account", { accountId: account.id });
 
     // Resolve or create the price in THIS account
-    const priceId = await resolvePrice(stripe, plan);
+    const priceId = await resolvePrice(stripe, plan as keyof typeof PLAN_DEFS);
 
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     let customerId: string | undefined;
@@ -104,7 +162,7 @@ serve(async (req) => {
       customerId = customers.data[0].id;
     }
 
-    const origin = req.headers.get("origin");
+    const origin = resolveSiteOrigin(req.headers.get("origin"));
     const successPath = redirect_path || "/dashboard/settings";
     const successUrl = `${origin}${successPath}${successPath.includes('?') ? '&' : '?'}checkout=success`;
 

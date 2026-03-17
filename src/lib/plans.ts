@@ -29,7 +29,9 @@ export interface PlanConfig {
 export const CREDIT_COSTS = {
   generateSlide: 1,
   regenerateSlide: 1,
+  resizeSlide: 1,
   translateSlide: 1,
+  suggestCopy: 1,
   exportSet: 0,
 } as const;
 
@@ -42,6 +44,7 @@ export const PLANS: PlanConfig[] = [
     description: 'Try the power of ShotApp AI.',
     features: [
       '3 credits included',
+      'Up to 3 slides per set',
       'Standard templates',
       'Watermarked export',
     ],

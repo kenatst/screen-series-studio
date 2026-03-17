@@ -1,35 +1,46 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
+import { creditsCapForPlan, PLAN_CREDITS, PRODUCT_NAME_TO_PLAN, toPlanId } from "../_shared/billing.ts";
+import { creditCreditsAtomic } from "../_shared/credits.ts";
+import { getStripeSecretKey } from "../_shared/stripe.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-/** Map product name → plan id */
-const PRODUCT_NAME_TO_PLAN: Record<string, string> = {
-  "ShotApp Starter": "starter",
-  "ShotApp Pro": "pro",
-  "ShotApp Unlimited": "unlimited",
-};
-
-const PLAN_CREDITS: Record<string, number> = {
-  free: 3,
-  starter: 50,
-  pro: 200,
-  unlimited: 1000,
-};
-
 const logStep = (step: string, details?: any) => {
   console.log(`[STRIPE-WEBHOOK] ${step}${details ? ` - ${JSON.stringify(details)}` : ''}`);
 };
 
-/** Resolve plan name from a Stripe price's product */
-async function resolvePlanFromPrice(stripe: Stripe, priceId: string): Promise<string> {
-  const price = await stripe.prices.retrieve(priceId, { expand: ["product"] });
-  const product = price.product as Stripe.Product;
-  return PRODUCT_NAME_TO_PLAN[product.name] || "starter";
+async function resolvePlanFromSubscriptionItem(
+  stripe: Stripe,
+  item: Stripe.SubscriptionItem | undefined,
+): Promise<"free" | "starter" | "pro" | "unlimited"> {
+  if (!item) return "free";
+
+  const price = item.price;
+  const fromPriceMetadata = toPlanId(price.metadata?.plan);
+  if (fromPriceMetadata !== "free") return fromPriceMetadata;
+
+  const product = price.product;
+  if (product && typeof product !== "string") {
+    const fromProductMetadata = toPlanId(product.metadata?.plan);
+    if (fromProductMetadata !== "free") return fromProductMetadata;
+    return PRODUCT_NAME_TO_PLAN[product.name] ?? "starter";
+  }
+
+  if (typeof product === "string") {
+    const hydratedPrice = await stripe.prices.retrieve(price.id, { expand: ["product"] });
+    if (hydratedPrice.product && typeof hydratedPrice.product !== "string") {
+      const fromHydratedMetadata = toPlanId(hydratedPrice.product.metadata?.plan);
+      if (fromHydratedMetadata !== "free") return fromHydratedMetadata;
+      return PRODUCT_NAME_TO_PLAN[hydratedPrice.product.name] ?? "starter";
+    }
+  }
+
+  return "starter";
 }
 
 serve(async (req) => {
@@ -37,10 +48,10 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const stripeKey = Deno.env.get("STRIPE_TEST_SECRET");
+  const stripeKey = getStripeSecretKey();
   const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
   if (!stripeKey || !webhookSecret) {
-    logStep("ERROR", { message: "Missing STRIPE_TEST_SECRET or STRIPE_WEBHOOK_SECRET" });
+    logStep("ERROR", { message: "Missing Stripe secret (STRIPE_SECRET_KEY/STRIPE_TEST_SECRET) or STRIPE_WEBHOOK_SECRET" });
     return new Response(JSON.stringify({ error: "Server misconfigured" }), { status: 500 });
   }
 
@@ -57,7 +68,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: "No signature" }), { status: 400 });
   }
 
-  let event: Stripe.Event;
+  let event: Stripe.Event | null = null;
   try {
     event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
   } catch (err: any) {
@@ -65,24 +76,51 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: "Invalid signature" }), { status: 400 });
   }
 
+  if (!event) {
+    return new Response(JSON.stringify({ error: "Invalid event payload" }), { status: 400 });
+  }
+
   logStep("Event received", { type: event.type, id: event.id });
 
   try {
+    const { error: claimEventError } = await supabase
+      .from("stripe_webhook_events")
+      .insert({
+        event_id: event.id,
+        event_type: event.type,
+      });
+
+    if (claimEventError) {
+      if ((claimEventError as any).code === "23505") {
+        logStep("Duplicate event ignored", { id: event.id, type: event.type });
+        return new Response(JSON.stringify({ received: true, duplicate: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+      throw new Error(`Could not claim event: ${claimEventError.message}`);
+    }
+
+    // Best-effort retention cleanup for old idempotency rows.
+    const retentionThreshold = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    await supabase
+      .from("stripe_webhook_events")
+      .delete()
+      .lt("processed_at", retentionThreshold);
+
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
         const userId = session.metadata?.user_id;
-        const plan = session.metadata?.plan;
+        const plan = toPlanId(session.metadata?.plan);
         const customerId = session.customer as string;
 
-        if (userId && plan) {
-          const credits = PLAN_CREDITS[plan] || 3;
+        if (userId && plan !== "free") {
           await supabase.from("profiles").update({
             plan,
             stripe_customer_id: customerId,
-            credits,
           }).eq("id", userId);
-          logStep("Plan updated + credits granted via checkout", { userId, plan, credits, customerId });
+          logStep("Plan linked via checkout.session.completed", { userId, plan, customerId });
         }
         break;
       }
@@ -107,7 +145,12 @@ serve(async (req) => {
           .single();
 
         if (prof) {
-          const sub = await stripe.subscriptions.list({ customer: customerId, status: "active", limit: 1 });
+          const sub = await stripe.subscriptions.list({
+            customer: customerId,
+            status: "active",
+            limit: 1,
+            expand: ["data.items.data.price.product"],
+          });
           if (sub.data.length > 0) {
             const priceId = sub.data[0].items.data[0]?.price?.id;
             const activePlan = await resolvePlanFromPrice(stripe, priceId);
@@ -119,6 +162,28 @@ serve(async (req) => {
             const newCredits = Math.min(currentCredits + monthlyCredits, maxCredits);
             await supabase.from("profiles").update({ plan: activePlan, credits: newCredits }).eq("id", prof.id);
             logStep("Plan synced + credits added on invoice.paid", { userId: prof.id, plan: activePlan, added: monthlyCredits, total: newCredits });
+            const activePlan = await resolvePlanFromSubscriptionItem(stripe, sub.data[0].items.data[0]);
+            const monthlyCredits = PLAN_CREDITS[activePlan] || PLAN_CREDITS.free;
+            const cap = creditsCapForPlan(activePlan);
+            const newBalance = await creditCreditsAtomic(supabase as any, prof.id, monthlyCredits, cap);
+            if (newBalance === null) {
+              logStep("Could not top up credits on invoice.paid", {
+                userId: prof.id,
+                plan: activePlan,
+                monthlyCredits,
+              });
+              break;
+            }
+            await supabase
+              .from("profiles")
+              .update({ plan: activePlan })
+              .eq("id", prof.id);
+            logStep("Credits topped up on invoice.paid", {
+              userId: prof.id,
+              plan: activePlan,
+              monthlyCredits,
+              newBalance,
+            });
           }
         }
         break;
@@ -146,11 +211,9 @@ serve(async (req) => {
               .single();
 
             if (profileByEmail) {
-              const priceId = subscription.items.data[0]?.price?.id;
-              const plan = isActive ? await resolvePlanFromPrice(stripe, priceId) : "free";
-              const credits = PLAN_CREDITS[plan] || 3;
-              await supabase.from("profiles").update({ plan, stripe_customer_id: customerId, credits }).eq("id", profileByEmail.id);
-              logStep("Plan updated via email lookup", { userId: profileByEmail.id, plan, credits });
+              const plan = isActive ? await resolvePlanFromSubscriptionItem(stripe, subscription.items.data[0]) : "free";
+              await supabase.from("profiles").update({ plan, stripe_customer_id: customerId }).eq("id", profileByEmail.id);
+              logStep("Plan updated via email lookup", { userId: profileByEmail.id, plan });
             }
           }
           break;
@@ -164,6 +227,9 @@ serve(async (req) => {
         const credits = planChanged ? (PLAN_CREDITS[plan] || 3) : (currentProfile?.credits ?? PLAN_CREDITS[plan] || 3);
         await supabase.from("profiles").update({ plan, credits }).eq("id", profile.id);
         logStep("Plan updated", { userId: profile.id, plan, credits, planChanged, status: subscription.status });
+        const plan = isActive ? await resolvePlanFromSubscriptionItem(stripe, subscription.items.data[0]) : "free";
+        await supabase.from("profiles").update({ plan }).eq("id", profile.id);
+        logStep("Plan updated", { userId: profile.id, plan, status: subscription.status });
         break;
       }
 
@@ -178,7 +244,7 @@ serve(async (req) => {
           .single();
 
         if (profile) {
-          await supabase.from("profiles").update({ plan: "free", credits: 3 }).eq("id", profile.id);
+          await supabase.from("profiles").update({ plan: "free" }).eq("id", profile.id);
           logStep("Payment failed, downgraded to free", { customerId, userId: profile.id });
         } else {
           logStep("Payment failed, no profile found", { customerId });
@@ -191,11 +257,20 @@ serve(async (req) => {
     }
 
     return new Response(JSON.stringify({ received: true }), {
-      headers: { "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error: any) {
+    if (event?.id) {
+      await supabase
+        .from("stripe_webhook_events")
+        .delete()
+        .eq("event_id", event.id);
+    }
     logStep("ERROR processing event", { message: error.message });
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+    });
   }
 });

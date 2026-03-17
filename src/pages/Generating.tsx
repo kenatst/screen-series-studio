@@ -34,13 +34,16 @@ const PHASE_KEYS = [
   { key: "harmonizingSet", icon: "🎯" },
   { key: "allGenerated", icon: "✅" },
 ];
+import { isStoragePath, resolveSignedUrl } from "@/lib/storage-utils";
+import { useGenerationStream, type SlideUiStatus } from "@/hooks/useGenerationStream";
+
+const phaseIcons = ["🎨", "🖼️", "✨", "📐", "🔥", "🎯", "✅"];
 
 const fadeUp = {
   hidden: { opacity: 0, y: 10 },
   visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.4 } })
 };
 
-type SlideUiStatus = "pending" | "generating" | "completed" | "error";
 type SlideSnapshot = { slide_number: number; status: string; image_url: string | null };
 
 const normalizeStatus = (status: string, imageUrl: string | null): SlideUiStatus => {
@@ -83,14 +86,13 @@ const Generating = () => {
   const [feedback, setFeedback] = useState("");
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   const [hasMoreSlides, setHasMoreSlides] = useState(true);
-  const [isDispatching, setIsDispatching] = useState(false);
 
   // Handle successful checkout return
   useEffect(() => {
     if (searchParams.get("checkout") === "success") {
       toast({
-        title: "Upgrade Successful! 🎉",
-        description: "Your Pro plan is active. Resuming your generation...",
+        title: t("generating.upgradeSuccessTitle"),
+        description: t("generating.upgradeSuccessDesc"),
         duration: 5000,
       });
       const newParams = new URLSearchParams(searchParams);
@@ -99,7 +101,7 @@ const Generating = () => {
       checkSubscription();
       refreshProfile();
     }
-  }, [searchParams, toast, setSearchParams, checkSubscription, refreshProfile]);
+  }, [searchParams, toast, setSearchParams, checkSubscription, refreshProfile, t]);
 
   const stopPolling = useCallback(() => {
     if (pollIntervalRef.current) {
@@ -132,8 +134,7 @@ const Generating = () => {
     if (!isStoragePath(imageUrl)) return imageUrl;
     const cached = signedUrlCacheRef.current[imageUrl];
     if (cached) return cached;
-    const { data } = await supabase.storage.from("generated-outputs").createSignedUrl(imageUrl, 60 * 60 * 2);
-    const signedUrl = data?.signedUrl || null;
+    const signedUrl = await resolveSignedUrl("generated-outputs", imageUrl);
     if (signedUrl) signedUrlCacheRef.current[imageUrl] = signedUrl;
     return signedUrl;
   }, []);
@@ -198,136 +199,27 @@ const Generating = () => {
     }, 5000);
   }, [projectId, reviewMode, applyLiveSlides, hydrateSlidesForUi]);
 
-  const startGenerationStream = useCallback(async (accessToken: string, resume = false, targetSlide?: number, userFeedback?: string): Promise<"done" | "hasMore" | "busy" | { error: string }> => {
-    setIsDispatching(true);
-    try {
-      if (!projectId) return { error: "No project ID" };
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      if (requestAbortRef.current) requestAbortRef.current.abort();
-      requestAbortRef.current = new AbortController();
-
-      const response = await fetch(`${supabaseUrl}/functions/v1/generate-screenshots`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${accessToken}`, "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
-        body: JSON.stringify({ project_id: projectId, resume, target_slide_number: targetSlide, user_feedback: userFeedback, idempotency_key: crypto.randomUUID() }),
-        signal: requestAbortRef.current.signal,
-      });
-
-      if (response.status === 409) { setIsDispatching(false); return "busy"; }
-      if (response.status === 402) { setIsDispatching(false); return { error: "Insufficient credits. Please upgrade your plan." }; }
-      if (response.status === 401 || response.status === 403) { setIsDispatching(false); return { error: "Authentication issue. Please reconnect and retry generation." }; }
-      if (!response.ok || !response.body) {
-        try { const errData = await response.json(); setIsDispatching(false); return { error: errData.error || `Server error (${response.status})` }; }
-        catch { setIsDispatching(false); return { error: `Server error (${response.status})` }; }
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let textBuffer = "";
-      let localHasMore = false;
-      let currentEvent = "";
-      let currentData = "";
-      let hasReceivedEvent = false;
-
-      const handleEvent = (eventType: string, eventDataRaw: string) => {
-        if (!eventType || !eventDataRaw) return;
-        if (!hasReceivedEvent) { hasReceivedEvent = true; setIsDispatching(false); }
-
-        let data: any = {};
-        try { data = JSON.parse(eventDataRaw); } catch { return; }
-
-        if (eventType === "slide-start") {
-          const num = data.slideNumber || 1;
-          const index = Math.max(0, num - 1);
-          setCurrentPhase(4);
-          setActiveSlideNumber(num);
-          setReviewMode(false);
-          setSlideStatuses((prev) => {
-            const length = Math.max(prev.length, index + 1, data.total || 0);
-            const next = Array.from({ length }, (_, i) => prev[i] ?? "pending") as SlideUiStatus[];
-            next[index] = "generating";
-            return next;
-          });
-        }
-
-        if (eventType === "slide-done") {
-          const num = data.slideNumber || 1;
-          const index = Math.max(0, num - 1);
-          setActiveSlideNumber(num);
-          setReviewSlideNumber(num);
-          setSlideStatuses((prev) => {
-            const length = Math.max(prev.length, index + 1);
-            const next = Array.from({ length }, (_, i) => prev[i] ?? "pending") as SlideUiStatus[];
-            next[index] = "completed";
-            return next;
-          });
-          setSlideImages((prev) => {
-            const length = Math.max(prev.length, index + 1);
-            const next = Array.from({ length }, (_, i) => prev[i] ?? null);
-            next[index] = data.imageUrl || next[index];
-            return next;
-          });
-          // Refresh credit count after each slide generation
-          refreshProfile();
-        }
-
-        if (eventType === "slide-error") {
-          const index = Math.max(0, (data.slideNumber || 1) - 1);
-          setSlideStatuses((prev) => {
-            const length = Math.max(prev.length, index + 1);
-            const next = Array.from({ length }, (_, i) => prev[i] ?? "pending") as SlideUiStatus[];
-            next[index] = "error";
-            return next;
-          });
-        }
-
-        if (eventType === "all-done") {
-          localHasMore = Boolean(data.hasMore);
-          setHasMoreSlides(localHasMore);
-          setReviewMode(true);
-          if (!localHasMore) { setCurrentPhase(6); setProgress(100); }
-        }
-      };
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        textBuffer += decoder.decode(value, { stream: true });
-        let newlineIndex: number;
-        while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
-          let line = textBuffer.slice(0, newlineIndex);
-          textBuffer = textBuffer.slice(newlineIndex + 1);
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (line.trim() === "") { handleEvent(currentEvent, currentData); currentEvent = ""; currentData = ""; continue; }
-          if (line.startsWith("event:")) { currentEvent = line.slice(6).trim(); continue; }
-          if (line.startsWith("data:")) { const payloadLine = line.slice(5).trimStart(); currentData = currentData ? `${currentData}\n${payloadLine}` : payloadLine; }
-        }
-      }
-      if (currentEvent && currentData) handleEvent(currentEvent, currentData);
-
-      setIsDispatching(false);
-      return localHasMore ? "hasMore" : "done";
-    } catch (e: any) {
-      setIsDispatching(false);
-      if (e.name === "AbortError") return "busy";
-      return { error: `Request failed: ${e?.message || "Network/CORS error"}` };
-    }
-  }, [projectId]);
-
-  const processQueue = useCallback(async (accessToken: string, initialResume: boolean, targetSlide?: number, userFeedback?: string) => {
-    const result = await startGenerationStream(accessToken, initialResume, targetSlide, userFeedback);
-    if (result === "busy") return;
-    if (typeof result === "object" && result.error) {
-      toast({ title: t('generating.generationFailed'), description: result.error, variant: "destructive", duration: 8000 });
-      stopPolling();
-      return;
-    }
-    if (result === "done") stopPolling();
-  }, [startGenerationStream, stopPolling, toast, t]);
+  const { isDispatching, processQueue } = useGenerationStream({
+    projectId,
+    t,
+    toast,
+    stopPolling,
+    refreshProfile,
+    requestAbortRef,
+    setCurrentPhase,
+    setActiveSlideNumber,
+    setReviewMode,
+    setSlideStatuses,
+    setSlideImages,
+    setReviewSlideNumber,
+    setHasMoreSlides,
+    setProgress,
+  });
 
   useEffect(() => {
     if (!projectId || startedRef.current) return;
     startedRef.current = true;
+    const requestAbortController = requestAbortRef.current;
 
     warmupIntervalRef.current = window.setInterval(() => {
       setProgress((prev) => { if (prev >= 20) { if (warmupIntervalRef.current) window.clearInterval(warmupIntervalRef.current); return 20; } return prev + 5; });
@@ -359,12 +251,11 @@ const Generating = () => {
       await processQueue(session.access_token, shouldAutoStart);
     };
 
-    const timer = window.setTimeout(bootstrap, 500);
+    void bootstrap();
     return () => {
       if (warmupIntervalRef.current) window.clearInterval(warmupIntervalRef.current);
-      window.clearTimeout(timer);
       stopPolling();
-      requestAbortRef.current?.abort();
+      requestAbortController?.abort();
     };
   }, [navigate, projectId, applyLiveSlides, hydrateSlidesForUi, processQueue, routeToResults, startPolling, stopPolling]);
 
@@ -431,6 +322,8 @@ const Generating = () => {
             <div className="hidden md:flex items-center gap-2">
               <span className="text-sm font-bold text-primary">{PHASE_KEYS[currentPhase]?.icon}</span>
               <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{t(`generatingPhases.${PHASE_KEYS[currentPhase]?.key}`)}</span>
+              <span className="text-sm font-bold text-primary">{phaseIcons[currentPhase]}</span>
+              <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{t(`generating.phases.${currentPhase}`)}</span>
               <span className="text-sm font-black ml-2">{progress}%</span>
             </div>
             <AlertDialog>
@@ -500,7 +393,7 @@ const Generating = () => {
               return (
                 <div key={i} className={`group flex-shrink-0 relative w-16 xl:w-full aspect-[9/16] rounded-xl border-2 flex flex-col items-center justify-center cursor-pointer transition-all duration-500 overflow-hidden shadow-sm hover:shadow-lg hover:scale-[1.02] ${status === "completed" ? "border-primary/50 bg-card/90" : status === "generating" ? "border-primary bg-primary/5 backdrop-blur-md animate-[pulse_2.6s_ease-in-out_infinite]" : "border-border bg-card/50 opacity-60 hover:opacity-100"} ${isActive ? 'ring-4 ring-primary ring-offset-2 ring-offset-background z-10' : ''}`}
                   onClick={() => { setActiveSlideNumber(i + 1); if (status === "completed") setReviewSlideNumber(i + 1); }}>
-                  {image ? <img src={image} alt={`Tmb ${i + 1}`} className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105" loading="lazy" /> : null}
+                  {image ? <img src={image} alt={t("generating.slide", { number: i + 1 })} className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105" loading="lazy" /> : null}
                   {status === "generating" || (status === "pending" && isDispatching && (i + 1 === activeSlideNumber || activeSlideNumber === null)) ? (
                     <div className="flex flex-col items-center gap-1 z-10">
                       <Loader2 className="h-5 w-5 text-primary animate-[spin_2.4s_linear_infinite]" />

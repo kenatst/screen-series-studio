@@ -18,8 +18,8 @@ export function useBilling() {
             });
             if (error) throw error;
             if (data?.url) window.location.href = data.url;
-        } catch (e: any) {
-            toast({ title: "Error", description: e.message, variant: "destructive" });
+        } catch (e: unknown) {
+            toast({ title: "Error", description: e instanceof Error ? e.message : "Unknown error", variant: "destructive" });
         } finally {
             setIsUpgrading(false);
         }
@@ -31,8 +31,8 @@ export function useBilling() {
             const { data, error } = await supabase.functions.invoke("customer-portal");
             if (error) throw error;
             if (data?.url) window.open(data.url, "_blank");
-        } catch (e: any) {
-            toast({ title: "Error", description: e.message, variant: "destructive" });
+        } catch (e: unknown) {
+            toast({ title: "Error", description: e instanceof Error ? e.message : "Unknown error", variant: "destructive" });
         } finally {
             setIsOpeningPortal(false);
         }

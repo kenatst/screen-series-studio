@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, FolderOpen, LayoutGrid,
+  LayoutDashboard, LayoutGrid,
   Settings, HelpCircle, LogOut,
 } from "lucide-react";
 import appLogo from "@/assets/logo-shotapp.png";

@@ -1,10 +1,23 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
+import { FORMAT_SUFFIX } from "../../../shared/localization.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+function crc32(bytes: Uint8Array): number {
+  let crc = 0xffffffff;
+  for (let i = 0; i < bytes.length; i++) {
+    crc ^= bytes[i];
+    for (let j = 0; j < 8; j++) {
+      const mask = -(crc & 1);
+      crc = (crc >>> 1) ^ (0xedb88320 & mask);
+    }
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
 
 /**
  * Creates a simple ZIP file from an array of files.
@@ -18,6 +31,7 @@ function createZipBuffer(files: { name: string; data: Uint8Array }[]): Uint8Arra
 
   for (const file of files) {
     const nameBytes = new TextEncoder().encode(file.name);
+    const crc = crc32(file.data);
 
     // Local file header (30 + nameLen + dataLen)
     const localHeader = new Uint8Array(30 + nameBytes.length);
@@ -28,7 +42,7 @@ function createZipBuffer(files: { name: string; data: Uint8Array }[]): Uint8Arra
     lv.setUint16(8, 0, true); // compression: stored
     lv.setUint16(10, 0, true); // mod time
     lv.setUint16(12, 0, true); // mod date
-    lv.setUint32(14, 0, true); // crc-32 (skip for simplicity)
+    lv.setUint32(14, crc, true);
     lv.setUint32(18, file.data.length, true); // compressed size
     lv.setUint32(22, file.data.length, true); // uncompressed size
     lv.setUint16(26, nameBytes.length, true);
@@ -45,7 +59,7 @@ function createZipBuffer(files: { name: string; data: Uint8Array }[]): Uint8Arra
     cv.setUint16(10, 0, true); // compression
     cv.setUint16(12, 0, true); // mod time
     cv.setUint16(14, 0, true); // mod date
-    cv.setUint32(16, 0, true); // crc-32
+    cv.setUint32(16, crc, true);
     cv.setUint32(20, file.data.length, true); // compressed
     cv.setUint32(24, file.data.length, true); // uncompressed
     cv.setUint16(28, nameBytes.length, true);
@@ -172,20 +186,34 @@ serve(async (req) => {
 
     // Collect files for ZIP
     const zipFiles: { name: string; data: Uint8Array }[] = [];
+    const primaryFormat = deviceFormats[0] || "iphone-6-5";
+
+    const addSlideToZip = async (storagePath: string, fileName: string) => {
+      const { data: fileData } = await adminClient.storage.from("generated-outputs").download(storagePath);
+      if (!fileData) return false;
+      const arrayBuffer = await fileData.arrayBuffer();
+      zipFiles.push({ name: fileName, data: new Uint8Array(arrayBuffer) });
+      return true;
+    };
 
     for (const slide of slides) {
       if (!slide.image_url) continue;
 
-      const { data: fileData } = await adminClient.storage.from("generated-outputs").download(slide.image_url);
+      const paddedNum = String(slide.slide_number).padStart(2, "0");
 
-      if (fileData) {
-        const arrayBuffer = await fileData.arrayBuffer();
-        const imageData = new Uint8Array(arrayBuffer);
-        const paddedNum = String(slide.slide_number).padStart(2, "0");
-        const fileName = `${safeName}/${locale}/slide-${paddedNum}.png`;
-        zipFiles.push({ name: fileName, data: imageData });
-      } else {
-        console.warn(`Failed to download image for slide ${slide.slide_number}`);
+      // Primary format (original)
+      const primaryPath = slide.image_url.startsWith("http")
+        ? `${userId}/${projectId}/slide-${slide.slide_number}.png`
+        : slide.image_url;
+      await addSlideToZip(primaryPath, `${safeName}/${locale}/${primaryFormat}/slide-${paddedNum}.png`);
+
+      // Additional resized formats, if they exist.
+      for (const format of deviceFormats) {
+        if (format === primaryFormat) continue;
+        const suffix = FORMAT_SUFFIX[format];
+        if (!suffix) continue;
+        const resizedPath = `${userId}/${projectId}/slide-${slide.slide_number}-${suffix}.png`;
+        await addSlideToZip(resizedPath, `${safeName}/${locale}/${format}/slide-${paddedNum}.png`);
       }
     }
 

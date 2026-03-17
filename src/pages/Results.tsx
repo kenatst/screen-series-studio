@@ -2,16 +2,18 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  Download, RefreshCw, Globe, Loader2, Wand2, Send, Lock, Sparkles, ImageDown, ChevronLeft, ChevronRight, Coins, CheckCircle2, Smartphone, Tablet
+  Download, RefreshCw, Globe, Loader2, Lock, Sparkles, Coins, CheckCircle2, Smartphone, Tablet
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useProject, useProjectSlides } from "@/hooks/useProjects";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { TranslationsModal } from "@/components/project/TranslationsModal";
+import { DeviceFormatsGallery } from "@/components/project/DeviceFormatsGallery";
+import { SlideDetailPanel } from "@/components/project/SlideDetailPanel";
+import { SavedTranslation, TranslationsSection } from "@/components/project/TranslationsSection";
 import { canTranslate, CREDIT_COSTS } from "@/lib/plans";
 import { useToast } from "@/hooks/use-toast";
 import { useBilling } from "@/hooks/useBilling";
@@ -24,19 +26,19 @@ import { isStoragePath, LANGUAGE_LABELS } from "@/lib/storage-utils";
 
 interface SavedTranslation {
   id: string;
+import { isStoragePath, resolveSignedUrl } from "@/lib/storage-utils";
+import { DEVICE_FORMAT_LABELS, FORMAT_SUFFIX } from "@/lib/localization";
+
+interface ResizedFormatSlide {
   slide_number: number;
-  target_language: string;
-  source_language: string;
-  storage_path: string;
-  device_format: string;
-  created_at: string;
-  signedUrl?: string;
+  imageUrl: string;
+  storagePath: string;
 }
 
 const Results = () => {
   const navigate = useNavigate();
   const { projectId } = useParams();
-  const { profile, refreshProfile } = useAuth();
+  const { profile, refreshProfile, user } = useAuth();
   const { toast } = useToast();
   const { t } = useTranslation();
 
@@ -54,10 +56,11 @@ const Results = () => {
   const [savedTranslations, setSavedTranslations] = useState<SavedTranslation[]>([]);
   const [expandedLang, setExpandedLang] = useState<string | null>(null);
   const [isResizing, setIsResizing] = useState(false);
-  const [resizedFormats, setResizedFormats] = useState<Record<string, { slide_number: number; imageUrl: string }[]>>({});
+  const [resizedFormats, setResizedFormats] = useState<Record<string, ResizedFormatSlide[]>>({});
   const [activeFormatTab, setActiveFormatTab] = useState<string | null>(null);
+  const resolvedImagesRef = useRef<Record<string, string>>({});
 
-  const userPlan = (profile?.plan || 'free') as any;
+  const userPlan = (profile?.plan || "free") as "free" | "starter" | "pro" | "unlimited";
   const userCredits = profile?.credits ?? 0;
   const { handleUpgrade: billingUpgrade, isOpeningPortal } = useBilling();
   const [showWatermarkWarning, setShowWatermarkWarning] = useState(false);
@@ -81,13 +84,57 @@ const Results = () => {
         }
       } catch { /* skip */ }
     }));
+  useEffect(() => {
+    resolvedImagesRef.current = resolvedImages;
+  }, [resolvedImages]);
 
+  // Resolve storage paths to signed URLs
+  const resolveImages = useCallback(async () => {
+    if (!slides?.length) return;
+    const toResolve = slides.filter(
+      (slide) => slide.image_url && isStoragePath(slide.image_url) && !resolvedImagesRef.current[slide.id],
+    );
+    if (toResolve.length === 0) return;
+
+    const resolvedEntries = await Promise.all(
+      toResolve.map(async (slide) => {
+        const signed = await resolveSignedUrl("generated-outputs", slide.image_url);
+        if (!signed) return null;
+        return [slide.id, signed] as const;
+      }),
+    );
+
+    const newResolved = Object.fromEntries(resolvedEntries.filter(Boolean) as Array<readonly [string, string]>);
     if (Object.keys(newResolved).length > 0) {
-      setResolvedImages(prev => ({ ...prev, ...newResolved }));
+      setResolvedImages((prev) => ({ ...prev, ...newResolved }));
     }
   }, [slides]);
 
-  useEffect(() => { resolveImages(); }, [resolveImages]);
+  useEffect(() => {
+    void resolveImages();
+  }, [resolveImages]);
+
+  const refreshResizedFormatUrls = useCallback(async () => {
+    const entries = Object.entries(resizedFormats);
+    if (entries.length === 0) return;
+
+    const refreshed = await Promise.all(
+      entries.map(async ([format, slidesForFormat]) => {
+        const refreshedSlides = await Promise.all(
+          slidesForFormat.map(async (slide) => {
+            const signed = await resolveSignedUrl("generated-outputs", slide.storagePath);
+            return {
+              ...slide,
+              imageUrl: signed || slide.imageUrl,
+            };
+          }),
+        );
+        return [format, refreshedSlides] as const;
+      }),
+    );
+
+    setResizedFormats(Object.fromEntries(refreshed));
+  }, [resizedFormats]);
 
   // Auto-refresh signed URLs every 90 minutes (they expire in 120 minutes)
   useEffect(() => {
@@ -111,19 +158,40 @@ const Results = () => {
       if (error || !data) return;
 
       // Resolve signed URLs for all translations
-      const withUrls = await Promise.all(data.map(async (tr: any) => {
-        try {
-          const { data: signed } = await supabase.storage.from('generated-outputs').createSignedUrl(tr.storage_path, 60 * 60 * 2);
-          return { ...tr, signedUrl: signed?.signedUrl || '' };
-        } catch {
-          return { ...tr, signedUrl: '' };
-        }
-      }));
+      const withUrls = await Promise.all(
+        data.map(async (tr: any) => ({
+          ...tr,
+          signedUrl: (await resolveSignedUrl("generated-outputs", tr.storage_path)) || "",
+        })),
+      );
       setSavedTranslations(withUrls);
     } catch { /* ignore */ }
   }, [projectId]);
 
-  useEffect(() => { fetchSavedTranslations(); }, [fetchSavedTranslations]);
+  useEffect(() => {
+    void fetchSavedTranslations();
+  }, [fetchSavedTranslations]);
+
+  const refreshSignedAssets = useCallback(async () => {
+    resolvedImagesRef.current = {};
+    setResolvedImages({});
+    await Promise.all([fetchSavedTranslations(), refreshResizedFormatUrls(), resolveImages()]);
+  }, [fetchSavedTranslations, refreshResizedFormatUrls, resolveImages]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      void refreshSignedAssets();
+    }, 90 * 60 * 1000);
+    return () => window.clearInterval(interval);
+  }, [refreshSignedAssets]);
+
+  useEffect(() => {
+    const onFocus = () => {
+      void refreshSignedAssets();
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [refreshSignedAssets]);
 
   const handleDownloadTranslation = async (tr: SavedTranslation) => {
     if (!tr.signedUrl) return;
@@ -140,7 +208,7 @@ const Results = () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch {
-      toast({ title: 'Download failed', variant: 'destructive' });
+      toast({ title: t("results.downloadFailed"), variant: "destructive" });
     }
   };
 
@@ -151,23 +219,29 @@ const Results = () => {
     const zip = new JSZip();
     const langSlug = lang.toLowerCase().replace(/[^a-z]/g, '');
     const appLabel = project?.app_name || 'export';
-    const formats = [...new Set(langTranslations.map(t => t.device_format || 'iphone-6-5'))];
+    const formats = [...new Set(langTranslations.map((t) => t.device_format || "iphone-6-5"))];
+    await Promise.all(
+      formats.map(async (fmt) => {
+        const fmtSlug = fmt.replace(/[^a-z0-9-]/g, "");
+        const folderName = formats.length > 1 ? `${appLabel}-${langSlug}-${fmtSlug}` : `${appLabel}-${langSlug}`;
+        const folder = zip.folder(folderName);
+        if (!folder) return;
 
-    for (const fmt of formats) {
-      const fmtSlug = fmt.replace(/[^a-z0-9-]/g, '');
-      const folderName = formats.length > 1 ? `${appLabel}-${langSlug}-${fmtSlug}` : `${appLabel}-${langSlug}`;
-      const folder = zip.folder(folderName);
-      if (!folder) continue;
+        const fmtTranslations = langTranslations.filter((t) => (t.device_format || "iphone-6-5") === fmt);
+        const files = await Promise.all(
+          fmtTranslations.map(async (tr) => {
+            const res = await fetch(tr.signedUrl!);
+            if (!res.ok) return null;
+            const blob = await res.blob();
+            return { slide: tr.slide_number, blob };
+          }),
+        );
 
-      const fmtTranslations = langTranslations.filter(t => (t.device_format || 'iphone-6-5') === fmt);
-      for (const tr of fmtTranslations) {
-        try {
-          const res = await fetch(tr.signedUrl!);
-          const blob = await res.blob();
-          folder.file(`slide-${String(tr.slide_number).padStart(2, '0')}-${langSlug}.png`, blob);
-        } catch { /* skip */ }
-      }
-    }
+        files.filter(Boolean).forEach((file) => {
+          folder.file(`slide-${String(file!.slide).padStart(2, "0")}-${langSlug}.png`, file!.blob);
+        });
+      }),
+    );
 
     const content = await zip.generateAsync({ type: 'blob' });
     saveAs(content, `${appLabel}-${langSlug}.zip`);
@@ -184,26 +258,57 @@ const Results = () => {
   // Also group just by language for the accordion headers
   const translationLanguages = [...new Set(savedTranslations.map(tr => tr.target_language))];
 
-  const FORMAT_SHORT: Record<string, string> = {
-    'iphone-6-5': '6.5"',
-    'iphone-6-9': '6.9"',
-    'ipad-12-9': '12.9" iPad',
-  };
-
   const FORMAT_LABELS: Record<string, { label: string; icon: typeof Smartphone }> = {
-    'iphone-6-5': { label: '6.5"', icon: Smartphone },
-    'iphone-6-9': { label: '6.9"', icon: Smartphone },
-    'ipad-12-9': { label: '12.9" iPad', icon: Tablet },
+    "iphone-6-5": { label: DEVICE_FORMAT_LABELS["iphone-6-5"], icon: Smartphone },
+    "iphone-6-9": { label: DEVICE_FORMAT_LABELS["iphone-6-9"], icon: Smartphone },
+    "ipad-12-9": { label: DEVICE_FORMAT_LABELS["ipad-12-9"], icon: Tablet },
   };
 
   const projectFormats = (project?.device_formats as string[]) || ['iphone-6-5'];
   const primaryFormat = projectFormats[0] || 'iphone-6-5';
   const additionalFormats = projectFormats.filter(f => f !== primaryFormat);
 
+  const resolvePersistedFormat = useCallback(async (format: string): Promise<ResizedFormatSlide[]> => {
+    if (!projectId || !slides?.length || !user?.id) return [];
+    const suffix = FORMAT_SUFFIX[format];
+    if (!suffix) return [];
+
+    const resolved = await Promise.all(
+      slides.map(async (slide) => {
+        const storagePath = `${user.id}/${projectId}/slide-${slide.slide_number}-${suffix}.png`;
+        const signed = await resolveSignedUrl("generated-outputs", storagePath);
+        if (!signed) return null;
+        return {
+          slide_number: slide.slide_number,
+          imageUrl: signed,
+          storagePath,
+        };
+      }),
+    );
+
+    return resolved.filter(Boolean) as ResizedFormatSlide[];
+  }, [projectId, slides, user?.id]);
+
+  useEffect(() => {
+    const persistedFormats = (project?.config as any)?.resized_formats as string[] | undefined;
+    if (!persistedFormats?.length) return;
+    const missingFormats = persistedFormats.filter((format) => !resizedFormats[format]);
+    if (missingFormats.length === 0) return;
+
+    void (async () => {
+      const loaded = await Promise.all(
+        missingFormats.map(async (format) => [format, await resolvePersistedFormat(format)] as const),
+      );
+      const entries = loaded.filter(([, slidesForFormat]) => slidesForFormat.length > 0);
+      if (entries.length === 0) return;
+      setResizedFormats((prev) => ({ ...prev, ...Object.fromEntries(entries) }));
+    })();
+  }, [project?.config, resolvePersistedFormat, resizedFormats]);
+
   const handleResizeFormat = async (targetFormat: string) => {
     if (!projectId || isResizing) return;
     const slideCount = slides?.length || 0;
-    if (!checkCredits(slideCount * CREDIT_COSTS.regenerateSlide)) return;
+    if (!checkCredits(slideCount * CREDIT_COSTS.resizeSlide)) return;
 
     setIsResizing(true);
     try {
@@ -222,19 +327,45 @@ const Results = () => {
       });
 
       if (!response.ok) {
-        const errData = await response.json().catch(() => ({ error: 'Server error' }));
+        const errData = await response.json().catch(() => ({ error: t("results.serverErrorFallback") }));
         throw new Error(errData.error || `Error ${response.status}`);
       }
 
       const result = await response.json();
       if (result.slides?.length > 0) {
-        setResizedFormats(prev => ({ ...prev, [targetFormat]: result.slides }));
+        const resized = result.slides.map((slide: any) => ({
+          slide_number: slide.slide_number,
+          imageUrl: slide.imageUrl,
+          storagePath: slide.storage_path,
+        })) as ResizedFormatSlide[];
+
+        setResizedFormats(prev => ({ ...prev, [targetFormat]: resized }));
         setActiveFormatTab(targetFormat);
-        toast({ title: `${FORMAT_LABELS[targetFormat]?.label || targetFormat} format generated!`, description: `${result.slides.length} slide(s) resized.` });
+        toast({
+          title: t("results.resizeGeneratedTitle", { format: FORMAT_LABELS[targetFormat]?.label || targetFormat }),
+          description: t("results.resizeGeneratedDesc", { count: result.slides.length }),
+        });
+        const existingConfig = (project?.config as any) || {};
+        const existingFormats = (existingConfig.resized_formats as string[] | undefined) || [];
+        if (!existingFormats.includes(targetFormat)) {
+          await supabase
+            .from("projects")
+            .update({
+              config: {
+                ...existingConfig,
+                resized_formats: [...existingFormats, targetFormat],
+              },
+            })
+            .eq("id", projectId);
+        }
         await refreshProfile();
       }
     } catch (err: any) {
-      toast({ title: 'Resize failed', description: err.message || 'Unknown error', variant: 'destructive' });
+      toast({
+        title: t("results.resizeFailed"),
+        description: err.message || t("results.unknownError"),
+        variant: "destructive",
+      });
     } finally {
       setIsResizing(false);
     }
@@ -261,7 +392,7 @@ const Results = () => {
     saveAs(content, `${project?.app_name || 'export'}-${formatSlug}.zip`);
   };
 
-  const getImageUrl = (slide: any) => {
+  const getImageUrl = (slide: { id: string; image_url: string | null }) => {
     if (!slide?.image_url) return null;
     if (resolvedImages[slide.id]) return resolvedImages[slide.id];
     if (!isStoragePath(slide.image_url)) return slide.image_url;
@@ -273,11 +404,36 @@ const Results = () => {
   const isFreePlan = userPlan === 'free';
   const isSlideLocked = isFreePlan && selectedIndex > 0;
 
+  const handleDownloadSelectedSlide = async () => {
+    if (!selectedSlide || !selectedImageUrl) return;
+    try {
+      const response = await fetch(selectedImageUrl);
+      let blob = await response.blob();
+      blob = await resizeImageForDevice(blob, primaryFormat);
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      const dimensions = DEVICE_DIMENSIONS[primaryFormat];
+      const dimensionSuffix = dimensions ? `-${dimensions.width}x${dimensions.height}` : "";
+      anchor.download = `${project?.app_name || project?.name || "project"}-slide-${selectedSlide.slide_number}${dimensionSuffix}.png`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+      toast({ title: t('results.downloadFailed'), variant: "destructive" });
+    }
+  };
+
   const handleUpgrade = () => billingUpgrade('starter', `/project/${projectId}/results`);
 
   const checkCredits = (cost: number): boolean => {
     if (userCredits < cost) {
-      toast({ title: t('results.insufficientCredits'), description: `You need ${cost} credit(s). Current balance: ${userCredits}.`, variant: "destructive" });
+      toast({
+        title: t("results.insufficientCredits"),
+        description: t("results.needCreditsDesc", { required: cost, current: userCredits }),
+        variant: "destructive",
+      });
       return false;
     }
     return true;
@@ -352,10 +508,15 @@ const Results = () => {
   const handleRegenerateAll = async () => {
     const totalCost = (slides?.length || 0) * CREDIT_COSTS.regenerateSlide;
     if (!checkCredits(totalCost)) return;
+    if (!window.confirm(t("results.regenAllConfirm", { cost: totalCost }))) return;
     setIsRegenerating(true);
     try {
       if (!projectId) return;
-      await supabase.from('projects').update({ status: 'generating' }).eq('id', projectId);
+      const existingConfig = (project?.config as any) || {};
+      await supabase.from('projects').update({
+        status: 'generating',
+        config: { ...existingConfig, resized_formats: [] },
+      }).eq('id', projectId);
       await supabase.from('project_slides').update({ status: 'pending', image_url: null }).eq('project_id', projectId);
       navigate(`/project/${projectId}/generating`);
     } catch {
@@ -390,11 +551,19 @@ const Results = () => {
         setShowRegenPrompt(false);
         toast({ title: t('results.slideRegenerated') });
       } else {
-        const errBody = await response.json().catch(() => ({ error: "Unknown error" }));
-        toast({ title: t('results.regenFailed'), description: errBody.error || "Server error", variant: "destructive" });
+        const errBody = await response.json().catch(() => ({ error: t("results.unknownError") }));
+        toast({
+          title: t("results.regenFailed"),
+          description: errBody.error || t("results.serverErrorFallback"),
+          variant: "destructive",
+        });
       }
     } catch (e: any) {
-      toast({ title: t('results.regenFailed'), description: e.message || "Network error", variant: "destructive" });
+      toast({
+        title: t("results.regenFailed"),
+        description: e.message || t("results.networkError"),
+        variant: "destructive",
+      });
     } finally {
       setRegeneratingSlideId(null);
     }
@@ -451,325 +620,64 @@ const Results = () => {
           </div>
         </motion.div>
 
-        {/* Device Format Tabs + Gallery */}
-        <div className="rounded-2xl border border-border bg-card/50 backdrop-blur-sm overflow-hidden">
-          {/* Format tabs bar */}
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-muted/30 overflow-x-auto">
-            <Button
-              variant={activeFormatTab === null ? 'default' : 'ghost'}
-              size="sm"
-              className="rounded-lg text-xs shrink-0"
-              onClick={() => setActiveFormatTab(null)}
-            >
-              <Smartphone className="h-3.5 w-3.5 mr-1.5" />
-              {FORMAT_LABELS[primaryFormat]?.label || primaryFormat}
-              {primaryDims && <span className="ml-1 text-[10px] opacity-70">{primaryDims.width}&times;{primaryDims.height}</span>}
-            </Button>
-            {additionalFormats.map(fmt => {
-              const hasGenerated = !!resizedFormats[fmt]?.length;
-              const FormatIcon = FORMAT_LABELS[fmt]?.icon || Smartphone;
-              const fmtDims = DEVICE_DIMENSIONS[fmt];
-              return (
-                <div key={fmt} className="flex gap-1 shrink-0">
-                  {hasGenerated ? (
-                    <>
-                      <Button
-                        variant={activeFormatTab === fmt ? 'default' : 'ghost'}
-                        size="sm"
-                        className="rounded-lg text-xs"
-                        onClick={() => setActiveFormatTab(fmt)}
-                      >
-                        <FormatIcon className="h-3.5 w-3.5 mr-1.5" />
-                        {FORMAT_LABELS[fmt]?.label || fmt}
-                        {fmtDims && <span className="ml-1 text-[10px] opacity-70">{fmtDims.width}&times;{fmtDims.height}</span>}
-                      </Button>
-                      <Button variant="ghost" size="sm" className="rounded-lg text-xs h-8 w-8 p-0" onClick={() => handleDownloadFormat(fmt)}>
-                        <Download className="h-3 w-3" />
-                      </Button>
-                    </>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="rounded-lg text-xs border-dashed"
-                      onClick={() => handleResizeFormat(fmt)}
-                      disabled={isResizing}
-                    >
-                      {isResizing ? <Loader2 className="h-3 w-3 mr-1.5 animate-spin" /> : <FormatIcon className="h-3.5 w-3.5 mr-1.5" />}
-                      {FORMAT_LABELS[fmt]?.label || fmt}
-                      <Badge variant="outline" className="ml-1.5 text-[10px] px-1 py-0">{slides?.length || 0} cr</Badge>
-                    </Button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Slides gallery */}
-          <div className="p-4">
-            {activeFormatTab === null ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-                {slides.map((slide, index) => {
-                  const imgUrl = getImageUrl(slide);
-                  const locked = isFreePlan && index > 0;
-                  return (
-                    <motion.div
-                      key={slide.id}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: index * 0.04 }}
-                      onClick={() => setSelectedIndex(index)}
-                      className={`relative ${primaryFormat.includes('ipad') ? 'aspect-[3/4]' : 'aspect-[9/16]'} rounded-xl border-2 overflow-hidden cursor-pointer transition-all duration-200 group ${selectedIndex === index ? 'border-primary ring-2 ring-primary/30 shadow-glow' : 'border-border/50 hover:border-primary/40'}`}
-                    >
-                      {imgUrl && !locked ? (
-                        <img src={imgUrl} alt={`Slide ${slide.slide_number}`} className="w-full h-full object-cover transition-transform group-hover:scale-[1.03]" loading="lazy" />
-                      ) : (
-                        <div className="w-full h-full bg-muted flex items-center justify-center">
-                          {locked ? (
-                            <div className="flex flex-col items-center gap-1">
-                              <Lock className="h-5 w-5 text-muted-foreground" />
-                              <span className="text-[10px] text-muted-foreground font-bold">{t('common.upgrade')}</span>
-                            </div>
-                          ) : (
-                            <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
-                          )}
-                        </div>
-                      )}
-                      <div className="absolute bottom-1.5 left-1.5 bg-background/80 backdrop-blur-sm rounded-md px-1.5 py-0.5">
-                        <span className="text-[10px] font-black text-foreground">{slide.slide_number}</span>
-                      </div>
-                      {regeneratingSlideId === slide.id && (
-                        <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
-                          <Loader2 className="h-6 w-6 text-primary animate-spin" />
-                        </div>
-                      )}
-                    </motion.div>
-                  );
-                })}
-              </div>
-            ) : resizedFormats[activeFormatTab] ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-                {resizedFormats[activeFormatTab].map((slide) => (
-                  <div
-                    key={slide.slide_number}
-                    className={`relative rounded-xl border-2 border-border/50 overflow-hidden ${activeFormatTab.includes('ipad') ? 'aspect-[3/4]' : 'aspect-[9/16]'}`}
-                  >
-                    <img src={slide.imageUrl} alt={`Slide ${slide.slide_number} - ${activeFormatTab}`} className="w-full h-full object-cover" loading="lazy" />
-                    <div className="absolute bottom-1.5 left-1.5 bg-background/80 backdrop-blur-sm rounded-md px-1.5 py-0.5">
-                      <span className="text-[10px] font-black text-foreground">{slide.slide_number}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-          </div>
-        </div>
+        <DeviceFormatsGallery
+          activeFormatTab={activeFormatTab}
+          onActiveFormatTabChange={setActiveFormatTab}
+          primaryFormat={primaryFormat}
+          primaryDimensions={primaryDims}
+          additionalFormats={additionalFormats}
+          formatLabels={FORMAT_LABELS}
+          resizedFormats={resizedFormats}
+          slides={slides}
+          getImageUrl={getImageUrl}
+          isFreePlan={isFreePlan}
+          selectedIndex={selectedIndex}
+          onSelectSlide={setSelectedIndex}
+          regeneratingSlideId={regeneratingSlideId}
+          onDownloadFormat={handleDownloadFormat}
+          onResizeFormat={handleResizeFormat}
+          isResizing={isResizing}
+          t={t}
+        />
 
         {/* Selected slide detail */}
         {selectedSlide && activeFormatTab === null && (
-          <motion.div
-            key={selectedSlide.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="rounded-2xl border border-border bg-card/50 backdrop-blur-sm p-4 md:p-6"
-          >
-            <div className="flex flex-col md:flex-row gap-6">
-              {/* Image preview */}
-              <div className="flex-shrink-0 w-full md:w-64">
-                <div className={`w-full ${primaryFormat.includes('ipad') ? 'aspect-[3/4]' : 'aspect-[9/16]'} rounded-xl overflow-hidden border border-border bg-muted`}>
-                  {selectedImageUrl && !isSlideLocked ? (
-                    <img src={selectedImageUrl} alt={`Slide ${selectedSlide.slide_number}`} className="w-full h-full object-cover" />
-                  ) : isSlideLocked ? (
-                    <div className="w-full h-full flex flex-col items-center justify-center gap-3 p-6 text-center">
-                      <Lock className="h-10 w-10 text-muted-foreground" />
-                      <p className="text-sm font-bold text-foreground">{t('results.upgradeToUnlock')}</p>
-                      <p className="text-xs text-muted-foreground">{t('results.freePreview')}</p>
-                      <Button size="sm" onClick={handleUpgrade} disabled={isOpeningPortal} className="mt-2 rounded-xl">
-                        <Sparkles className="h-3.5 w-3.5 mr-1.5" /> {t('common.upgrade')}
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Loader2 className="h-6 w-6 text-muted-foreground animate-spin" />
-                    </div>
-                  )}
-                </div>
-
-                {/* Slide navigation */}
-                <div className="flex items-center justify-center gap-3 mt-3">
-                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" disabled={selectedIndex === 0} onClick={() => setSelectedIndex(i => i - 1)}>
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <span className="text-sm font-black text-muted-foreground">{selectedIndex + 1} / {slides.length}</span>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" disabled={selectedIndex === slides.length - 1} onClick={() => setSelectedIndex(i => i + 1)}>
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-
-              {/* Slide info & actions */}
-              <div className="flex-1 space-y-4">
-                <div>
-                  <h3 className="text-lg font-black text-foreground">{selectedSlide.headline || `Slide ${selectedSlide.slide_number}`}</h3>
-                  {selectedSlide.subheadline && <p className="text-sm text-muted-foreground mt-1">{selectedSlide.subheadline}</p>}
-                </div>
-
-                <div className="flex gap-2 flex-wrap">
-                  {selectedSlide.objective && <Badge variant="outline" className="text-xs">{selectedSlide.objective}</Badge>}
-                  {selectedSlide.emphasis && <Badge variant="outline" className="text-xs">{selectedSlide.emphasis}</Badge>}
-                  {primaryDims && (
-                    <Badge variant="secondary" className="text-xs font-mono">
-                      {primaryDims.width}&times;{primaryDims.height}px
-                    </Badge>
-                  )}
-                </div>
-
-                {/* Actions */}
-                {!isSlideLocked && (
-                  <div className="space-y-3 pt-2">
-                    {selectedImageUrl && (
-                      <Button variant="ghost" size="sm" className="rounded-lg text-xs" onClick={async () => {
-                        try {
-                          const res = await fetch(selectedImageUrl);
-                          let blob = await res.blob();
-                          blob = await resizeImageForDevice(blob, primaryFormat);
-                          const url = URL.createObjectURL(blob);
-                          const a = document.createElement("a");
-                          a.href = url;
-                          const dims = DEVICE_DIMENSIONS[primaryFormat];
-                          const dimSuffix = dims ? `-${dims.width}x${dims.height}` : '';
-                          a.download = `${project.app_name || project.name}-slide-${selectedSlide.slide_number}${dimSuffix}.png`;
-                          document.body.appendChild(a);
-                          a.click();
-                          document.body.removeChild(a);
-                          URL.revokeObjectURL(url);
-                        } catch { toast({ title: t('results.downloadFailed'), variant: "destructive" }); }
-                      }}>
-                        <ImageDown className="mr-1.5 h-3.5 w-3.5" /> {t('results.saveSlide')}
-                        {primaryDims && <span className="ml-1 text-[10px] opacity-60">{primaryDims.width}&times;{primaryDims.height}</span>}
-                      </Button>
-                    )}
-
-                    {showRegenPrompt ? (
-                      <div className="space-y-2">
-                        <Textarea
-                          value={regenPrompt}
-                          onChange={e => setRegenPrompt(e.target.value)}
-                          placeholder={t('results.describeChanges')}
-                          className="bg-card border-border text-sm min-h-[70px] resize-none rounded-xl p-3"
-                        />
-                        <div className="flex gap-2">
-                          <Button size="sm" onClick={() => handleRegenerateSingle(selectedSlide.id)} disabled={regeneratingSlideId === selectedSlide.id} className="rounded-lg">
-                            {regeneratingSlideId === selectedSlide.id ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Send className="mr-1.5 h-3.5 w-3.5" />}
-                            {t('results.regenerateCredit')}
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={() => { setShowRegenPrompt(false); setRegenPrompt(''); }} className="rounded-lg text-muted-foreground">{t('common.cancel')}</Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <Button variant="outline" size="sm" onClick={() => setShowRegenPrompt(true)} className="rounded-lg w-full">
-                        <Wand2 className="mr-2 h-4 w-4 text-primary" /> {t('results.regeneratePrompt')}
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          </motion.div>
+          <SlideDetailPanel
+            slide={selectedSlide}
+            selectedImageUrl={selectedImageUrl}
+            isSlideLocked={isSlideLocked}
+            isOpeningPortal={isOpeningPortal}
+            onUpgrade={handleUpgrade}
+            selectedIndex={selectedIndex}
+            totalSlides={slides.length}
+            onPrevious={() => setSelectedIndex((index) => index - 1)}
+            onNext={() => setSelectedIndex((index) => index + 1)}
+            primaryFormat={primaryFormat}
+            primaryDimensions={primaryDims}
+            showRegenPrompt={showRegenPrompt}
+            regenPrompt={regenPrompt}
+            onRegenPromptChange={setRegenPrompt}
+            onToggleRegenPrompt={(open) => {
+              setShowRegenPrompt(open);
+              if (!open) setRegenPrompt("");
+            }}
+            regeneratingSlideId={regeneratingSlideId}
+            onRegenerateSelected={() => handleRegenerateSingle(selectedSlide.id)}
+            onDownloadSelected={handleDownloadSelectedSlide}
+            t={t}
+          />
         )}
 
-        {/* Saved Translations Section */}
-        {translationLanguages.length > 0 && (
-          <div className="rounded-2xl border border-border bg-card/50 backdrop-blur-sm p-4 md:p-6">
-            <h3 className="text-lg font-black text-foreground flex items-center gap-2 mb-4">
-              <Globe className="h-5 w-5 text-primary" /> Translations
-            </h3>
-            <div className="space-y-3">
-              {translationLanguages.map(lang => {
-                const langTranslations = savedTranslations.filter(tr => tr.target_language === lang);
-                const langFormats = [...new Set(langTranslations.map(tr => tr.device_format || 'iphone-6-5'))];
-
-                return (
-                  <div key={lang} className="border border-border/50 rounded-xl overflow-hidden">
-                    <button
-                      onClick={() => setExpandedLang(expandedLang === lang ? null : lang)}
-                      className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Globe className="h-4 w-4 text-primary" />
-                        <span className="font-bold text-sm">{LANGUAGE_LABELS[lang] || lang}</span>
-                        <Badge variant="outline" className="text-xs">{langTranslations.length} slide(s)</Badge>
-                        {langFormats.length > 1 && (
-                          <Badge variant="outline" className="text-xs">{langFormats.length} sizes</Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost" size="sm" className="text-xs h-7 rounded-lg"
-                          onClick={(e) => { e.stopPropagation(); handleDownloadTranslationSet(lang); }}
-                        >
-                          <Download className="h-3 w-3 mr-1" /> ZIP
-                        </Button>
-                        <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${expandedLang === lang ? 'rotate-90' : ''}`} />
-                      </div>
-                    </button>
-                    <AnimatePresence>
-                      {expandedLang === lang && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          className="overflow-hidden"
-                        >
-                          <div className="p-4 pt-0 space-y-4">
-                            {langFormats.map(fmt => {
-                              const fmtKey = `${lang}|||${fmt}`;
-                              const fmtTranslations = translationsByLangFormat[fmtKey] || [];
-                              const isIpad = fmt.includes('ipad');
-                              const fmtDims = DEVICE_DIMENSIONS[fmt];
-
-                              return (
-                                <div key={fmt}>
-                                  {langFormats.length > 1 && (
-                                    <div className="flex items-center gap-2 mb-2">
-                                      <Badge variant="secondary" className="text-[10px] font-bold">{FORMAT_SHORT[fmt] || fmt}</Badge>
-                                      {fmtDims && <span className="text-[10px] text-muted-foreground font-mono">{fmtDims.width}&times;{fmtDims.height}</span>}
-                                      <span className="text-[10px] text-muted-foreground">{fmtTranslations.length} slide(s)</span>
-                                    </div>
-                                  )}
-                                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
-                                    {fmtTranslations.map(tr => (
-                                      <div key={tr.id} className={`relative group rounded-lg overflow-hidden border border-border/50 ${isIpad ? 'aspect-[3/4]' : 'aspect-[9/16]'}`}>
-                                        {tr.signedUrl ? (
-                                          <img src={tr.signedUrl} alt={`Slide ${tr.slide_number} - ${lang} - ${fmt}`} className="w-full h-full object-cover" loading="lazy" />
-                                        ) : (
-                                          <div className="w-full h-full bg-muted flex items-center justify-center">
-                                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                                          </div>
-                                        )}
-                                        <button
-                                          onClick={() => handleDownloadTranslation(tr)}
-                                          className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                                        >
-                                          <Download className="h-5 w-5 text-foreground" />
-                                        </button>
-                                        <div className="absolute bottom-1 left-1 bg-background/80 rounded px-1 py-0.5 text-[10px] font-bold">{tr.slide_number}</div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
+        <TranslationsSection
+          translationLanguages={translationLanguages}
+          savedTranslations={savedTranslations}
+          translationsByLangFormat={translationsByLangFormat}
+          expandedLang={expandedLang}
+          onToggleLanguage={(lang) => setExpandedLang(expandedLang === lang ? null : lang)}
+          onDownloadLanguageZip={handleDownloadTranslationSet}
+          onDownloadTranslation={handleDownloadTranslation}
+          t={t}
+        />
       </div>
 
       <TranslationsModal
@@ -778,7 +686,11 @@ const Results = () => {
         projectId={projectId || ''}
         deviceFormats={projectFormats}
         generatedFormats={Object.keys(resizedFormats).filter(f => resizedFormats[f]?.length > 0)}
-        onSuccess={() => { refetchSlides(); refreshProfile(); fetchSavedTranslations(); }}
+        onSuccess={() => {
+          void refetchSlides();
+          void refreshProfile();
+          void refreshSignedAssets();
+        }}
       />
 
       <Dialog open={showWatermarkWarning} onOpenChange={setShowWatermarkWarning}>

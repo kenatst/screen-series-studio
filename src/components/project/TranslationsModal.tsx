@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { useTranslation } from 'react-i18next';
+import { DEVICE_FORMAT_LABELS, LANGUAGE_OPTIONS } from '@/lib/localization';
 
 interface TranslationsModalProps {
     isOpen: boolean;
@@ -17,33 +18,17 @@ interface TranslationsModalProps {
     onSuccess?: () => void;
 }
 
-const FORMAT_OPTIONS: Record<string, string> = {
-    'iphone-6-5': '6.5" iPhone',
-    'iphone-6-9': '6.9" iPhone',
-    'ipad-12-9': '12.9" iPad',
-};
-
-const LANGUAGES = [
-    { value: 'French', label: 'French (Français)' },
-    { value: 'Spanish', label: 'Spanish (Español)' },
-    { value: 'German', label: 'German (Deutsch)' },
-    { value: 'Japanese', label: 'Japanese (日本語)' },
-    { value: 'Portuguese', label: 'Portuguese (Português)' },
-    { value: 'Chinese', label: 'Chinese (中文)' },
-    { value: 'Korean', label: 'Korean (한국어)' },
-    { value: 'Italian', label: 'Italian (Italiano)' },
-    { value: 'Arabic', label: 'Arabic (العربية)' },
-    { value: 'Russian', label: 'Russian (Русский)' },
-    { value: 'Turkish', label: 'Turkish (Türkçe)' },
-    { value: 'Hindi', label: 'Hindi (हिन्दी)' },
-];
-
 interface TranslatedSlide {
     slide_number: number;
     imageUrl: string;
 }
 
+interface TranslateCopyResponse {
+    translations?: TranslatedSlide[];
+}
+
 export const TranslationsModal = ({ isOpen, onOpenChange, projectId, deviceFormats = ['iphone-6-5'], generatedFormats = [], onSuccess }: TranslationsModalProps) => {
+    const { t } = useTranslation();
     const [language, setLanguage] = useState('');
     const [selectedFormats, setSelectedFormats] = useState<string[]>([]);
     const [isTranslating, setIsTranslating] = useState(false);
@@ -108,9 +93,9 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, deviceForma
                     throw new Error(errData.error || `Error ${response.status} for ${fmt}`);
                 }
 
-                const result = await response.json();
+                const result = (await response.json()) as TranslateCopyResponse;
                 if (result.translations?.length > 0) {
-                    allTranslated.push(...result.translations.map((t: any) => ({
+                    allTranslated.push(...result.translations.map((t) => ({
                         ...t,
                         format: fmt,
                     })));
@@ -121,27 +106,27 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, deviceForma
 
             if (allTranslated.length > 0) {
                 setTranslatedSlides(allTranslated);
-                const langLabel = LANGUAGES.find(l => l.value === language)?.label || language;
+                const langLabel = LANGUAGE_OPTIONS.find(l => l.value === language)?.label || language;
                 toast({
-                    title: `Translation to ${langLabel} completed!`,
-                    description: `${allTranslated.length} slide(s) translated across ${totalFormats} format(s).`,
+                    title: t('translations.toastSuccessTitle', { language: langLabel }),
+                    description: t('translations.toastSuccessDesc', { slides: allTranslated.length, formats: totalFormats }),
                 });
                 onSuccess?.();
             } else {
                 setError(t('translations.noSlides'));
+                setError(t('translations.noSlidesTranslated'));
             }
-        } catch (err: any) {
-            setError(err.message || 'Translation failed');
-            toast({ title: 'Translation failed', description: err.message || 'Unknown error', variant: 'destructive' });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : t('translations.unknownError');
+            setError(message || t('translations.failed'));
+            toast({ title: t('translations.failed'), description: message || t('translations.unknownError'), variant: 'destructive' });
         } finally {
             setIsTranslating(false);
         }
     };
 
     const handleDownloadAll = async () => {
-        for (const slide of translatedSlides) {
-            await handleDownloadTranslated(slide);
-        }
+        await Promise.all(translatedSlides.map((slide) => handleDownloadTranslated(slide)));
     };
 
     const handleDownloadTranslated = async (slide: TranslatedSlide) => {
@@ -158,7 +143,7 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, deviceForma
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         } catch {
-            toast({ title: 'Download failed', variant: 'destructive' });
+            toast({ title: t('results.downloadFailed'), variant: 'destructive' });
         }
     };
 
@@ -184,6 +169,7 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, deviceForma
                     </DialogTitle>
                     <DialogDescription className="text-muted-foreground pt-2">
                         {t('translations.description')}
+                        {t('translations.subtitle')}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -195,7 +181,7 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, deviceForma
                                     <SelectValue placeholder={t('translations.selectLanguage')} />
                                 </SelectTrigger>
                                 <SelectContent className="bg-popover border-border/50">
-                                    {LANGUAGES.map(lang => (
+                                    {LANGUAGE_OPTIONS.map(lang => (
                                         <SelectItem key={lang.value} value={lang.value} className="focus:bg-primary/20 focus:text-primary cursor-pointer">
                                             {lang.label}
                                         </SelectItem>
@@ -219,14 +205,15 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, deviceForma
                                                             : 'bg-muted/50 text-muted-foreground border-border hover:border-primary/40'
                                                     }`}
                                                 >
-                                                    {FORMAT_OPTIONS[fmt] || fmt}
-                                                    {fmt === primaryFormat && ' (original)'}
+                                                    {DEVICE_FORMAT_LABELS[fmt] || fmt}
+                                                    {fmt === primaryFormat && ` (${t('translations.original')})`}
                                                 </button>
                                             );
                                         })}
                                     </div>
                                     <p className="text-[10px] text-muted-foreground">
                                         {t('translations.formatsSelected', { count: selectedFormats.length || 1 })}
+                                        {t('translations.formatsSelectedCost', { count: selectedFormats.length || 1 })}
                                     </p>
                                 </div>
                             )}
@@ -236,6 +223,7 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, deviceForma
                                     <Progress value={progressPercent} className="h-2" />
                                     <p className="text-xs text-muted-foreground text-center">
                                         {t('translations.translating', { language: LANGUAGES.find(l => l.value === language)?.label })}
+                                        {t('translations.translatingTo', { language: LANGUAGE_OPTIONS.find(l => l.value === language)?.label || language })}
                                     </p>
                                 </div>
                             )}
@@ -252,6 +240,12 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, deviceForma
                             <Button onClick={handleTranslate} disabled={!language || isTranslating} className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-glow">
                                 {isTranslating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Globe className="mr-2 h-4 w-4" />}
                                 {isTranslating ? t('translations.translatingBatch') : selectedFormats.length > 1 ? t('translations.translateAllSizes', { count: selectedFormats.length }) : t('translations.translateAll')}
+                            <Button variant="outline" onClick={() => handleClose(false)} className="border-border/60">{t('common.cancel')}</Button>
+                            <Button onClick={handleTranslate} disabled={!language || isTranslating} className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-glow">
+                                {isTranslating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Globe className="mr-2 h-4 w-4" />}
+                                {isTranslating
+                                    ? t('translations.translatingBatch')
+                                    : t('translations.translateAll', { sizes: selectedFormats.length > 1 ? ` (${selectedFormats.length})` : '' })}
                             </Button>
                         </DialogFooter>
                     </>
@@ -261,6 +255,7 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, deviceForma
                             <div className="flex items-center gap-2 text-sm text-primary font-bold">
                                 <CheckCircle2 className="h-4 w-4" />
                                 {t('translations.completed', { count: translatedSlides.length, language: LANGUAGES.find(l => l.value === language)?.label })}
+                                {t('translations.resultSummary', { count: translatedSlides.length, language: LANGUAGE_OPTIONS.find(l => l.value === language)?.label || language })}
                             </div>
                             <Button variant="outline" size="sm" onClick={handleDownloadAll} className="text-xs rounded-lg">
                                 <Download className="h-3 w-3 mr-1" /> {t('translations.downloadAll')}

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,8 +17,39 @@ import NotFound from "./pages/NotFound";
 import Settings from "./pages/Settings";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
+import { PageErrorBoundary } from "@/components/errors/PageErrorBoundary";
+import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
+const Landing = lazy(() => import("./pages/Landing"));
+const Login = lazy(() => import("./pages/Login"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const NewProject = lazy(() => import("./pages/NewProject"));
+const Generating = lazy(() => import("./pages/Generating"));
+const Results = lazy(() => import("./pages/Results"));
+const Templates = lazy(() => import("./pages/Templates"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const Settings = lazy(() => import("./pages/Settings"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Terms = lazy(() => import("./pages/Terms"));
+
+const RouteFallback = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
+    <Loader2 className="h-6 w-6 animate-spin" />
+  </div>
+);
+
+const GeneratingRoute = () => (
+  <PageErrorBoundary pageName="Generation">
+    <Generating />
+  </PageErrorBoundary>
+);
+
+const ResultsRoute = () => (
+  <PageErrorBoundary pageName="Results">
+    <Results />
+  </PageErrorBoundary>
+);
 
 const RouteAwareToasters = () => {
   const { pathname } = useLocation();
@@ -53,6 +85,22 @@ const App = () => (
             <Route path="/templates" element={<ProtectedRoute><Templates /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <Suspense fallback={<RouteFallback />}>
+            <Routes>
+              <Route path="/" element={<Landing />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/dashboard/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              <Route path="/project/new" element={<ProtectedRoute><NewProject /></ProtectedRoute>} />
+              <Route path="/project/:projectId/generating" element={<ProtectedRoute><GeneratingRoute /></ProtectedRoute>} />
+              <Route path="/project/:projectId/results" element={<ProtectedRoute><ResultsRoute /></ProtectedRoute>} />
+              <Route path="/project/:projectId/planner" element={<ProtectedRoute><NewProject /></ProtectedRoute>} />
+              <Route path="/templates" element={<ProtectedRoute><Templates /></ProtectedRoute>} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>

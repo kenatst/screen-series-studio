@@ -4,13 +4,11 @@ import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { Plus, LayoutTemplate, Loader2, Crown, CreditCard, Settings, ArchiveRestore, Archive, Coins, Layers, FolderKanban } from "lucide-react";
 import { motion } from "framer-motion";
-import { useProjects, useProjectSlides, useArchiveProject, useUnarchiveProject } from "@/hooks/useProjects";
+import { useProjects, useArchiveProject, useUnarchiveProject } from "@/hooks/useProjects";
 import { useAuth } from "@/hooks/useAuth";
 import { canCreateProject, getPlanById } from "@/lib/plans";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useBilling } from "@/hooks/useBilling";
 import { ProjectThumbnail } from "@/components/dashboard/ProjectThumbnail";
 import { useTranslation } from "react-i18next";
@@ -30,7 +28,7 @@ const statusColors: Record<string, string> = {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user, signOut, profile, checkSubscription } = useAuth();
+  const { profile, checkSubscription } = useAuth();
   const { toast } = useToast();
   const { data: projects, isLoading } = useProjects();
   const plan = getPlanById(profile?.plan || 'free');
@@ -77,8 +75,12 @@ const Dashboard = () => {
     try {
       await archiveProject.mutateAsync(projectId);
       toast({ title: t('dashboard.projectArchived') });
-    } catch (err: any) {
-      toast({ title: t('common.error'), description: err?.message || "Could not archive the project.", variant: "destructive" });
+    } catch (err: unknown) {
+      toast({
+        title: t('common.error'),
+        description: err instanceof Error ? err.message : "Could not archive the project.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -91,19 +93,19 @@ const Dashboard = () => {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between mb-10"
+          className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-10"
         >
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground">{t('dashboard.title')}</h1>
             <p className="text-muted-foreground mt-1 font-medium text-lg">{t('dashboard.subtitle')}</p>
           </div>
-          <div className="flex flex-wrap md:flex-nowrap items-center gap-3 overflow-x-auto pb-2 w-full md:w-auto scrollbar-hide">
+          <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
             <Badge variant="outline" className="text-xs font-bold uppercase tracking-wider whitespace-nowrap">
               <Crown className="h-3 w-3 mr-1" /> {plan.name}
             </Badge>
             {profile?.subscriptionEnd && (
               <span className="text-xs text-muted-foreground">
-                expires {new Date(profile.subscriptionEnd).toLocaleDateString()}
+                {t('dashboard.expires')} {new Date(profile.subscriptionEnd).toLocaleDateString()}
               </span>
             )}
             <Button variant="ghost" size="sm" onClick={handleRefreshSub} disabled={isCheckingSub} className="rounded-xl text-xs">
@@ -260,7 +262,7 @@ const Dashboard = () => {
                   </div>
                   <div className="flex items-center justify-between mt-3">
                     <p className="text-xs text-muted-foreground">
-                      Updated {new Date(project.updated_at).toLocaleDateString()}
+                      {t('dashboard.updated')} {new Date(project.updated_at).toLocaleDateString()}
                     </p>
                     <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => handleArchive(e, project.id)}>
                       <Archive className="h-3 w-3" />
@@ -303,7 +305,7 @@ const Dashboard = () => {
                     </div>
                     <div className="flex items-center justify-between mt-3">
                       <p className="text-xs text-muted-foreground">
-                        Updated {new Date(project.updated_at).toLocaleDateString()}
+                        {t('dashboard.updated')} {new Date(project.updated_at).toLocaleDateString()}
                       </p>
                       <Button variant="outline" size="sm" className="h-7 px-3 text-xs rounded-xl" onClick={(e) => handleUnarchive(e, project.id)}>
                         <ArchiveRestore className="h-3 w-3 mr-1" /> {t('dashboard.restore')}

@@ -1,6 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
 import { GoogleGenAI } from "https://esm.sh/@google/genai@1.44.0";
+import { creditCreditsAtomic, debitCreditsAtomic } from "../_shared/credits.ts";
+import { claimFunctionIdempotency } from "../_shared/idempotency.ts";
+import { arrayBufferToBase64, base64ToUint8Array } from "../_shared/base64.ts";
+import { checkFunctionRateLimit } from "../_shared/rate-limit.ts";
+import { buildSlidePrompt, DEVICE_DIMENSIONS } from "./prompt-builder.ts";
+import { analyzeTemplateSet, type TemplateSetAnalysis } from "./template-analysis.ts";
+import { parseQualityScore } from "./quality.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,367 +17,7 @@ const corsHeaders = {
 };
 
 const CREDIT_COST_PER_SLIDE = 1;
-
-// ─────────────────────────────────────────────────────────────
-// App Store exact pixel dimensions per device format
-// ─────────────────────────────────────────────────────────────
-const DEVICE_DIMENSIONS: Record<string, { width: number; height: number; label: string }> = {
-  "iphone-6-5": { width: 1242, height: 2688, label: '6.5" iPhone (1242×2688)' },
-  "iphone-6-9": { width: 1320, height: 2868, label: '6.9" iPhone (1320×2868)' },
-  "ipad-12-9":  { width: 2048, height: 2732, label: '12.9" iPad (2048×2732)' },
-};
-
-// ─────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────
-
-function safeBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  const chunks: string[] = [];
-  const chunkSize = 8192;
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    chunks.push(String.fromCharCode(...bytes.subarray(i, Math.min(i + chunkSize, bytes.length))));
-  }
-  return btoa(chunks.join(""));
-}
-
-// ─────────────────────────────────────────────────────────────
-// Template Layout Analysis Types
-// ─────────────────────────────────────────────────────────────
-
-interface SlideLayoutAnalysis {
-  slidePosition: number;
-  hasDeviceMockup: boolean;
-  devicePosition: string;
-  deviceScale: string;
-  textPosition: string;
-  headlineStyle: string;
-  backgroundType: string;
-  has3DElements: boolean;
-  hasMascot: boolean;
-  mascotDescription: string | null;
-  decorativeElements: string[];
-  mood: string;
-  detailedComposition: string;
-}
-
-interface TemplateSetAnalysis {
-  totalSlides: number;
-  overallStyle: string;
-  colorPalette: string;
-  slides: SlideLayoutAnalysis[];
-}
-
-// ─────────────────────────────────────────────────────────────
-// Step 1: Analyze FULL template composite image
-// Extracts per-slide layouts from a single image showing
-// multiple slides side by side (like a portfolio/showcase)
-// ─────────────────────────────────────────────────────────────
-
-async function analyzeTemplateSet(
-  ai: any,
-  imageBase64: string,
-  mimeType: string
-): Promise<TemplateSetAnalysis> {
-  try {
-    console.log("[ANALYSIS] Analyzing full template set (composite image)...");
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: [
-        {
-          inlineData: { mimeType, data: imageBase64 },
-        },
-        {
-          text: `This image shows a SET of App Store screenshot templates displayed side by side (like a portfolio showcase). Each individual screenshot/slide in this set is a separate design that will be recreated with different app content.
-
-Your task: Analyze EACH individual slide/screenshot visible in this composite image, from LEFT to RIGHT.
-
-Return ONLY a JSON object (no markdown, no backticks) with this exact structure:
-
-{
-  "totalSlides": <number of individual slides visible in the image>,
-  "overallStyle": "A 2-3 sentence description of the overall visual identity, design language, and artistic direction that ties all slides together. Describe the shared color scheme, typography approach, device frame style, background treatment, and any recurring visual motifs.",
-  "colorPalette": "List the dominant colors used across the set (e.g. '#1A1A2E deep navy, #E94560 coral accent, #F5F5F5 light background')",
-  "slides": [
-    {
-      "slidePosition": 1,
-      "hasDeviceMockup": boolean,
-      "devicePosition": "center" | "left" | "right" | "angled",
-      "deviceScale": "small" | "medium" | "large" | "full",
-      "textPosition": "top" | "bottom" | "left" | "right" | "overlay",
-      "headlineStyle": "bold-serif" | "bold-sans" | "script" | "condensed",
-      "backgroundType": "gradient" | "solid" | "photo" | "3d-scene" | "pattern" | "aurora",
-      "has3DElements": boolean,
-      "hasMascot": boolean,
-      "mascotDescription": "description of mascot/character if present, null otherwise",
-      "decorativeElements": ["list", "of", "visual", "elements", "like", "floating-shapes", "particles", "icons"],
-      "mood": "one-word-or-hyphenated mood descriptor",
-      "detailedComposition": "A 3-4 sentence PRECISE description of THIS SPECIFIC slide's spatial layout. Include: exact element positions (e.g. 'headline at top 15%, phone centered at 40-85%, subheadline at bottom 10%'), device angle and shadow direction, text alignment, background gradient direction, decorative element placement, and any unique aspects that distinguish this slide from the others in the set."
-    }
-  ]
-}
-
-IMPORTANT:
-- Count and describe EVERY individual slide visible, from left to right
-- Each slide's detailedComposition must describe what makes THAT slide unique within the set
-- The overallStyle should capture what makes these slides look like they belong together
-- Be extremely precise about spatial positions, proportions, and visual hierarchy`,
-        },
-      ],
-      config: {
-        temperature: 0.1,
-        maxOutputTokens: 4096,
-      },
-    });
-
-    const text = response.candidates?.[0]?.content?.parts
-      ?.find((p: any) => p.text)?.text || "{}";
-
-    const cleaned = text.replace(/```json\n?|```/g, "").trim();
-    const parsed = JSON.parse(cleaned);
-    console.log(`[ANALYSIS] ✅ Template set analysis complete: ${parsed.totalSlides} slides detected, style: ${(parsed.overallStyle || "").slice(0, 100)}...`);
-    return parsed as TemplateSetAnalysis;
-  } catch (e: any) {
-    console.error("[ANALYSIS] ❌ Template set analysis failed:", e?.message);
-    return {
-      totalSlides: 1,
-      overallStyle: "Clean, professional App Store screenshot design with centered phone mockup.",
-      colorPalette: "Gradient background with accent colors",
-      slides: [{
-        slidePosition: 1,
-        hasDeviceMockup: true,
-        devicePosition: "center",
-        deviceScale: "large",
-        textPosition: "top",
-        headlineStyle: "bold-sans",
-        backgroundType: "gradient",
-        has3DElements: false,
-        hasMascot: false,
-        mascotDescription: null,
-        decorativeElements: [],
-        mood: "premium",
-        detailedComposition: "Standard centered layout with large phone mockup and headline text above.",
-      }],
-    };
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-// Step 2: Build the prompt — Template-faithful approach
-// ─────────────────────────────────────────────────────────────
-
-function buildSlidePrompt(params: {
-  slide: any;
-  project: any;
-  brandKit: any;
-  templateSetAnalysis: TemplateSetAnalysis | null;
-  slideLayout: SlideLayoutAnalysis | null;
-  isFirstSlide: boolean;
-  totalSlides: number;
-  hasPreviousSlides: boolean;
-  hasRawScreen: boolean;
-  isBeyondTemplate: boolean;
-  userFeedback?: string;
-  deviceFormats: string[];
-}): string {
-  const { slide, project, brandKit, templateSetAnalysis, slideLayout, isFirstSlide, totalSlides, hasPreviousSlides, hasRawScreen, isBeyondTemplate, userFeedback, deviceFormats } = params;
-
-  const config = project.config as any || {};
-  const appName = project.app_name || project.name || "App";
-
-  const brandBlock = [
-    brandKit?.colors?.length > 0 ? `Brand colors: ${brandKit.colors.join(", ")}` : "",
-    brandKit?.fontFamily ? `Brand font: ${brandKit.fontFamily}` : "",
-  ].filter(Boolean).join("\n");
-
-  const outputLang = project.output_language || config?.outputLanguage || "en";
-  const langDirective = outputLang !== "en"
-    ? `\n\nLANGUAGE: All text on the screenshot (headline, subheadline) MUST be written in ${outputLang}. Reproduce the provided text EXACTLY as given.`
-    : "";
-
-  const feedbackBlock = userFeedback
-    ? `\n\n=== USER REDESIGN INSTRUCTION (HIGHEST PRIORITY) ===\nYou MUST incorporate the following feedback exactly: "${userFeedback}"\n=== END USER INSTRUCTION ===`
-    : "";
-
-  const primaryFormat = deviceFormats[0] || "iphone-6-5";
-  const dims = DEVICE_DIMENSIONS[primaryFormat] || DEVICE_DIMENSIONS["iphone-6-5"];
-  const aspectStr = primaryFormat.includes("ipad")
-    ? `3:4 (iPad portrait — target: ${dims.width}×${dims.height}px)`
-    : `9:16 (iPhone portrait — target: ${dims.width}×${dims.height}px)`;
-
-  const appCategory = config?.appCategory || "Not specified";
-  const appDescription = config?.appDescription || project.app_description || "";
-
-  // ── CASE 1: Slide within template range — match specific template slide ──
-  if (!isBeyondTemplate && slideLayout && templateSetAnalysis) {
-    return `
-You are an elite-tier App Store screenshot designer — your work rivals the best studios on Dribbble and Behance.
-
-=== YOUR MISSION ===
-IMAGE #1 is a TEMPLATE SET showing ${templateSetAnalysis.totalSlides} slides side by side.
-You are generating slide ${slide.slide_number} of ${totalSlides} for a "${appCategory}" app called "${appName}".
-Your job: recreate the DESIGN STRUCTURE of SLIDE #${slideLayout.slidePosition} (counting left to right) from the template, but fully adapted to the new app's theme and content.
-
-=== CRITICAL: THEME ADAPTATION ===
-The template was designed for a DIFFERENT app. You MUST adapt ALL visual elements to match "${appName}" (${appCategory}):
-- DO NOT copy the template's mascots, characters, or brand-specific icons literally
-- DO NOT copy the template's background scenery if it's app-specific (e.g., lavender fields for a lifestyle app → replace with weather-themed visuals for a weather app)
-- DO adapt decorative elements to match the app's category: ${appCategory}${appDescription ? ` — ${appDescription.slice(0, 150)}` : ""}
-- DO keep the template's LAYOUT STRUCTURE (positions, proportions, spacing, visual hierarchy)
-- DO keep the template's DESIGN QUALITY (gradient richness, shadow depth, typography style)
-- Think of it as: same designer, same skill level, but designing for a completely different app
-
-=== TEMPLATE SET STYLE (design DNA to keep) ===
-${templateSetAnalysis.overallStyle}
-Color palette: ${templateSetAnalysis.colorPalette}
-
-=== TARGET SLIDE LAYOUT (slide #${slideLayout.slidePosition} from the template) ===
-${slideLayout.detailedComposition}
-
-Layout structure to reproduce:
-- Device mockup: ${slideLayout.hasDeviceMockup ? `YES — positioned ${slideLayout.devicePosition}, scale ${slideLayout.deviceScale}. Match the EXACT device angle, shadow, and frame style.` : "NO device mockup — DO NOT add one."}
-- Text placement: ${slideLayout.textPosition} — match the EXACT position and spacing proportions
-- Headline style: ${slideLayout.headlineStyle}, large and impactful
-- Background TYPE: ${slideLayout.backgroundType} — keep the same TYPE but adapt the THEME to ${appCategory}
-${slideLayout.decorativeElements.length > 0 ? `- Decorative elements in template: ${slideLayout.decorativeElements.join(", ")} — adapt these to ${appCategory}-themed equivalents` : ""}
-- 3D elements: ${slideLayout.has3DElements ? `YES — create 3D elements relevant to ${appCategory} (NOT the template's original 3D objects)` : "NO — keep flat/2D"}
-${slideLayout.hasMascot ? `- Template has mascot: "${slideLayout.mascotDescription}" — create a NEW mascot/character relevant to ${appCategory} in the SAME position and scale, OR replace with a thematic icon/illustration` : ""}
-- Mood: ${slideLayout.mood}
-
-=== APP CONTENT ===
-App: "${appName}" | Category: "${appCategory}"
->>> HEADLINE (render EXACTLY): "${slide.headline || ""}" <<<
->>> SUBHEADLINE (render EXACTLY): "${slide.subheadline || ""}" <<<
-${brandBlock ? `\n=== BRAND IDENTITY ===\n${brandBlock}` : ""}
-Color adaptation: ${brandKit?.colors?.length > 0 ? `Use ${brandKit.colors.join(", ")} as primary/accent colors, adapting the template's gradient style and contrast ratios.` : "Create a color palette appropriate for ${appCategory}, inspired by the template's color relationships."}
-
-${hasRawScreen ? `=== RAW APP SCREEN (next image after template) ===
-Composite this REAL app screenshot INTO the device frame as-is. Preserve EVERY pixel.` : `=== NO RAW SCREEN ===
-${slideLayout.hasDeviceMockup ? "Include a phone mockup with a generic branded screen matching the app's color scheme." : "Focus on headline, subheadline, and background visual energy."}`}
-
-=== SLIDE CONTEXT ===
-Slide ${slide.slide_number} of ${totalSlides} | Objective: ${slide.objective || "Feature spotlight"} | Emphasis: ${slide.emphasis || "balanced"} | Format: ${aspectStr}
-
-${!isFirstSlide && hasPreviousSlides ? `=== VISUAL CONTINUITY (CRITICAL) ===
-Previously generated slides from THIS SET are attached after the template.
-- LAYOUT: Follow template slide #${slideLayout.slidePosition}'s structure
-- VISUAL IDENTITY: Match the exact colors, typography, device frames from the previous slides
-- ONE designer, ONE Figma file, ONE session
-Previously generated slides from THIS SET are also attached after the template and raw screen.
-- LAYOUT: Follow the template slide #${slideLayout.slidePosition}'s composition (IMAGE #1)
-- VISUAL IDENTITY: Match the exact color palette, typography, device frames, background treatment, and lighting from the previously generated slides
-- Think of it as: ONE designer, ONE Figma file, ONE session — each slide has a different layout but shares the same visual DNA
-` : ""}=== TARGET DISPLAY ===
-This screenshot is for an Apple App Store ${dims.label} display.
-Target pixel dimensions: ${dims.width} × ${dims.height} pixels.
-Design all text, UI elements, and device mockups at a scale appropriate for this exact resolution.
-Headlines should be large and readable at this resolution — typically 60-90pt equivalent.
-
-=== QUALITY RULES ===
-1. Text pixel-perfect, crisp, perfectly kerned — zero artifacts
-2. Render the EXACT headline/subheadline strings — NO placeholders
-3. INDISTINGUISHABLE from the template's professional quality
-4. Match proportions, spacing, and visual weight from the target template slide
-5. Rich backgrounds with proper depth and lighting
-6. Photorealistic device frames with proper shadows
-${langDirective}${feedbackBlock}
-
-Generate the image now.
-`.trim();
-    return prompt;
-  }
-
-
-  // ── CASE 2: Beyond template range — continuity mode ──
-  return `
-You are an elite-tier App Store screenshot designer — your work rivals the best studios on Dribbble and Behance.
-
-=== YOUR MISSION ===
-You are generating slide ${slide.slide_number} of ${totalSlides} for the app "${appName}".
-There is NO specific template layout for this slide position — the template set only had ${templateSetAnalysis?.totalSlides || 0} slides.
-The previously generated slides (attached) are your PRIMARY VISUAL REFERENCE.
-Your job: continue the set with the EXACT same visual DNA — same quality, same style, same attention to detail.
-It must be IMPOSSIBLE to tell where the template-based slides end and the continuity slides begin.
-
-${templateSetAnalysis ? `=== SET IDENTITY (from template) ===
-${templateSetAnalysis.overallStyle}
-Color palette: ${templateSetAnalysis.colorPalette}` : ""}
-
-=== APP CONTENT TO INSERT ===
-App name: "${appName}" | Category: "${config?.appCategory || "Not specified"}"
->>> HEADLINE (render EXACTLY): "${slide.headline || ""}" <<<
->>> SUBHEADLINE (render EXACTLY): "${slide.subheadline || ""}" <<<
-${brandBlock ? `\n=== BRAND IDENTITY ===\n${brandBlock}` : ""}
-
-${hasRawScreen ? `=== RAW APP SCREEN ===
-This is the REAL app screenshot. Composite it INTO the device frame EXACTLY as-is.
-- Preserve EVERY pixel — do NOT redesign or modify the UI
-- Match the device frame style from previously generated slides` : `=== NO RAW SCREEN ===
-Include a phone mockup with a clean branded screen matching the app's color scheme, using the same device frame style as previous slides.`}
-
-=== SLIDE CONTEXT ===
-Slide ${slide.slide_number} of ${totalSlides} | Objective: ${slide.objective || "Feature spotlight"} | Emphasis: ${slide.emphasis || "balanced"} | Importance: ${slide.importance || "high"} | Format: ${aspectStr}
-
-=== VISUAL CONTINUITY (THIS IS YOUR #1 PRIORITY) ===
-The previously generated slides are attached — they are your ONLY layout reference.
-Match EVERYTHING from them:
-- Exact color palette, gradient directions, and color ratios
-- Typography: same font style, weight, size proportions, kerning
-- Device frame: same model, angle, shadow, reflection style
-- Background treatment: same gradient type, texture, depth, lighting
-- Decorative elements: same floating shapes, particles, or patterns if present
-- Spacing: same margins, padding, text-to-device ratios
-ONE designer, ONE Figma file, ONE session — this slide must feel like a natural continuation.
-${langDirective}${feedbackBlock}
-
-=== TARGET DISPLAY ===
-This screenshot is for an Apple App Store ${dims.label} display.
-Target pixel dimensions: ${dims.width} × ${dims.height} pixels.
-Design all text, UI elements, and device mockups at a scale appropriate for this exact resolution.
-
-=== QUALITY RULES ===
-1. Text pixel-perfect, crisp, perfectly kerned — zero artifacts
-2. Render the EXACT headline/subheadline strings — NO placeholders
-3. INDISTINGUISHABLE from the previously generated slides in style and quality
-4. Vary the LAYOUT slightly (different text position, different device angle) to keep the set dynamic
-5. Rich backgrounds with proper depth and lighting
-
-Generate the image now. Continue the set seamlessly.`.trim();
-}
-
-// ─────────────────────────────────────────────────────────────
-// Quality parsing
-// ─────────────────────────────────────────────────────────────
-
-function parseQualityScore(rawText: string): number | null {
-  const trimmed = (rawText || "").trim();
-  if (!trimmed) return null;
-  const jsonCandidate = trimmed.match(/\{[\s\S]*\}/)?.[0];
-  if (!jsonCandidate) return null;
-  try {
-    const parsed = JSON.parse(jsonCandidate);
-    const score = Number(parsed?.overall_score ?? parsed?.score ?? parsed?.quality_score);
-    if (Number.isFinite(score)) return Math.max(0, Math.min(100, Math.round(score)));
-  } catch { return null; }
-  return null;
-}
-
-// ─────────────────────────────────────────────────────────────
-// Rate limiting & idempotency
-// ─────────────────────────────────────────────────────────────
-
-const IPs = new Map<string, number[]>();
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  let requests = IPs.get(ip) || [];
-  requests = requests.filter(time => now - time < 60000);
-  if (requests.length >= 15) { IPs.set(ip, requests); return true; }
-  requests.push(now);
-  IPs.set(ip, requests);
-  return false;
-}
-
-const idempotencyCache = new Set<string>();
+const GENERATE_RATE_LIMIT_PER_MINUTE = 15;
 
 // ─────────────────────────────────────────────────────────────
 // Main handler
@@ -387,13 +34,6 @@ serve(async (req: Request) => {
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const clientIp = req.headers.get("cf-connecting-ip") || req.headers.get("x-forwarded-for") || "unknown";
-    if (clientIp !== "unknown" && isRateLimited(clientIp)) {
-      return new Response(JSON.stringify({ error: "Too many generation requests. Please wait a minute." }), {
-        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -444,16 +84,6 @@ serve(async (req: Request) => {
       resumeGeneration = url.searchParams.get("resume") === "true";
     }
 
-    if (idempotencyKey) {
-      if (idempotencyCache.has(idempotencyKey)) {
-        return new Response(JSON.stringify({ error: "Duplicate request detected in progress" }), {
-          status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      idempotencyCache.add(idempotencyKey);
-      setTimeout(() => idempotencyCache.delete(idempotencyKey!), 60000);
-    }
-
     if (!projectId) {
       return new Response(JSON.stringify({ error: "project_id required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -461,6 +91,32 @@ serve(async (req: Request) => {
     }
 
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
+    if (idempotencyKey) {
+      const claimed = await claimFunctionIdempotency(
+        adminClient as any,
+        userId,
+        "generate-screenshots",
+        idempotencyKey,
+        120,
+      );
+      if (!claimed) {
+        return new Response(JSON.stringify({ error: "Duplicate request detected in progress" }), {
+          status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
+    const withinRateLimit = await checkFunctionRateLimit(
+      adminClient as any,
+      userId,
+      "generate-screenshots",
+      GENERATE_RATE_LIMIT_PER_MINUTE,
+    );
+    if (!withinRateLimit) {
+      return new Response(JSON.stringify({ error: "Too many generation requests. Please wait a minute." }), {
+        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // ── Load project & slides ──
     const { data: project, error: projError } = await userClient.from("projects").select("*").eq("id", projectId).single();
@@ -521,7 +177,7 @@ serve(async (req: Request) => {
     const invocationSlides = [slidesToGenerate[0]];
 
     // ── Credit check ──
-    const { data: profileData } = await adminClient.from("profiles").select("credits, plan").eq("id", userId).single();
+    const { data: profileData } = await adminClient.from("profiles").select("credits").eq("id", userId).single();
     const currentCredits = profileData?.credits ?? 0;
     const billableSlides = invocationSlides.filter((slide: any) => {
       if (singleSlideId || forceRegenerate) return true;
@@ -572,7 +228,7 @@ serve(async (req: Request) => {
         const { data: fileData } = await adminClient.storage.from("raw-uploads").download(asset.storage_path);
         if (!fileData) continue;
         const arrayBuffer = await fileData.arrayBuffer();
-        const base64 = safeBase64(arrayBuffer);
+        const base64 = arrayBufferToBase64(arrayBuffer);
         const ext = asset.storage_path.split(".").pop()?.toLowerCase() || "png";
         const mime = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
         referenceImages.push({ mimeType: mime, data: base64, tag: asset.tag || undefined, assetType: asset.asset_type });
@@ -592,7 +248,7 @@ serve(async (req: Request) => {
           if (tmplError) continue;
           if (tmplData) {
             const ab = await tmplData.arrayBuffer();
-            const b64 = safeBase64(ab);
+            const b64 = arrayBufferToBase64(ab);
             const ext = name.split(".").pop() || "png";
             templateImage = { mimeType: ext === "jpg" || ext === "jpeg" ? "image/jpeg" : `image/${ext}`, data: b64 };
             console.log(`[TEMPLATE] ✅ Loaded: ${name} (${Math.round(ab.byteLength / 1024)}KB)`);
@@ -611,10 +267,30 @@ serve(async (req: Request) => {
     // ── Analyze FULL template set (extracts per-slide layouts from composite) ──
     const ai = new GoogleGenAI({ apiKey: geminiApiKey });
     let templateSetAnalysis: TemplateSetAnalysis | null = null;
+    const projectConfig = (project.config as any) || {};
+    const cachedTemplateAnalysis = projectConfig?.template_analysis;
 
-    if (templateImage) {
+    if (
+      cachedTemplateAnalysis?.template_id === templateKey &&
+      cachedTemplateAnalysis?.analysis &&
+      Array.isArray(cachedTemplateAnalysis.analysis.slides)
+    ) {
+      templateSetAnalysis = cachedTemplateAnalysis.analysis as TemplateSetAnalysis;
+      console.log(`[TEMPLATE] ♻️ Reusing cached template analysis for "${templateKey}"`);
+    } else if (templateImage) {
       templateSetAnalysis = await analyzeTemplateSet(ai, templateImage.data, templateImage.mimeType);
       console.log(`[TEMPLATE] Template has ${templateSetAnalysis.totalSlides} slides. Project needs ${allSlides.length} slides.`);
+
+      await adminClient.from("projects").update({
+        config: {
+          ...projectConfig,
+          template_analysis: {
+            template_id: templateKey,
+            analyzed_at: new Date().toISOString(),
+            analysis: templateSetAnalysis,
+          },
+        },
+      }).eq("id", projectId);
     }
 
     // ── Update project status ──
@@ -648,7 +324,7 @@ serve(async (req: Request) => {
             const { data: contextData } = await adminClient.storage.from("generated-outputs").download(contextPath);
             if (!contextData) continue;
             const ab = await contextData.arrayBuffer();
-            previousSlideImages.push({ mimeType: "image/png", data: safeBase64(ab) });
+            previousSlideImages.push({ mimeType: "image/png", data: arrayBufferToBase64(ab) });
           } catch { /* ignore */ }
         }
 
@@ -663,11 +339,21 @@ serve(async (req: Request) => {
 
         for (const slide of invocationSlides) {
           const displayNum = slide.slide_number;
+          const shouldBillSlide = Boolean(singleSlideId || forceRegenerate || !(resumeGeneration && slide.status === "generating"));
+          let creditReserved = false;
           sendEvent("slide-start", { slideNumber: displayNum, total: allSlides.length });
           const slideStartMs = Date.now();
           await adminClient.from("project_slides").update({ status: "generating", attempt_count: (slide.attempt_count || 0) + 1 }).eq("id", slide.id);
 
           try {
+            if (shouldBillSlide) {
+              const remaining = await debitCreditsAtomic(adminClient as any, userId, CREDIT_COST_PER_SLIDE);
+              if (remaining === null) {
+                throw new Error("Insufficient credits to generate this slide.");
+              }
+              creditReserved = true;
+            }
+
             // ── Resolve which template slide to target ──
             const templateSlideCount = templateSetAnalysis?.totalSlides || 0;
             const isBeyondTemplate = displayNum > templateSlideCount;
@@ -746,12 +432,12 @@ serve(async (req: Request) => {
               }
             }
 
-            // Enforce max 14 images
+            // Enforce a strict context cap to stay under model input limits.
             let imgCount = 0;
             for (let j = parts.length - 1; j >= 0; j--) {
               if ((parts[j] as any).inlineData) {
                 imgCount++;
-                if (imgCount > 14) parts.splice(j, 1);
+                if (imgCount > 10) parts.splice(j, 1);
               }
             }
 
@@ -778,12 +464,17 @@ serve(async (req: Request) => {
               }
             }
 
-            // Auto-repair: retry once if no image or low quality
-            if (!imageBase64) {
-              console.warn(`[GENERATE] Slide ${displayNum}: No image on first attempt, retrying...`);
+            const firstPassQuality = parseQualityScore(text);
+
+            // Auto-repair: retry once if no image or low quality score available.
+            if (!imageBase64 || (firstPassQuality !== null && firstPassQuality < 70)) {
+              console.warn(`[GENERATE] Slide ${displayNum}: Retrying (hasImage=${Boolean(imageBase64)}, quality=${firstPassQuality ?? "n/a"})`);
               const retryResponse = await ai.models.generateContent({
                 model: "gemini-3.1-flash-image-preview",
-                contents: [{ text: `${prompt}\n\nCRITICAL: You MUST generate an image. Return an App Store screenshot image.` }, ...(templateImage ? [{ inlineData: { mimeType: templateImage.mimeType, data: templateImage.data } }] : [])],
+                contents: [
+                  ...parts,
+                  { text: "CRITICAL REFINEMENT: improve readability, spacing precision, and overall polish while preserving exact requested text." },
+                ],
                 config: {
                   responseModalities: ["TEXT", "IMAGE"],
                   imageConfig: { aspectRatio, imageSize: "2K" },
@@ -806,7 +497,7 @@ serve(async (req: Request) => {
 
             // Upload to storage
             const storagePath = `${userId}/${projectId}/slide-${displayNum}.png`;
-            const imageBytes = Uint8Array.from(atob(imageBase64), (c) => c.charCodeAt(0));
+            const imageBytes = base64ToUint8Array(imageBase64);
             await adminClient.storage.from("generated-outputs").upload(storagePath, imageBytes, {
               contentType: "image/png", upsert: true,
             });
@@ -828,6 +519,13 @@ serve(async (req: Request) => {
               qualityScore, generationMs,
             });
           } catch (error: any) {
+            if (creditReserved) {
+              try {
+                await creditCreditsAtomic(adminClient as any, userId, CREDIT_COST_PER_SLIDE);
+              } catch (refundError) {
+                console.error(`[GENERATE] Refund failed for slide ${displayNum}:`, refundError);
+              }
+            }
             console.error(`[GENERATE] Error slide ${displayNum}:`, error);
             await adminClient.from("project_slides").update({ status: "error", last_error: error.message || "Generation failed" }).eq("id", slide.id);
             sendEvent("slide-error", { slideNumber: displayNum, message: error.message || "Generation failed" });
