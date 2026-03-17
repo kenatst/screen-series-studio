@@ -11,8 +11,16 @@ interface TranslationsModalProps {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
     projectId: string;
+    deviceFormats?: string[];
+    generatedFormats?: string[];
     onSuccess?: () => void;
 }
+
+const FORMAT_OPTIONS: Record<string, string> = {
+    'iphone-6-5': '6.5" iPhone',
+    'iphone-6-9': '6.9" iPhone',
+    'ipad-12-9': '12.9" iPad',
+};
 
 const LANGUAGES = [
     { value: 'French', label: 'French (Français)' },
@@ -34,57 +42,88 @@ interface TranslatedSlide {
     imageUrl: string;
 }
 
-export const TranslationsModal = ({ isOpen, onOpenChange, projectId, onSuccess }: TranslationsModalProps) => {
+export const TranslationsModal = ({ isOpen, onOpenChange, projectId, deviceFormats = ['iphone-6-5'], generatedFormats = [], onSuccess }: TranslationsModalProps) => {
     const [language, setLanguage] = useState('');
+    const [selectedFormats, setSelectedFormats] = useState<string[]>([]);
     const [isTranslating, setIsTranslating] = useState(false);
     const [translatedSlides, setTranslatedSlides] = useState<TranslatedSlide[]>([]);
     const [error, setError] = useState('');
     const [progressPercent, setProgressPercent] = useState(0);
     const { toast } = useToast();
 
+    // Available formats = primary format + any resized formats
+    const primaryFormat = deviceFormats[0] || 'iphone-6-5';
+    const availableFormats = [primaryFormat, ...generatedFormats.filter(f => f !== primaryFormat)];
+
+    const toggleFormat = (fmt: string) => {
+        setSelectedFormats(prev =>
+            prev.includes(fmt) ? prev.filter(f => f !== fmt) : [...prev, fmt]
+        );
+    };
+
     const handleTranslate = async () => {
         if (!language) return;
+        const formatsToTranslate = selectedFormats.length > 0 ? selectedFormats : [primaryFormat];
+
         setIsTranslating(true);
         setError('');
         setTranslatedSlides([]);
-        setProgressPercent(10);
+        setProgressPercent(5);
 
         try {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) throw new Error("Not authenticated");
 
-            setProgressPercent(20);
-
             const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-            const response = await fetch(`${supabaseUrl}/functions/v1/translate-copy`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`,
-                    'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-                },
-                body: JSON.stringify({
-                    project_id: projectId,
-                    target_language: language,
-                    source_language: 'English',
-                }),
-            });
+            const allTranslated: TranslatedSlide[] = [];
+            const totalFormats = formatsToTranslate.length;
 
-            setProgressPercent(60);
+            for (let fi = 0; fi < totalFormats; fi++) {
+                const fmt = formatsToTranslate[fi];
+                const baseProgress = (fi / totalFormats) * 100;
+                const formatProgress = (1 / totalFormats) * 100;
+                setProgressPercent(Math.round(baseProgress + formatProgress * 0.2));
 
-            if (!response.ok) {
-                const errData = await response.json().catch(() => ({ error: 'Server error' }));
-                throw new Error(errData.error || `Error ${response.status}`);
+                const response = await fetch(`${supabaseUrl}/functions/v1/translate-copy`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}`,
+                        'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                    },
+                    body: JSON.stringify({
+                        project_id: projectId,
+                        target_language: language,
+                        source_language: 'English',
+                        device_format: fmt,
+                    }),
+                });
+
+                setProgressPercent(Math.round(baseProgress + formatProgress * 0.8));
+
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({ error: 'Server error' }));
+                    throw new Error(errData.error || `Error ${response.status} for ${fmt}`);
+                }
+
+                const result = await response.json();
+                if (result.translations?.length > 0) {
+                    allTranslated.push(...result.translations.map((t: any) => ({
+                        ...t,
+                        format: fmt,
+                    })));
+                }
             }
 
-            const result = await response.json();
-            setProgressPercent(90);
+            setProgressPercent(100);
 
-            if (result.translations?.length > 0) {
-                setTranslatedSlides(result.translations);
+            if (allTranslated.length > 0) {
+                setTranslatedSlides(allTranslated);
                 const langLabel = LANGUAGES.find(l => l.value === language)?.label || language;
-                toast({ title: `Translation to ${langLabel} completed!`, description: `${result.translations.length} slide(s) translated.` });
-                setProgressPercent(100);
+                toast({
+                    title: `Translation to ${langLabel} completed!`,
+                    description: `${allTranslated.length} slide(s) translated across ${totalFormats} format(s).`,
+                });
                 onSuccess?.();
             } else {
                 setError('No slides were translated. Make sure you have generated slides with images first.');
@@ -126,6 +165,7 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, onSuccess }
             setTranslatedSlides([]);
             setError('');
             setLanguage('');
+            setSelectedFormats([]);
             setProgressPercent(0);
             setIsTranslating(false);
         }
@@ -161,6 +201,34 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, onSuccess }
                                 </SelectContent>
                             </Select>
 
+                            {availableFormats.length > 1 && (
+                                <div className="space-y-2">
+                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Device sizes to translate</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {availableFormats.map(fmt => {
+                                            const isSelected = selectedFormats.includes(fmt) || (selectedFormats.length === 0 && fmt === primaryFormat);
+                                            return (
+                                                <button
+                                                    key={fmt}
+                                                    onClick={() => toggleFormat(fmt)}
+                                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                                                        isSelected
+                                                            ? 'bg-primary/20 text-primary border-primary'
+                                                            : 'bg-muted/50 text-muted-foreground border-border hover:border-primary/40'
+                                                    }`}
+                                                >
+                                                    {FORMAT_OPTIONS[fmt] || fmt}
+                                                    {fmt === primaryFormat && ' (original)'}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground">
+                                        {(selectedFormats.length || 1)} format(s) selected — costs 1 credit per slide per format
+                                    </p>
+                                </div>
+                            )}
+
                             {isTranslating && (
                                 <div className="space-y-2">
                                     <Progress value={progressPercent} className="h-2" />
@@ -181,7 +249,7 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, onSuccess }
                             <Button variant="outline" onClick={() => handleClose(false)} className="border-border/60">Cancel</Button>
                             <Button onClick={handleTranslate} disabled={!language || isTranslating} className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-glow">
                                 {isTranslating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Globe className="mr-2 h-4 w-4" />}
-                                {isTranslating ? 'Translating batch...' : 'Translate All Slides'}
+                                {isTranslating ? 'Translating batch...' : `Translate All Slides${selectedFormats.length > 1 ? ` (${selectedFormats.length} sizes)` : ''}`}
                             </Button>
                         </DialogFooter>
                     </>
