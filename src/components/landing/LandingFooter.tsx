@@ -1,9 +1,10 @@
+import { forwardRef } from 'react';
 import appLogo from '@/assets/logo-shotapp.png';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
-export const LandingFooter = () => {
+export const LandingFooter = forwardRef<HTMLElement>((_, ref) => {
     const { t } = useTranslation();
 
     return (
@@ -40,4 +41,6 @@ export const LandingFooter = () => {
             </div>
         </footer>
     );
-};
+});
+
+LandingFooter.displayName = 'LandingFooter';
