@@ -165,6 +165,8 @@ serve(async (req) => {
 
       if (!aiResponse.ok) {
         const status = aiResponse.status;
+        // Refund credit on upstream errors
+        await creditCreditsAtomic(adminClient as any, userData.user.id, 1);
         if (status === 429) return new Response(JSON.stringify({ error: "Rate limited, try again later" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         if (status === 402) return new Response(JSON.stringify({ error: "Payment required" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         const errText = await aiResponse.text();

@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
 import { creditsCapForPlan, PLAN_CREDITS, PRODUCT_NAME_TO_PLAN, toPlanId } from "../_shared/billing.ts";
+import { creditCreditsAtomic } from "../_shared/credits.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -124,16 +125,18 @@ serve(async (req) => {
             const activePlan = await resolvePlanFromSubscriptionItem(stripe, sub.data[0].items.data[0]);
             const monthlyCredits = PLAN_CREDITS[activePlan] || PLAN_CREDITS.free;
             const cap = creditsCapForPlan(activePlan);
-            const nextCredits = Math.min((prof.credits ?? 0) + monthlyCredits, cap);
+
+            // Use atomic RPC to add credits with cap — avoids read-then-write race condition
+            const newBalance = await creditCreditsAtomic(supabase as any, prof.id, monthlyCredits, cap);
             await supabase
               .from("profiles")
-              .update({ plan: activePlan, credits: nextCredits })
+              .update({ plan: activePlan })
               .eq("id", prof.id);
             logStep("Credits topped up on invoice.paid", {
               userId: prof.id,
               plan: activePlan,
               monthlyCredits,
-              nextCredits,
+              newBalance,
             });
           }
         }

@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 async function listAllObjectPaths(
-  client: ReturnType<typeof createClient>,
+  client: any,
   bucket: string,
   prefix: string,
 ): Promise<string[]> {
@@ -41,7 +41,7 @@ async function listAllObjectPaths(
 }
 
 async function removeInChunks(
-  client: ReturnType<typeof createClient>,
+  client: any,
   bucket: string,
   objectPaths: string[],
 ): Promise<void> {
