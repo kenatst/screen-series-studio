@@ -36,7 +36,6 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, deviceForma
     const [error, setError] = useState('');
     const [progressPercent, setProgressPercent] = useState(0);
     const { toast } = useToast();
-    const { t } = useTranslation();
 
     // Available formats = primary format + any resized formats
     const primaryFormat = deviceFormats[0] || 'iphone-6-5';
@@ -113,7 +112,6 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, deviceForma
                 });
                 onSuccess?.();
             } else {
-                setError(t('translations.noSlides'));
                 setError(t('translations.noSlidesTranslated'));
             }
         } catch (err: unknown) {
@@ -168,7 +166,6 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, deviceForma
                         {t('translations.title')}
                     </DialogTitle>
                     <DialogDescription className="text-muted-foreground pt-2">
-                        {t('translations.description')}
                         {t('translations.subtitle')}
                     </DialogDescription>
                 </DialogHeader>
@@ -212,7 +209,6 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, deviceForma
                                         })}
                                     </div>
                                     <p className="text-[10px] text-muted-foreground">
-                                        {t('translations.formatsSelected', { count: selectedFormats.length || 1 })}
                                         {t('translations.formatsSelectedCost', { count: selectedFormats.length || 1 })}
                                     </p>
                                 </div>
@@ -222,7 +218,6 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, deviceForma
                                 <div className="space-y-2">
                                     <Progress value={progressPercent} className="h-2" />
                                     <p className="text-xs text-muted-foreground text-center">
-                                        {t('translations.translating', { language: LANGUAGES.find(l => l.value === language)?.label })}
                                         {t('translations.translatingTo', { language: LANGUAGE_OPTIONS.find(l => l.value === language)?.label || language })}
                                     </p>
                                 </div>
@@ -236,10 +231,6 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, deviceForma
                             )}
                         </div>
                         <DialogFooter>
-                            <Button variant="outline" onClick={() => handleClose(false)} className="border-border/60">{t('translations.cancel')}</Button>
-                            <Button onClick={handleTranslate} disabled={!language || isTranslating} className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-glow">
-                                {isTranslating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Globe className="mr-2 h-4 w-4" />}
-                                {isTranslating ? t('translations.translatingBatch') : selectedFormats.length > 1 ? t('translations.translateAllSizes', { count: selectedFormats.length }) : t('translations.translateAll')}
                             <Button variant="outline" onClick={() => handleClose(false)} className="border-border/60">{t('common.cancel')}</Button>
                             <Button onClick={handleTranslate} disabled={!language || isTranslating} className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-glow">
                                 {isTranslating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Globe className="mr-2 h-4 w-4" />}
@@ -254,7 +245,6 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, deviceForma
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-sm text-primary font-bold">
                                 <CheckCircle2 className="h-4 w-4" />
-                                {t('translations.completed', { count: translatedSlides.length, language: LANGUAGES.find(l => l.value === language)?.label })}
                                 {t('translations.resultSummary', { count: translatedSlides.length, language: LANGUAGE_OPTIONS.find(l => l.value === language)?.label || language })}
                             </div>
                             <Button variant="outline" size="sm" onClick={handleDownloadAll} className="text-xs rounded-lg">

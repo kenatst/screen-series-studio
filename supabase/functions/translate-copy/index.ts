@@ -235,15 +235,6 @@ CRITICAL RULES:
           throw translationUpsertError;
         }
 
-        // Atomic credit deduction — prevents race conditions
-        creditsDeducted += 1;
-        const { data: deductResult } = await adminClient.rpc('deduct_credits', { p_user_id: userId, p_amount: 1 });
-        if (deductResult === -1) {
-          console.warn(`[TRANSLATE] Insufficient credits for slide ${slide.slide_number}, stopping.`);
-          break;
-        }
-      } catch (err: any) {
-        console.error(`Translation error for slide ${slide.slide_number}:`, err?.message || err);
       } catch (err: unknown) {
         if (reservedCredit) {
           try {

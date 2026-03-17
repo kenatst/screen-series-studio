@@ -23,17 +23,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useProject, useProjectSlides } from "@/hooks/useProjects";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { isStoragePath } from "@/lib/storage-utils";
-
-const PHASE_KEYS = [
-  { key: "analyzingBrand", icon: "🎨" },
-  { key: "processingVisuals", icon: "🖼️" },
-  { key: "buildingDirection", icon: "✨" },
-  { key: "planningSlides", icon: "📐" },
-  { key: "renderingVisuals", icon: "🔥" },
-  { key: "harmonizingSet", icon: "🎯" },
-  { key: "allGenerated", icon: "✅" },
-];
 import { isStoragePath, resolveSignedUrl } from "@/lib/storage-utils";
 import { useGenerationStream, type SlideUiStatus } from "@/hooks/useGenerationStream";
 
@@ -320,8 +309,6 @@ const Generating = () => {
               <span className="text-xs text-muted-foreground font-medium">{t('generating.credits')}</span>
             </div>
             <div className="hidden md:flex items-center gap-2">
-              <span className="text-sm font-bold text-primary">{PHASE_KEYS[currentPhase]?.icon}</span>
-              <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{t(`generatingPhases.${PHASE_KEYS[currentPhase]?.key}`)}</span>
               <span className="text-sm font-bold text-primary">{phaseIcons[currentPhase]}</span>
               <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{t(`generating.phases.${currentPhase}`)}</span>
               <span className="text-sm font-black ml-2">{progress}%</span>

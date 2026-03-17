@@ -363,7 +363,14 @@
     "unknownError": "Unknown error",
     "noSlidesTranslated": "No slides were translated. Make sure generated slides exist.",
     "toastSuccessTitle": "Translation to {{language}} completed!",
-    "toastSuccessDesc": "{{slides}} slide(s) translated across {{formats}} format(s)."
+    "toastSuccessDesc": "{{slides}} slide(s) translated across {{formats}} format(s).",
+    "description": "Translate all slides at once. Costs 1 credit per slide.",
+    "formatsSelected": "{{count}} format(s) selected — costs 1 credit per slide per format",
+    "translating": "Translating all slides to {{language}}...",
+    "translateAllSizes": "Translate All Slides ({{count}} sizes)",
+    "completed": "{{count}} slide(s) translated to {{language}}",
+    "noSlides": "No slides were translated. Make sure you have generated slides with images first.",
+    "cancel": "Cancel"
   },
   "step": {
     "project": {
@@ -645,5 +652,14 @@
         "body": "Terms questions can be sent to"
       }
     }
+  },
+  "generatingPhases": {
+    "analyzingBrand": "Analyzing brand identity",
+    "processingVisuals": "Processing visual references",
+    "buildingDirection": "Building creative direction",
+    "planningSlides": "Planning slide compositions",
+    "renderingVisuals": "Rendering slide visuals",
+    "harmonizingSet": "Harmonizing set consistency",
+    "allGenerated": "All slides generated"
   }
 }

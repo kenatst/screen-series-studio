@@ -22,10 +22,6 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { useTranslation } from "react-i18next";
 import { resizeImageForDevice, DEVICE_DIMENSIONS } from "@/lib/image-resize";
-import { isStoragePath, LANGUAGE_LABELS } from "@/lib/storage-utils";
-
-interface SavedTranslation {
-  id: string;
 import { isStoragePath, resolveSignedUrl } from "@/lib/storage-utils";
 import { DEVICE_FORMAT_LABELS, FORMAT_SUFFIX } from "@/lib/localization";
 
@@ -65,25 +61,6 @@ const Results = () => {
   const { handleUpgrade: billingUpgrade, isOpeningPortal } = useBilling();
   const [showWatermarkWarning, setShowWatermarkWarning] = useState(false);
 
-  // Track resolved slide IDs to avoid re-fetching signed URLs unnecessarily
-  const resolvedRef = useRef<Set<string>>(new Set());
-
-  // Resolve storage paths to signed URLs — fixes circular dependency
-  const resolveImages = useCallback(async () => {
-    if (!slides?.length) return;
-    const toResolve = slides.filter(s => s.image_url && isStoragePath(s.image_url) && !resolvedRef.current.has(s.id));
-    if (toResolve.length === 0) return;
-
-    const newResolved: Record<string, string> = {};
-    await Promise.all(toResolve.map(async (slide) => {
-      try {
-        const { data } = await supabase.storage.from("generated-outputs").createSignedUrl(slide.image_url!, 60 * 60 * 2);
-        if (data?.signedUrl) {
-          newResolved[slide.id] = data.signedUrl;
-          resolvedRef.current.add(slide.id);
-        }
-      } catch { /* skip */ }
-    }));
   useEffect(() => {
     resolvedImagesRef.current = resolvedImages;
   }, [resolvedImages]);
@@ -135,15 +112,6 @@ const Results = () => {
 
     setResizedFormats(Object.fromEntries(refreshed));
   }, [resizedFormats]);
-
-  // Auto-refresh signed URLs every 90 minutes (they expire in 120 minutes)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      resolvedRef.current.clear();
-      setResolvedImages({});
-    }, 90 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Fetch saved translations from DB
   const fetchSavedTranslations = useCallback(async () => {
