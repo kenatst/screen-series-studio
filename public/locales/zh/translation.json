@@ -1,582 +1,649 @@
 {
-    "nav": {
-        "workflow": "工作流程",
-        "examples": "案例",
-        "pricing": "价格",
-        "faq": "常见问题",
-        "login": "登录",
-        "start": "免费开始"
-    },
-    "hero": {
-        "badge": "专为 App Store 和 Google Play 打造",
-        "title": "生成看起来",
-        "titleHighlight": "世界级",
-        "titleSuffix": "的截图集 — 只需几分钟。",
-        "subtitle": "上传您的应用截图，选择风格，定义每张幻灯片，并在一个连贯的批次中编排多达10个商店级视觉效果。",
-        "cta": "开始免费试用",
-        "ctaSecondary": "查看工作流程",
-        "scroll": "向下滚动探索"
-    },
-    "consistency": {
-        "badge": "我们的差异化优势",
-        "title": "一致性引擎",
-        "subtitle": "ShotApp AI 不只是生成孤立的图片，而是编排一个连贯的视觉系统。",
-        "rulesLabel": "全局规则",
-        "features": {
-            "colors": "共享色彩逻辑",
-            "typography": "同步排版",
-            "layout": "全局布局节奏",
-            "coherence": "幻灯片间的一致性",
-            "direction": "单一创意方向"
-        }
-    },
-    "pricing": {
-        "badge": "价格",
-        "title": "简单透明的定价。",
-        "subtitle": "不再为手动截图制作支付数千美元。",
-        "mostPopular": "最受欢迎",
-        "yourPlan": "您的计划",
-        "currentPlan": "当前计划",
-        "creditsPerMonth": "积分/月"
-    },
-    "faq": {
-        "title": "常见问题",
-        "subtitle": "关于 ShotApp AI 您需要知道的一切。"
-    },
-    "footer": {
-        "cta": "准备好生成您的高端截图集了吗？",
-        "ctaSubtitle": "加入节省设计时间同时提高转化率的顶级创始人和ASO团队。",
-        "ctaButton": "立即开始免费试用",
-        "noCard": "无需信用卡。7天免费试用。",
-        "privacy": "隐私政策",
-        "terms": "服务条款",
-        "rights": "版权所有。"
-    },
-    "dashboard": {
-        "title": "Dashboard",
-        "subtitle": "Create, edit, and export your screenshot sets",
-        "newProject": "New project",
-        "billing": "Billing",
-        "upgrade": "Upgrade",
-        "noProjects": "No projects yet",
-        "noProjectsDesc": "Create your first screenshot set to start generating high-converting App Store visuals.",
-        "createFirst": "Create first project",
-        "browseTemplates": "Browse Templates",
-        "continueWorking": "Continue working",
-        "allProjects": "All Projects",
-        "viewResults": "View Results",
-        "viewProgress": "View Progress",
-        "continue": "Continue",
-        "archive": "Archive",
-        "restore": "Restore",
-        "archived": "Archived",
-        "activeProjects": "Active Projects",
-        "setsCompleted": "Sets Completed",
-        "creditsLeft": "Credits Left",
-        "limitReached": "Limit reached",
-        "statusUpdated": "Status updated",
-        "projectArchived": "Project archived",
-        "projectRestored": "Project restored",
-        "archiveConfirm": "Are you sure you want to archive this project?",
-        "updated": "Updated",
-        "expires": "expires"
-    },
-    "login": {
-        "appName": "ShotApp AI",
-        "createAccount": "Create your account",
-        "welcomeBack": "Welcome back",
-        "startGenerating": "Start generating premium screenshot sets",
-        "signInAccount": "Sign in to your account",
-        "continueGoogle": "Continue with Google",
-        "or": "or",
-        "email": "Email",
-        "emailPlaceholder": "you@company.com",
-        "password": "Password",
-        "passwordPlaceholder": "••••••••",
-        "forgotPassword": "Forgot password?",
-        "createAccountBtn": "Create account",
-        "signIn": "Sign in",
-        "alreadyAccount": "Already have an account?",
-        "noAccount": "Don't have an account?",
-        "signUp": "Sign up",
-        "checkEmail": "Check your email",
-        "confirmationSent": "We sent you a confirmation link.",
-        "enterEmailFirst": "Enter your email first",
-        "resetSent": "Password reset link sent.",
-        "humanCheckLabel": "Human verification",
-        "humanCheckPlaceholder": "What is {{a}} + {{b}}?",
-        "humanCheckFailed": "Human verification failed",
-        "suspiciousSignup": "Please wait a moment and try again."
-    },
-    "settings": {
-        "title": "Settings",
-        "subtitle": "Manage your account, credits, and subscription.",
-        "credits": "Credits",
-        "generationBalance": "Your generation balance",
-        "creditsRemaining": "credits remaining",
-        "generation": "Generation",
-        "regeneration": "Regeneration",
-        "translation": "Translation",
-        "suggestions": "AI Suggestions",
-        "perSlide": "/ slide",
-        "perRequest": "/ request",
-        "upgradePrompt": "Upgrade to a paid plan for more credits.",
-        "manageSub": "Manage subscription",
-        "upgradePlan": "Upgrade plan",
-        "refresh": "Refresh",
-        "account": "Account",
-        "changePassword": "Change Password",
-        "newPassword": "New Password",
-        "confirmPassword": "Confirm Password",
-        "minChars": "Min. 8 characters",
-        "repeatPassword": "Repeat new password",
-        "updatePassword": "Update Password",
-        "dangerZone": "Danger Zone",
-        "deleteAccountDesc": "Permanently delete your account and all associated data. This action cannot be undone.",
-        "deleteAccount": "Delete Account",
-        "signOut": "Sign Out from ShotApp",
-        "deleteConfirmTitle": "Delete Account?",
-        "deleteConfirmDesc": "This will permanently end your session and request deletion of all your data.",
-        "typeDelete": "Type DELETE to confirm",
-        "cancel": "Cancel",
-        "confirmDeletion": "Confirm Deletion",
-        "paymentSuccess": "Payment successful!",
-        "subActive": "Your subscription is active. Refreshing...",
-        "passwordTooShort": "Password too short",
-        "passwordNoMatch": "Passwords don't match",
-        "passwordUpdated": "Password updated",
-        "passwordUpdatedDesc": "Your password has been changed successfully.",
-        "accountDeleted": "Account deleted",
-        "accountDeletedDesc": "Your account and all data have been permanently removed.",
-        "deletionFailed": "Deletion failed",
-        "active": "Active",
-        "email": "Email",
-        "plan": "Plan",
-        "planIncludes": "Your {{planName}} plan includes {{credits}} credits/mo.",
-        "perMonth": "/mo"
-    },
-    "generating": {
-        "title": "Consistency Engine",
-        "connecting": "Connecting to the rendering engine...",
-        "slidesReady": "{{completed}} of {{total}} slides ready",
-        "allCompleted": "All {{total}} slides completed!",
-        "crafting": "Crafting your premium store assets...",
-        "credits": "credits",
-        "stopArchive": "Stop & Archive",
-        "stopConfirmTitle": "Stop generation?",
-        "stopConfirmDesc": "This will stop the current generation and archive the project.",
-        "continueGenerating": "Continue generating",
-        "stopAndArchive": "Stop & Archive",
-        "slide": "Slide {{number}}",
-        "initializing": "initializing",
-        "wantChanges": "Want changes? Describe them:",
-        "feedbackPlaceholder": "e.g., 'Make the headline smaller', 'Change background to blue'",
-        "redesign": "Redesign",
-        "looksGoodContinue": "Looks Good, Continue with Slide {{number}}",
-        "looksGoodResults": "Looks Good, View Results",
-        "allSlidesReady": "All {{count}} slides ready!",
-        "setComplete": "Your screenshot set is complete.",
-        "viewDownload": "View & Download Results",
-        "redesigning": "Redesigning slide...",
-        "redesigningDesc": "Applying your feedback to the creative engine.",
-        "generationFailed": "Generation Failed",
-        "upgradeSuccessTitle": "Upgrade successful",
-        "upgradeSuccessDesc": "Your subscription is active. Resuming generation...",
-        "errors": {
-            "noProjectId": "Missing project id.",
-            "insufficientCredits": "Insufficient credits. Please upgrade your plan.",
-            "authIssue": "Authentication issue. Please reconnect and retry generation.",
-            "server": "Server error ({{status}})",
-            "networkFallback": "Network/CORS error",
-            "requestFailed": "Request failed: {{reason}}"
-        },
-        "phases": {
-            "0": "Analyzing brand identity",
-            "1": "Processing visual references",
-            "2": "Building creative direction",
-            "3": "Planning slide compositions",
-            "4": "Rendering slide visuals",
-            "5": "Harmonizing set consistency",
-            "6": "All slides generated"
-        }
-    },
-    "results": {
-        "slides": "{{count}} slides",
-        "translate": "Translate",
-        "regenerateAll": "Regenerate All",
-        "exportZip": "Export ZIP",
-        "upgradeToUnlock": "Upgrade to unlock",
-        "freePreview": "Free plan only previews slide 1.",
-        "saveSlide": "Save this slide",
-        "regeneratePrompt": "Regenerate with prompt",
-        "describeChanges": "Describe the desired changes...",
-        "regenerateCredit": "Regenerate (1 cr.)",
-        "noImages": "No images to export",
-        "exportComplete": "Export complete",
-        "exportWatermark": "Export with watermark complete",
-        "exportFailed": "Export failed",
-        "downloadFailed": "Download failed",
-        "slideRegenerated": "Slide regenerated",
-        "regenFailed": "Regeneration failed",
-        "insufficientCredits": "Insufficient credits",
-        "needCreditsDesc": "You need {{required}} credit(s). Current balance: {{current}}.",
-        "resizeGeneratedTitle": "{{format}} format generated",
-        "resizeGeneratedDesc": "{{count}} slide(s) resized.",
-        "resizeFailed": "Resize failed",
-        "unknownError": "Unknown error",
-        "serverErrorFallback": "Server error",
-        "networkError": "Network error",
-        "watermarkTitle": "Export with watermark",
-        "watermarkDesc": "Free plan exports include a watermark. Upgrade for clean HD exports.",
-        "downloadAnyway": "Download anyway",
-        "regenAllConfirm": "Regenerate all slides? This will cost {{cost}} credits.",
-        "translations": "Translations"
-    },
-    "translations": {
-        "title": "1-Click Batch Localization",
-        "subtitle": "Translate all slides at once. Costs 1 credit per slide.",
-        "selectLanguage": "Select target language",
-        "deviceSizes": "Device sizes to translate",
-        "original": "original",
-        "formatsSelectedCost": "{{count}} format(s) selected - costs 1 credit per slide per format",
-        "translatingTo": "Translating all slides to {{language}}...",
-        "translatingBatch": "Translating batch...",
-        "translateAll": "Translate All Slides{{sizes}}",
-        "resultSummary": "{{count}} slide(s) translated to {{language}}",
-        "downloadAll": "Download All",
-        "done": "Done",
-        "failed": "Translation failed",
-        "unknownError": "Unknown error",
-        "noSlidesTranslated": "No slides were translated. Make sure generated slides exist.",
-        "toastSuccessTitle": "Translation to {{language}} completed!",
-        "toastSuccessDesc": "{{slides}} slide(s) translated across {{formats}} format(s)."
-    },
-    "newProject": {
-        "steps": {
-            "project": "Project",
-            "appInfo": "App Info",
-            "screens": "Screens",
-            "brandKit": "Brand Kit",
-            "style": "Style",
-            "planner": "Planner",
-            "review": "Review"
-        },
-        "saved": "Saved",
-        "saveDraft": "Save draft",
-        "back": "Back",
-        "continue": "Continue",
-        "validation": {
-            "missingInfo": "Missing required information",
-            "appNameRequired": "App name is required.",
-            "rawScreenRequired": "Upload at least one raw screen before continuing.",
-            "headlineRequired": "Every slide needs at least a headline before review."
-        },
-        "messages": {
-            "limitReachedTitle": "Limit reached",
-            "limitReachedDesc": "Max {{max}} slides for your plan.",
-            "noAssetsTitle": "No assets",
-            "noAssetsDesc": "Upload screenshots or brand assets first.",
-            "colorsDetectedTitle": "Colors detected",
-            "colorsDetectedDesc": "{{count}} dominant colors extracted from your assets.",
-            "noColorsTitle": "No colors found",
-            "noColorsDesc": "Could not extract meaningful colors.",
-            "missingInfoTitle": "Missing info",
-            "missingInfoDesc": "Fill in app name and description first (Step 2).",
-            "notAuthenticated": "Not authenticated",
-            "autoFillSuccessTitle": "Slides auto-filled!",
-            "autoFillSuccessDesc": "AI-generated headlines based on your app info.",
-            "autoFillFailedTitle": "Auto-fill failed",
-            "autoFillFailedDesc": "Try again or fill manually.",
-            "draftSavedTitle": "Draft saved",
-            "draftSavedDesc": "Project \"{{name}}\" saved.",
-            "saveFailedTitle": "Save failed",
-            "saveFailedDesc": "Could not save draft.",
-            "sessionExpiredTitle": "Session expired",
-            "sessionExpiredDesc": "Please log in again.",
-            "generateFailedDesc": "Failed to create project: {{reason}}",
-            "unknownError": "Unknown error"
-        }
-    },
-    "step": {
-        "project": {
-            "title": "Create project",
-            "subtitle": "Set up your screenshot project basics.",
-            "appName": "App name",
-            "appNamePlaceholder": "e.g. LinguaPal",
-            "projectName": "Project name",
-            "projectNameOptional": "(optional)",
-            "platform": "Platform",
-            "category": "App category",
-            "categoryPlaceholder": "e.g. Education, Finance, Health",
-            "audience": "Target audience",
-            "audiencePlaceholder": "e.g. Young professionals, students",
-            "goal": "Primary goal",
-            "outputLanguage": "Output language",
-            "outputLanguageHint": "The language used for headlines and subheadlines.",
-            "deviceFormats": "Device formats (App Store Compliance)",
-            "deviceFormatsRequired": "Required",
-            "deviceFormatsHint": "Assets will be batch-generated for all selected device metrics.",
-            "goals": {
-                "installs": "Increase installs",
-                "features": "Highlight features",
-                "conversion": "Improve conversion",
-                "localize": "Localize assets",
-                "launch": "Launch new app",
-                "ab": "A/B testing"
-            }
-        },
-        "appInfo": {
-            "title": "App information",
-            "subtitle": "Tell us about your app so we can craft the perfect screenshots.",
-            "shortDesc": "Short description",
-            "shortDescPlaceholder": "A brief summary of your app",
-            "longDesc": "Long description",
-            "longDescPlaceholder": "Full app description...",
-            "valueProp": "Value proposition",
-            "valuePropPlaceholder": "One line that captures your app's value",
-            "keyFeatures": "Key features",
-            "keyFeaturesPlaceholder": "List main features (one per line)...",
-            "topBenefits": "Top benefits",
-            "topBenefitsPlaceholder": "What users gain (one per line)...",
-            "tone": "Tone of voice"
-        },
-        "screens": {
-            "title": "Upload raw screens",
-            "subtitle": "Drag & drop your app screenshots. Tag and organize them.",
-            "dropHere": "Drop screenshots here",
-            "fileTypes": "PNG, JPG up to 10MB each",
-            "uploaded": "Uploaded screens",
-            "files": "{{count}} files",
-            "addMore": "Add more"
-        },
-        "brandKit": {
-            "title": "Brand kit",
-            "subtitle": "Set your visual identity for consistent branding.",
-            "upload": "Upload {{type}}",
-            "brandColors": "Brand colors",
-            "autoDetect": "Auto-detect from assets",
-            "noColors": "No colors yet — add your brand palette manually or auto-detect.",
-            "addColor": "Add color",
-            "add": "Add",
-            "brandFont": "Brand font",
-            "brandFontPlaceholder": "e.g. SF Pro, Inter, Montserrat",
-            "visualPrefs": "Visual preferences",
-            "visualPrefOptions": {
-                "untouched": "Keep app UI untouched",
-                "enhance": "Allow visual enhancement",
-                "palette": "Use premium preset palette",
-                "autoDetect": "Auto-detect from assets"
-            }
-        },
-        "style": {
-            "title": "Choose your style",
-            "subtitle": "Pick a template or upload references for inspiration.",
-            "templates": "Templates",
-            "references": "References",
-            "recommendedFor": "Recommended for {{name}}",
-            "yourApp": "your app",
-            "noMatch": "No templates match your filters.",
-            "mood": "Mood:",
-            "category": "Category:",
-            "uploadRef": "Upload your reference mockups",
-            "uploadRefTypes": "PNG/JPG/WEBP • multiple files supported",
-            "inspirationNotes": "Inspiration notes",
-            "inspirationPlaceholder": "e.g. Keep this cinematic rhythm, but preserve my app UI exactly and avoid tilted device mockups.",
-            "proFeature": "Pro Feature",
-            "refMockups": "Reference mockups",
-            "files": "{{count}} files",
-            "premiumTemplate": "\"{{name}}\" is a Premium template. Upgrade to unlock all styles? We'll save your draft so you can continue immediately.",
-            "referenceProFeature": "Reference-based generation is a Pro feature. Upgrade to unlock? We'll save your draft so you can continue immediately."
-        },
-        "planner": {
-            "title": "Screenshot set planner",
-            "subtitle": "Define each slide's content and objective.",
-            "autoFill": "Auto-fill with AI",
-            "slides": "Slides:",
-            "addSlide": "Add slide",
-            "consistency": "Consistency Engine",
-            "upgradeSlides": "Upgrade to unlock {{count}} slides? We'll save your draft so you can pick up exactly where you left off.",
-            "strictDesc": "All slides remain very homogeneous — same palette, framing, density. Recommended for traditional app store pages.",
-            "balancedDesc": "Same visual universe with controlled variations for each slide. Great for feature showcases.",
-            "exploratoryDesc": "More creative freedom while maintaining a coherent base brand identity. High contrast allowed."
-        },
-        "review": {
-            "title": "Pre-generation review",
-            "subtitle": "Review everything before generating your screenshot set.",
-            "projectSummary": "Project summary",
-            "slideHeadlines": "Slide headlines",
-            "app": "App:",
-            "platform": "Platform:",
-            "tone": "Tone:",
-            "template": "Template:",
-            "formats": "Formats:",
-            "slides": "Slides:",
-            "screens": "Screens:",
-            "brandAssets": "Brand assets:",
-            "consistency": "Consistency:",
-            "outputLanguage": "Output language:",
-            "notSet": "Not set",
-            "notSelected": "Not selected",
-            "uploaded": "uploaded",
-            "noHeadline": "No headline set",
-            "saveDraft": "Save draft",
-            "generate": "Generate Cinematic Screenshots",
-            "preparing": "Preparing Output..."
-        }
-    },
-    "templates": {
-        "badge": "Template Gallery",
-        "title": "Start with a",
-        "titleHighlight": "proven foundation",
-        "subtitle": "High-converting, production-ready layouts for every app category. Just select a template and customize 10 screens instantly.",
-        "premiumTemplates": "{{count}} premium templates",
-        "searchPlaceholder": "Search templates (e.g., Finance, Bold, Dark)...",
-        "category": "Category",
-        "mood": "Mood",
-        "style": "Style",
-        "noResults": "No templates match your filters.",
-        "noResultsHint": "Try adjusting mood, tone, or category.",
-        "moods": {
-            "dark": "Dark",
-            "light": "Light",
-            "colorful": "Colorful",
-            "neutral": "Neutral",
-            "all": "All"
-        },
-        "categories": {
-            "all": "All",
-            "business": "Business",
-            "entertainment": "Entertainment",
-            "education": "Education",
-            "lifestyle": "Lifestyle",
-            "luxury": "Luxury",
-            "media": "Media"
-        }
-    },
-    "notFound": {
-        "title": "404",
-        "message": "This page does not exist.",
-        "backHome": "Back to Home"
-    },
-    "common": {
-        "loading": "Loading...",
-        "error": "Error",
-        "upgrade": "Upgrade",
-        "cancel": "Cancel",
-        "save": "Save",
-        "delete": "Delete",
-        "confirm": "Confirm"
-    },
-    "privacyPage": {
-        "backHome": "Back to home",
-        "title": "Privacy Policy",
-        "lastUpdated": "Last updated: {{date}}",
-        "intro": "This policy explains what data ShotApp AI collects, why we process it, and the choices you have. By using the service, you agree to this processing as described below.",
-        "sections": {
-            "data": {
-                "title": "1. Data we collect",
-                "body": "We collect account details, project metadata, uploaded assets, generated outputs, billing events, and technical logs needed to operate ShotApp AI."
-            },
-            "usage": {
-                "title": "2. How we use data",
-                "body": "We use your data to provide screenshot generation, account security, payment processing, fraud prevention, and support. We do not sell personal data."
-            },
-            "legalBasis": {
-                "title": "3. Legal basis for processing",
-                "body": "We process data to perform our contract with you, protect legitimate business interests (security and abuse prevention), and comply with legal obligations."
-            },
-            "retention": {
-                "title": "4. Data retention",
-                "body": "We retain data while your account is active, or as required for legal and financial compliance. You can request deletion from your account settings."
-            },
-            "security": {
-                "title": "5. Security measures",
-                "body": "We use access controls, encryption in transit, signed asset URLs, and role-based database policies to reduce unauthorized access risks."
-            },
-            "processors": {
-                "title": "6. Third-party processors",
-                "body": "We rely on infrastructure and payment partners such as Supabase and Stripe. These processors handle data according to their own security and privacy terms."
-            },
-            "transfers": {
-                "title": "7. International transfers",
-                "body": "Your data may be processed in countries other than your own. We use appropriate safeguards for cross-border transfers where required."
-            },
-            "rights": {
-                "title": "8. Your rights",
-                "body": "Depending on your jurisdiction, you may request access, correction, deletion, restriction, objection, or portability of your personal data."
-            },
-            "children": {
-                "title": "9. Children's privacy",
-                "body": "ShotApp AI is not intended for children under 13 (or equivalent minimum age in your jurisdiction), and we do not knowingly collect their personal data."
-            },
-            "changes": {
-                "title": "10. Policy changes",
-                "body": "We may update this policy as the product or legal requirements evolve. We will post the latest version on this page."
-            },
-            "contact": {
-                "title": "11. Contact",
-                "body": "Privacy requests can be sent to"
-            }
-        }
-    },
-    "termsPage": {
-        "backHome": "Back to home",
-        "title": "Terms of Service",
-        "lastUpdated": "Last updated: {{date}}",
-        "intro": "These Terms govern your use of ShotApp AI. If you do not agree, do not use the service.",
-        "sections": {
-            "scope": {
-                "title": "1. Service scope",
-                "body": "ShotApp AI provides software tools to generate and export app-store screenshot creatives. Features and limits depend on your active plan."
-            },
-            "eligibility": {
-                "title": "2. Eligibility",
-                "body": "You must be legally able to enter into a binding agreement and use the service in compliance with applicable laws."
-            },
-            "account": {
-                "title": "3. Account responsibility",
-                "body": "You are responsible for account credentials, uploaded materials, and generated content usage. You must have rights to all assets you upload."
-            },
-            "license": {
-                "title": "4. License",
-                "body": "We grant you a limited, non-exclusive, non-transferable right to use ShotApp AI according to your plan while your account is in good standing."
-            },
-            "aiContent": {
-                "title": "5. AI-generated output",
-                "body": "AI output may vary and should be reviewed by you before publication. You remain responsible for legal compliance, claims, and final usage decisions."
-            },
-            "billing": {
-                "title": "6. Billing and credits",
-                "body": "Paid plans are billed on a recurring monthly basis. Credits are consumed per action as shown in-product. Abuse, chargebacks, or fraud may lead to suspension."
-            },
-            "refunds": {
-                "title": "7. Refunds",
-                "body": "Unless required by law, fees are non-refundable once billed. You can cancel renewal at any time from billing settings."
-            },
-            "use": {
-                "title": "8. Acceptable use",
-                "body": "You may not use the service for unlawful, infringing, deceptive, or harmful content. We may suspend access for policy violations."
-            },
-            "suspension": {
-                "title": "9. Suspension or termination",
-                "body": "We may suspend or terminate access for non-payment, abuse, legal risk, or policy breaches. You may stop using the service at any time."
-            },
-            "disclaimers": {
-                "title": "10. Disclaimers",
-                "body": "The service is provided on an 'as is' and 'as available' basis without warranties of uninterrupted availability, fitness for a specific purpose, or error-free operation."
-            },
-            "liability": {
-                "title": "11. Limitation of liability",
-                "body": "To the maximum extent allowed by law, ShotApp AI is not liable for indirect, incidental, special, consequential, or punitive damages."
-            },
-            "law": {
-                "title": "12. Governing law",
-                "body": "These Terms are governed by the laws applicable to our operating entity, unless your local consumer protection laws require otherwise."
-            },
-            "contact": {
-                "title": "13. Contact",
-                "body": "Terms questions can be sent to"
-            }
-        }
+  "nav": {
+    "workflow": "工作流程",
+    "examples": "案例",
+    "pricing": "价格",
+    "faq": "常见问题",
+    "login": "登录",
+    "start": "免费开始"
+  },
+  "hero": {
+    "badge": "专为 App Store 和 Google Play 打造",
+    "title": "生成看起来",
+    "titleHighlight": "世界级",
+    "titleSuffix": "的截图集 — 只需几分钟。",
+    "subtitle": "上传您的应用截图，选择风格，定义每张幻灯片，并在一个连贯的批次中编排多达10个商店级视觉效果。",
+    "cta": "开始免费试用",
+    "ctaSecondary": "查看工作流程",
+    "scroll": "向下滚动探索"
+  },
+  "consistency": {
+    "badge": "我们的差异化优势",
+    "title": "一致性引擎",
+    "subtitle": "ShotApp AI 不只是生成孤立的图片，而是编排一个连贯的视觉系统。",
+    "rulesLabel": "全局规则",
+    "features": {
+      "colors": "共享色彩逻辑",
+      "typography": "同步排版",
+      "layout": "全局布局节奏",
+      "coherence": "幻灯片间的一致性",
+      "direction": "单一创意方向"
     }
+  },
+  "pricing": {
+    "badge": "价格",
+    "title": "简单透明的定价。",
+    "subtitle": "不再为手动截图制作支付数千美元。",
+    "mostPopular": "最受欢迎",
+    "yourPlan": "您的计划",
+    "currentPlan": "当前计划",
+    "creditsPerMonth": "积分/月"
+  },
+  "faq": {
+    "title": "常见问题",
+    "subtitle": "关于 ShotApp AI 您需要知道的一切。"
+  },
+  "footer": {
+    "cta": "准备好生成您的高端截图集了吗？",
+    "ctaSubtitle": "加入节省设计时间同时提高转化率的顶级创始人和ASO团队。",
+    "ctaButton": "立即开始免费试用",
+    "noCard": "无需信用卡。7天免费试用。",
+    "privacy": "隐私政策",
+    "terms": "服务条款",
+    "rights": "版权所有。"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Create, edit, and export your screenshot sets",
+    "newProject": "New project",
+    "billing": "Billing",
+    "upgrade": "Upgrade",
+    "noProjects": "No projects yet",
+    "noProjectsDesc": "Create your first screenshot set to start generating high-converting App Store visuals.",
+    "createFirst": "Create first project",
+    "browseTemplates": "Browse Templates",
+    "continueWorking": "Continue working",
+    "allProjects": "All Projects",
+    "viewResults": "View Results",
+    "viewProgress": "View Progress",
+    "continue": "Continue",
+    "archive": "Archive",
+    "restore": "Restore",
+    "archived": "Archived",
+    "activeProjects": "Active Projects",
+    "setsCompleted": "Sets Completed",
+    "creditsLeft": "Credits Left",
+    "limitReached": "Limit reached",
+    "statusUpdated": "Status updated",
+    "projectArchived": "Project archived",
+    "projectRestored": "Project restored",
+    "archiveConfirm": "Are you sure you want to archive this project?",
+    "updated": "Updated",
+    "expires": "expires",
+    "limitReachedDesc": "Your {{planName}} plan allows {{maxProjects}} project(s). Upgrade to create more.",
+    "statusUpdatedDesc": "Current plan: {{planName}}",
+    "projectRestoredDesc": "Project is active again.",
+    "restoreFailed": "Could not restore the project.",
+    "archiveFailed": "Could not archive the project.",
+    "appFallback": "App",
+    "status": {
+      "draft": "Draft",
+      "generating": "Generating",
+      "completed": "Completed",
+      "archived": "Archived"
+    }
+  },
+  "login": {
+    "appName": "ShotApp AI",
+    "createAccount": "Create your account",
+    "welcomeBack": "Welcome back",
+    "startGenerating": "Start generating premium screenshot sets",
+    "signInAccount": "Sign in to your account",
+    "continueGoogle": "Continue with Google",
+    "or": "or",
+    "email": "Email",
+    "emailPlaceholder": "you@company.com",
+    "password": "Password",
+    "passwordPlaceholder": "••••••••",
+    "forgotPassword": "Forgot password?",
+    "createAccountBtn": "Create account",
+    "signIn": "Sign in",
+    "alreadyAccount": "Already have an account?",
+    "noAccount": "Don't have an account?",
+    "signUp": "Sign up",
+    "checkEmail": "Check your email",
+    "confirmationSent": "We sent you a confirmation link.",
+    "enterEmailFirst": "Enter your email first",
+    "resetSent": "Password reset link sent.",
+    "humanCheckLabel": "Human verification",
+    "humanCheckPlaceholder": "What is {{a}} + {{b}}?",
+    "humanCheckFailed": "Human verification failed",
+    "suspiciousSignup": "Please wait a moment and try again."
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Manage your account, credits, and subscription.",
+    "credits": "Credits",
+    "generationBalance": "Your generation balance",
+    "creditsRemaining": "credits remaining",
+    "generation": "Generation",
+    "regeneration": "Regeneration",
+    "translation": "Translation",
+    "suggestions": "AI Suggestions",
+    "perSlide": "/ slide",
+    "perRequest": "/ request",
+    "upgradePrompt": "Upgrade to a paid plan for more credits.",
+    "manageSub": "Manage subscription",
+    "upgradePlan": "Upgrade plan",
+    "refresh": "Refresh",
+    "account": "Account",
+    "changePassword": "Change Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm Password",
+    "minChars": "Min. 8 characters",
+    "repeatPassword": "Repeat new password",
+    "updatePassword": "Update Password",
+    "dangerZone": "Danger Zone",
+    "deleteAccountDesc": "Permanently delete your account and all associated data. This action cannot be undone.",
+    "deleteAccount": "Delete Account",
+    "signOut": "Sign Out from ShotApp",
+    "deleteConfirmTitle": "Delete Account?",
+    "deleteConfirmDesc": "This will permanently end your session and request deletion of all your data.",
+    "typeDelete": "Type DELETE to confirm",
+    "cancel": "Cancel",
+    "confirmDeletion": "Confirm Deletion",
+    "paymentSuccess": "Payment successful!",
+    "subActive": "Your subscription is active. Refreshing...",
+    "passwordTooShort": "Password too short",
+    "passwordNoMatch": "Passwords don't match",
+    "passwordUpdated": "Password updated",
+    "passwordUpdatedDesc": "Your password has been changed successfully.",
+    "accountDeleted": "Account deleted",
+    "accountDeletedDesc": "Your account and all data have been permanently removed.",
+    "deletionFailed": "Deletion failed",
+    "active": "Active",
+    "email": "Email",
+    "plan": "Plan",
+    "planIncludes": "Your {{planName}} plan includes {{credits}} credits/mo.",
+    "perMonth": "/mo"
+  },
+  "generating": {
+    "title": "Consistency Engine",
+    "connecting": "Connecting to the rendering engine...",
+    "slidesReady": "{{completed}} of {{total}} slides ready",
+    "allCompleted": "All {{total}} slides completed!",
+    "crafting": "Crafting your premium store assets...",
+    "credits": "credits",
+    "stopArchive": "Stop & Archive",
+    "stopConfirmTitle": "Stop generation?",
+    "stopConfirmDesc": "This will stop the current generation and archive the project.",
+    "continueGenerating": "Continue generating",
+    "stopAndArchive": "Stop & Archive",
+    "slide": "Slide {{number}}",
+    "initializing": "initializing",
+    "wantChanges": "Want changes? Describe them:",
+    "feedbackPlaceholder": "e.g., 'Make the headline smaller', 'Change background to blue'",
+    "redesign": "Redesign",
+    "looksGoodContinue": "Looks Good, Continue with Slide {{number}}",
+    "looksGoodResults": "Looks Good, View Results",
+    "allSlidesReady": "All {{count}} slides ready!",
+    "setComplete": "Your screenshot set is complete.",
+    "viewDownload": "View & Download Results",
+    "redesigning": "Redesigning slide...",
+    "redesigningDesc": "Applying your feedback to the creative engine.",
+    "generationFailed": "Generation Failed",
+    "upgradeSuccessTitle": "Upgrade successful",
+    "upgradeSuccessDesc": "Your subscription is active. Resuming generation...",
+    "errors": {
+      "noProjectId": "Missing project id.",
+      "insufficientCredits": "Insufficient credits. Please upgrade your plan.",
+      "authIssue": "Authentication issue. Please reconnect and retry generation.",
+      "server": "Server error ({{status}})",
+      "networkFallback": "Network/CORS error",
+      "requestFailed": "Request failed: {{reason}}"
+    },
+    "phases": {
+      "0": "Analyzing brand identity",
+      "1": "Processing visual references",
+      "2": "Building creative direction",
+      "3": "Planning slide compositions",
+      "4": "Rendering slide visuals",
+      "5": "Harmonizing set consistency",
+      "6": "All slides generated"
+    }
+  },
+  "results": {
+    "slides": "{{count}} slides",
+    "translate": "Translate",
+    "regenerateAll": "Regenerate All",
+    "exportZip": "Export ZIP",
+    "upgradeToUnlock": "Upgrade to unlock",
+    "freePreview": "Free plan only previews slide 1.",
+    "saveSlide": "Save this slide",
+    "regeneratePrompt": "Regenerate with prompt",
+    "describeChanges": "Describe the desired changes...",
+    "regenerateCredit": "Regenerate (1 cr.)",
+    "noImages": "No images to export",
+    "exportComplete": "Export complete",
+    "exportWatermark": "Export with watermark complete",
+    "exportFailed": "Export failed",
+    "downloadFailed": "Download failed",
+    "slideRegenerated": "Slide regenerated",
+    "regenFailed": "Regeneration failed",
+    "insufficientCredits": "Insufficient credits",
+    "needCreditsDesc": "You need {{required}} credit(s). Current balance: {{current}}.",
+    "resizeGeneratedTitle": "{{format}} format generated",
+    "resizeGeneratedDesc": "{{count}} slide(s) resized.",
+    "resizeFailed": "Resize failed",
+    "unknownError": "Unknown error",
+    "serverErrorFallback": "Server error",
+    "networkError": "Network error",
+    "watermarkTitle": "Export with watermark",
+    "watermarkDesc": "Free plan exports include a watermark. Upgrade for clean HD exports.",
+    "downloadAnyway": "Download anyway",
+    "regenAllConfirm": "Regenerate all slides? This will cost {{cost}} credits.",
+    "translations": "Translations",
+    "sizes": "{{count}} sizes",
+    "zip": "ZIP"
+  },
+  "translations": {
+    "title": "1-Click Batch Localization",
+    "subtitle": "Translate all slides at once. Costs 1 credit per slide.",
+    "selectLanguage": "Select target language",
+    "deviceSizes": "Device sizes to translate",
+    "original": "original",
+    "formatsSelectedCost": "{{count}} format(s) selected - costs 1 credit per slide per format",
+    "translatingTo": "Translating all slides to {{language}}...",
+    "translatingBatch": "Translating batch...",
+    "translateAll": "Translate All Slides{{sizes}}",
+    "resultSummary": "{{count}} slide(s) translated to {{language}}",
+    "downloadAll": "Download All",
+    "done": "Done",
+    "failed": "Translation failed",
+    "unknownError": "Unknown error",
+    "noSlidesTranslated": "No slides were translated. Make sure generated slides exist.",
+    "toastSuccessTitle": "Translation to {{language}} completed!",
+    "toastSuccessDesc": "{{slides}} slide(s) translated across {{formats}} format(s)."
+  },
+  "newProject": {
+    "steps": {
+      "project": "Project",
+      "appInfo": "App Info",
+      "screens": "Screens",
+      "brandKit": "Brand Kit",
+      "style": "Style",
+      "planner": "Planner",
+      "review": "Review"
+    },
+    "saved": "Saved",
+    "saveDraft": "Save draft",
+    "back": "Back",
+    "continue": "Continue",
+    "validation": {
+      "missingInfo": "Missing required information",
+      "appNameRequired": "App name is required.",
+      "rawScreenRequired": "Upload at least one raw screen before continuing.",
+      "headlineRequired": "Every slide needs at least a headline before review."
+    },
+    "messages": {
+      "limitReachedTitle": "Limit reached",
+      "limitReachedDesc": "Max {{max}} slides for your plan.",
+      "noAssetsTitle": "No assets",
+      "noAssetsDesc": "Upload screenshots or brand assets first.",
+      "colorsDetectedTitle": "Colors detected",
+      "colorsDetectedDesc": "{{count}} dominant colors extracted from your assets.",
+      "noColorsTitle": "No colors found",
+      "noColorsDesc": "Could not extract meaningful colors.",
+      "missingInfoTitle": "Missing info",
+      "missingInfoDesc": "Fill in app name and description first (Step 2).",
+      "notAuthenticated": "Not authenticated",
+      "autoFillSuccessTitle": "Slides auto-filled!",
+      "autoFillSuccessDesc": "AI-generated headlines based on your app info.",
+      "autoFillFailedTitle": "Auto-fill failed",
+      "autoFillFailedDesc": "Try again or fill manually.",
+      "draftSavedTitle": "Draft saved",
+      "draftSavedDesc": "Project \"{{name}}\" saved.",
+      "saveFailedTitle": "Save failed",
+      "saveFailedDesc": "Could not save draft.",
+      "sessionExpiredTitle": "Session expired",
+      "sessionExpiredDesc": "Please log in again.",
+      "generateFailedDesc": "Failed to create project: {{reason}}",
+      "unknownError": "Unknown error"
+    }
+  },
+  "step": {
+    "project": {
+      "title": "Create project",
+      "subtitle": "Set up your screenshot project basics.",
+      "appName": "App name",
+      "appNamePlaceholder": "e.g. LinguaPal",
+      "projectName": "Project name",
+      "projectNameOptional": "(optional)",
+      "platform": "Platform",
+      "category": "App category",
+      "categoryPlaceholder": "e.g. Education, Finance, Health",
+      "audience": "Target audience",
+      "audiencePlaceholder": "e.g. Young professionals, students",
+      "goal": "Primary goal",
+      "outputLanguage": "Output language",
+      "outputLanguageHint": "The language used for headlines and subheadlines.",
+      "deviceFormats": "Device formats (App Store Compliance)",
+      "deviceFormatsRequired": "Required",
+      "deviceFormatsHint": "Assets will be batch-generated for all selected device metrics.",
+      "goals": {
+        "installs": "Increase installs",
+        "features": "Highlight features",
+        "conversion": "Improve conversion",
+        "localize": "Localize assets",
+        "launch": "Launch new app",
+        "ab": "A/B testing"
+      },
+      "projectNamePlaceholder": "e.g. LinguaPal US Launch",
+      "platformOptions": {
+        "ios": "iOS",
+        "android": "Android",
+        "both": "Both"
+      },
+      "deviceDescriptions": {
+        "iphone69": "Pro Max",
+        "iphone65": "Max / Plus",
+        "ipad129": "Pro"
+      }
+    },
+    "appInfo": {
+      "title": "App information",
+      "subtitle": "Tell us about your app so we can craft the perfect screenshots.",
+      "shortDesc": "Short description",
+      "shortDescPlaceholder": "A brief summary of your app",
+      "longDesc": "Long description",
+      "longDescPlaceholder": "Full app description...",
+      "valueProp": "Value proposition",
+      "valuePropPlaceholder": "One line that captures your app's value",
+      "keyFeatures": "Key features",
+      "keyFeaturesPlaceholder": "List main features (one per line)...",
+      "topBenefits": "Top benefits",
+      "topBenefitsPlaceholder": "What users gain (one per line)...",
+      "tone": "Tone of voice",
+      "tones": {
+        "playful": "playful",
+        "premium": "premium",
+        "minimalist": "minimalist",
+        "bold": "bold",
+        "corporate": "corporate",
+        "energetic": "energetic",
+        "educational": "educational",
+        "gaming": "gaming"
+      }
+    },
+    "screens": {
+      "title": "Upload raw screens",
+      "subtitle": "Drag & drop your app screenshots. Tag and organize them.",
+      "dropHere": "Drop screenshots here",
+      "fileTypes": "PNG, JPG up to 10MB each",
+      "uploaded": "Uploaded screens",
+      "files": "{{count}} files",
+      "addMore": "Add more"
+    },
+    "brandKit": {
+      "title": "Brand kit",
+      "subtitle": "Set your visual identity for consistent branding.",
+      "upload": "Upload {{type}}",
+      "brandColors": "Brand colors",
+      "autoDetect": "Auto-detect from assets",
+      "noColors": "No colors yet — add your brand palette manually or auto-detect.",
+      "addColor": "Add color",
+      "add": "Add",
+      "brandFont": "Brand font",
+      "brandFontPlaceholder": "e.g. SF Pro, Inter, Montserrat",
+      "visualPrefs": "Visual preferences",
+      "visualPrefOptions": {
+        "untouched": "Keep app UI untouched",
+        "enhance": "Allow visual enhancement",
+        "palette": "Use premium preset palette",
+        "autoDetect": "Auto-detect from assets"
+      }
+    },
+    "style": {
+      "title": "Choose your style",
+      "subtitle": "Pick a template or upload references for inspiration.",
+      "templates": "Templates",
+      "references": "References",
+      "recommendedFor": "Recommended for {{name}}",
+      "yourApp": "your app",
+      "noMatch": "No templates match your filters.",
+      "mood": "Mood:",
+      "category": "Category:",
+      "uploadRef": "Upload your reference mockups",
+      "uploadRefTypes": "PNG/JPG/WEBP • multiple files supported",
+      "inspirationNotes": "Inspiration notes",
+      "inspirationPlaceholder": "e.g. Keep this cinematic rhythm, but preserve my app UI exactly and avoid tilted device mockups.",
+      "proFeature": "Pro Feature",
+      "refMockups": "Reference mockups",
+      "files": "{{count}} files",
+      "premiumTemplate": "\"{{name}}\" is a Premium template. Upgrade to unlock all styles? We'll save your draft so you can continue immediately.",
+      "referenceProFeature": "Reference-based generation is a Pro feature. Upgrade to unlock? We'll save your draft so you can continue immediately.",
+      "match": "{{percent}}% match"
+    },
+    "planner": {
+      "title": "Screenshot set planner",
+      "subtitle": "Define each slide's content and objective.",
+      "autoFill": "Auto-fill with AI",
+      "slides": "Slides:",
+      "addSlide": "Add slide",
+      "consistency": "Consistency Engine",
+      "upgradeSlides": "Upgrade to unlock {{count}} slides? We'll save your draft so you can pick up exactly where you left off.",
+      "strictDesc": "All slides remain very homogeneous — same palette, framing, density. Recommended for traditional app store pages.",
+      "balancedDesc": "Same visual universe with controlled variations for each slide. Great for feature showcases.",
+      "exploratoryDesc": "More creative freedom while maintaining a coherent base brand identity. High contrast allowed.",
+      "levels": {
+        "strict": "strict",
+        "balanced": "balanced",
+        "exploratory": "exploratory"
+      },
+      "headlinePlaceholder": "Headline — your big hook for this slide",
+      "subheadlinePlaceholder": "Subheadline — supporting text",
+      "noScreen": "No screen (Text only)",
+      "uploadedTag": "📱 {{tag}} (uploaded)",
+      "removeSlide": "Remove",
+      "emphasisOptions": {
+        "UI focused": "UI focused",
+        "text focused": "text focused",
+        "mascot focused": "mascot focused",
+        "illustration focused": "illustration focused",
+        "cinematic background": "cinematic background",
+        "clean product showcase": "clean product showcase",
+        "icon-driven": "icon-driven",
+        "feature comparison": "feature comparison"
+      }
+    },
+    "review": {
+      "title": "Pre-generation review",
+      "subtitle": "Review everything before generating your screenshot set.",
+      "projectSummary": "Project summary",
+      "slideHeadlines": "Slide headlines",
+      "app": "App:",
+      "platform": "Platform:",
+      "tone": "Tone:",
+      "template": "Template:",
+      "formats": "Formats:",
+      "slides": "Slides:",
+      "screens": "Screens:",
+      "brandAssets": "Brand assets:",
+      "consistency": "Consistency:",
+      "outputLanguage": "Output language:",
+      "notSet": "Not set",
+      "notSelected": "Not selected",
+      "uploaded": "uploaded",
+      "noHeadline": "No headline set",
+      "saveDraft": "Save draft",
+      "generate": "Generate Cinematic Screenshots",
+      "preparing": "Preparing Output..."
+    }
+  },
+  "templates": {
+    "badge": "Template Gallery",
+    "title": "Start with a",
+    "titleHighlight": "proven foundation",
+    "subtitle": "High-converting, production-ready layouts for every app category. Just select a template and customize 10 screens instantly.",
+    "premiumTemplates": "{{count}} premium templates",
+    "searchPlaceholder": "Search templates (e.g., Finance, Bold, Dark)...",
+    "category": "Category",
+    "mood": "Mood",
+    "style": "Style",
+    "noResults": "No templates match your filters.",
+    "noResultsHint": "Try adjusting mood, tone, or category.",
+    "moods": {
+      "dark": "Dark",
+      "light": "Light",
+      "colorful": "Colorful",
+      "neutral": "Neutral",
+      "all": "All"
+    },
+    "categories": {
+      "all": "All",
+      "business": "Business",
+      "entertainment": "Entertainment",
+      "education": "Education",
+      "lifestyle": "Lifestyle",
+      "luxury": "Luxury",
+      "media": "Media"
+    },
+    "tones": {
+      "all": "All",
+      "corporate": "corporate",
+      "bold": "bold",
+      "premium": "premium",
+      "playful": "playful",
+      "minimalist": "minimalist"
+    },
+    "slides": "{{count}} slides"
+  },
+  "notFound": {
+    "title": "404",
+    "message": "This page does not exist.",
+    "backHome": "Back to Home"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "upgrade": "Upgrade",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "unknownError": "Unknown error",
+    "toggleTheme": "Toggle theme"
+  },
+  "privacyPage": {
+    "backHome": "Back to home",
+    "title": "Privacy Policy",
+    "lastUpdated": "Last updated: {{date}}",
+    "intro": "This policy explains what data ShotApp AI collects, why we process it, and the choices you have. By using the service, you agree to this processing as described below.",
+    "sections": {
+      "data": {
+        "title": "1. Data we collect",
+        "body": "We collect account details, project metadata, uploaded assets, generated outputs, billing events, and technical logs needed to operate ShotApp AI."
+      },
+      "usage": {
+        "title": "2. How we use data",
+        "body": "We use your data to provide screenshot generation, account security, payment processing, fraud prevention, and support. We do not sell personal data."
+      },
+      "legalBasis": {
+        "title": "3. Legal basis for processing",
+        "body": "We process data to perform our contract with you, protect legitimate business interests (security and abuse prevention), and comply with legal obligations."
+      },
+      "retention": {
+        "title": "4. Data retention",
+        "body": "We retain data while your account is active, or as required for legal and financial compliance. You can request deletion from your account settings."
+      },
+      "security": {
+        "title": "5. Security measures",
+        "body": "We use access controls, encryption in transit, signed asset URLs, and role-based database policies to reduce unauthorized access risks."
+      },
+      "processors": {
+        "title": "6. Third-party processors",
+        "body": "We rely on infrastructure and payment partners such as Supabase and Stripe. These processors handle data according to their own security and privacy terms."
+      },
+      "transfers": {
+        "title": "7. International transfers",
+        "body": "Your data may be processed in countries other than your own. We use appropriate safeguards for cross-border transfers where required."
+      },
+      "rights": {
+        "title": "8. Your rights",
+        "body": "Depending on your jurisdiction, you may request access, correction, deletion, restriction, objection, or portability of your personal data."
+      },
+      "children": {
+        "title": "9. Children's privacy",
+        "body": "ShotApp AI is not intended for children under 13 (or equivalent minimum age in your jurisdiction), and we do not knowingly collect their personal data."
+      },
+      "changes": {
+        "title": "10. Policy changes",
+        "body": "We may update this policy as the product or legal requirements evolve. We will post the latest version on this page."
+      },
+      "contact": {
+        "title": "11. Contact",
+        "body": "Privacy requests can be sent to"
+      }
+    }
+  },
+  "termsPage": {
+    "backHome": "Back to home",
+    "title": "Terms of Service",
+    "lastUpdated": "Last updated: {{date}}",
+    "intro": "These Terms govern your use of ShotApp AI. If you do not agree, do not use the service.",
+    "sections": {
+      "scope": {
+        "title": "1. Service scope",
+        "body": "ShotApp AI provides software tools to generate and export app-store screenshot creatives. Features and limits depend on your active plan."
+      },
+      "eligibility": {
+        "title": "2. Eligibility",
+        "body": "You must be legally able to enter into a binding agreement and use the service in compliance with applicable laws."
+      },
+      "account": {
+        "title": "3. Account responsibility",
+        "body": "You are responsible for account credentials, uploaded materials, and generated content usage. You must have rights to all assets you upload."
+      },
+      "license": {
+        "title": "4. License",
+        "body": "We grant you a limited, non-exclusive, non-transferable right to use ShotApp AI according to your plan while your account is in good standing."
+      },
+      "aiContent": {
+        "title": "5. AI-generated output",
+        "body": "AI output may vary and should be reviewed by you before publication. You remain responsible for legal compliance, claims, and final usage decisions."
+      },
+      "billing": {
+        "title": "6. Billing and credits",
+        "body": "Paid plans are billed on a recurring monthly basis. Credits are consumed per action as shown in-product. Abuse, chargebacks, or fraud may lead to suspension."
+      },
+      "refunds": {
+        "title": "7. Refunds",
+        "body": "Unless required by law, fees are non-refundable once billed. You can cancel renewal at any time from billing settings."
+      },
+      "use": {
+        "title": "8. Acceptable use",
+        "body": "You may not use the service for unlawful, infringing, deceptive, or harmful content. We may suspend access for policy violations."
+      },
+      "suspension": {
+        "title": "9. Suspension or termination",
+        "body": "We may suspend or terminate access for non-payment, abuse, legal risk, or policy breaches. You may stop using the service at any time."
+      },
+      "disclaimers": {
+        "title": "10. Disclaimers",
+        "body": "The service is provided on an 'as is' and 'as available' basis without warranties of uninterrupted availability, fitness for a specific purpose, or error-free operation."
+      },
+      "liability": {
+        "title": "11. Limitation of liability",
+        "body": "To the maximum extent allowed by law, ShotApp AI is not liable for indirect, incidental, special, consequential, or punitive damages."
+      },
+      "law": {
+        "title": "12. Governing law",
+        "body": "These Terms are governed by the laws applicable to our operating entity, unless your local consumer protection laws require otherwise."
+      },
+      "contact": {
+        "title": "13. Contact",
+        "body": "Terms questions can be sent to"
+      }
+    }
+  }
 }

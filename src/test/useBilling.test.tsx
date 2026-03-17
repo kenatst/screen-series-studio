@@ -21,6 +21,16 @@ vi.mock("@/hooks/use-toast", () => ({
   }),
 }));
 
+vi.mock("react-i18next", () => ({
+  useTranslation: () => ({
+    t: (key: string) => {
+      if (key === "common.error") return "Error";
+      if (key === "common.unknownError") return "Unknown error";
+      return key;
+    },
+  }),
+}));
+
 describe("useBilling", () => {
   beforeEach(() => {
     invokeMock.mockReset();

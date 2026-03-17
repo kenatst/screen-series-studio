@@ -135,7 +135,7 @@ const Templates = () => {
                 className={`px-4 py-2 rounded-xl text-xs font-bold capitalize border transition-all duration-300 ${selectedTone === tone ? 'bg-primary/20 text-primary border-primary shadow-glow' : 'bg-secondary/50 text-muted-foreground border-border hover:border-primary/40 hover:text-foreground'
                   }`}
               >
-                {tone}
+                {t(`templates.tones.${tone.toLowerCase()}`, { defaultValue: tone })}
               </button>
             ))}
           </div>
@@ -170,7 +170,7 @@ const Templates = () => {
                   <p className="text-xs text-muted-foreground font-medium leading-relaxed line-clamp-2">{template.bestFor}</p>
                   <div className="flex items-center justify-between text-[10px] text-foreground/40 pt-2 border-t border-border uppercase tracking-widest font-bold">
                     <span className="text-primary/80">{template.complexity}</span>
-                    <span>{template.slidesSupported} slides</span>
+                    <span>{t("templates.slides", { count: template.slidesSupported })}</span>
                   </div>
                 </div>
               </div>

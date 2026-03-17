@@ -2,8 +2,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Upload, X, Plus, Wand2 } from "lucide-react";
 import { useNewProject } from "@/contexts/NewProjectContext";
+import { useTranslation } from "react-i18next";
 
 export const StepBrandKit = () => {
+  const { t } = useTranslation();
   const {
     brandAssets, brandColors, setBrandColors, brandFont, setBrandFont,
     newColor, setNewColor, handleBrandUpload, removeBrandAsset,
@@ -13,8 +15,8 @@ export const StepBrandKit = () => {
   return (
     <div className="space-y-8 relative z-10">
       <div className="border-b border-border pb-5">
-        <h2 className="text-3xl font-black tracking-tight text-foreground mb-2">Brand kit</h2>
-        <p className="text-muted-foreground font-medium">Set your visual identity for consistent branding.</p>
+        <h2 className="text-3xl font-black tracking-tight text-foreground mb-2">{t("step.brandKit.title")}</h2>
+        <p className="text-muted-foreground font-medium">{t("step.brandKit.subtitle")}</p>
       </div>
       <div className="grid md:grid-cols-3 gap-6">
         {(['logo', 'icon', 'mascot'] as const).map(type => {
@@ -35,7 +37,7 @@ export const StepBrandKit = () => {
                   <div className="h-14 w-14 bg-muted/50 border border-border rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 group-hover:border-primary/40 group-hover:shadow-glow transition-all duration-500">
                     <Upload className="h-6 w-6 text-foreground/30 group-hover:text-primary transition-colors" />
                   </div>
-                  <p className="text-sm font-bold text-muted-foreground tracking-tight capitalize">Upload {type}</p>
+                  <p className="text-sm font-bold text-muted-foreground tracking-tight capitalize">{t("step.brandKit.upload", { type })}</p>
                 </div>
               )}
             </div>
@@ -44,18 +46,18 @@ export const StepBrandKit = () => {
       </div>
       <div className="space-y-4 pt-4">
         <div className="flex items-center justify-between">
-          <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Brand colors</label>
+          <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">{t("step.brandKit.brandColors")}</label>
           <Button variant="outline" size="sm" onClick={handleAutoDetectColors} className="text-xs font-bold rounded-lg h-8 border-primary/30 text-primary hover:bg-primary/10">
-            <Wand2 className="h-3 w-3 mr-1.5" /> Auto-detect from assets
+            <Wand2 className="h-3 w-3 mr-1.5" /> {t("step.brandKit.autoDetect")}
           </Button>
         </div>
         {brandColors.length === 0 ? (
           <div className="p-6 border border-dashed border-border bg-card/90 rounded-2xl text-center shadow-inner">
-            <p className="text-sm text-muted-foreground font-medium mb-2">No colors yet — add your brand palette manually or auto-detect.</p>
+            <p className="text-sm text-muted-foreground font-medium mb-2">{t("step.brandKit.noColors")}</p>
             <div className="flex items-center justify-center gap-2 mt-3">
               <input type="color" value={newColor} onChange={e => setNewColor(e.target.value)} className="h-10 w-10 rounded-full border-2 border-dashed border-border cursor-pointer bg-transparent" />
               <Button variant="ghost" size="sm" onClick={() => { if (!brandColors.includes(newColor)) setBrandColors(prev => [...prev, newColor]); }} className="text-xs font-bold text-primary">
-                <Plus className="h-4 w-4 mr-1" /> Add color
+                <Plus className="h-4 w-4 mr-1" /> {t("step.brandKit.addColor")}
               </Button>
             </div>
           </div>
@@ -72,27 +74,32 @@ export const StepBrandKit = () => {
             <div className="flex items-center gap-2">
               <input type="color" value={newColor} onChange={e => setNewColor(e.target.value)} className="h-14 w-14 rounded-full border-2 border-dashed border-border cursor-pointer bg-transparent" />
               <Button variant="ghost" size="sm" onClick={() => { if (!brandColors.includes(newColor)) setBrandColors(prev => [...prev, newColor]); }} className="text-xs font-bold text-primary">
-                <Plus className="h-4 w-4 mr-1" /> Add
+                <Plus className="h-4 w-4 mr-1" /> {t("step.brandKit.add")}
               </Button>
             </div>
           </div>
         )}
       </div>
       <div className="space-y-4 pt-4">
-        <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Brand font</label>
-        <Input value={brandFont} onChange={e => setBrandFont(e.target.value)} placeholder="e.g. SF Pro, Inter, Montserrat" className="bg-muted/50 border-border text-foreground placeholder:text-foreground/30 shadow-inner h-12 focus-visible:ring-primary transition-all rounded-xl" />
+        <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">{t("step.brandKit.brandFont")}</label>
+        <Input value={brandFont} onChange={e => setBrandFont(e.target.value)} placeholder={t("step.brandKit.brandFontPlaceholder")} className="bg-muted/50 border-border text-foreground placeholder:text-foreground/30 shadow-inner h-12 focus-visible:ring-primary transition-all rounded-xl" />
       </div>
       <div className="space-y-4 pt-4">
-        <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Visual preferences</label>
+        <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">{t("step.brandKit.visualPrefs")}</label>
         <div className="flex flex-wrap gap-3">
-          {['Keep app UI untouched', 'Allow visual enhancement', 'Use premium preset palette', 'Auto-detect from assets'].map(opt => (
+          {[
+            { value: "Keep app UI untouched", key: "untouched" },
+            { value: "Allow visual enhancement", key: "enhance" },
+            { value: "Use premium preset palette", key: "palette" },
+            { value: "Auto-detect from assets", key: "autoDetect" },
+          ].map((option) => (
             <button
-              key={opt}
+              key={option.value}
               type="button"
-              onClick={() => setVisualPreferences(prev => prev.includes(opt) ? prev.filter(p => p !== opt) : [...prev, opt])}
-              className={`font-bold border cursor-pointer transition-all duration-300 py-2 px-4 shadow-sm rounded-lg text-sm ${visualPreferences.includes(opt) ? 'bg-primary text-primary-foreground border-primary shadow-glow' : 'bg-card/90 text-muted-foreground border-border hover:bg-primary/20 hover:text-primary hover:border-primary/40'}`}
+              onClick={() => setVisualPreferences(prev => prev.includes(option.value) ? prev.filter(p => p !== option.value) : [...prev, option.value])}
+              className={`font-bold border cursor-pointer transition-all duration-300 py-2 px-4 shadow-sm rounded-lg text-sm ${visualPreferences.includes(option.value) ? 'bg-primary text-primary-foreground border-primary shadow-glow' : 'bg-card/90 text-muted-foreground border-border hover:bg-primary/20 hover:text-primary hover:border-primary/40'}`}
             >
-              {opt}
+              {t(`step.brandKit.visualPrefOptions.${option.key}`)}
             </button>
           ))}
         </div>

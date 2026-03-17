@@ -67,8 +67,8 @@ export const TranslationsSection = ({
                 <div className="flex items-center gap-2">
                   <Globe className="h-4 w-4 text-primary" />
                   <span className="font-bold text-sm">{LANGUAGE_LABELS[lang] || lang}</span>
-                  <Badge variant="outline" className="text-xs">{langTranslations.length} slide(s)</Badge>
-                  {langFormats.length > 1 && <Badge variant="outline" className="text-xs">{langFormats.length} sizes</Badge>}
+                  <Badge variant="outline" className="text-xs">{t("results.slides", { count: langTranslations.length })}</Badge>
+                  {langFormats.length > 1 && <Badge variant="outline" className="text-xs">{t("results.sizes", { count: langFormats.length })}</Badge>}
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
@@ -80,7 +80,7 @@ export const TranslationsSection = ({
                       onDownloadLanguageZip(lang);
                     }}
                   >
-                    <Download className="h-3 w-3 mr-1" /> ZIP
+                    <Download className="h-3 w-3 mr-1" /> {t("results.zip")}
                   </Button>
                   <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${expandedLang === lang ? "rotate-90" : ""}`} />
                 </div>
@@ -106,7 +106,7 @@ export const TranslationsSection = ({
                               <div className="flex items-center gap-2 mb-2">
                                 <Badge variant="secondary" className="text-[10px] font-bold">{FORMAT_SHORT[format] || format}</Badge>
                                 {formatDimensions && <span className="text-[10px] text-muted-foreground font-mono">{formatDimensions.width}&times;{formatDimensions.height}</span>}
-                                <span className="text-[10px] text-muted-foreground">{formatTranslations.length} slide(s)</span>
+                                <span className="text-[10px] text-muted-foreground">{t("results.slides", { count: formatTranslations.length })}</span>
                               </div>
                             )}
                             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">

@@ -1,5 +1,6 @@
 import { useCallback, useState, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import type { TFunction } from "i18next";
+import { flushSseBuffer, parseSseChunk } from "@/lib/sse";
 
 export type SlideUiStatus = "pending" | "generating" | "completed" | "error";
 
@@ -173,43 +174,17 @@ export function useGenerationStream({
         }
       };
 
-      const parseEventBlock = (block: string) => {
-        const lines = block.split("\n");
-        let eventType = "";
-        const dataLines: string[] = [];
-
-        for (const rawLine of lines) {
-          const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
-          if (!line || line.startsWith(":")) continue;
-          if (line.startsWith("event:")) {
-            eventType = line.slice(6).trim();
-            continue;
-          }
-          if (line.startsWith("data:")) {
-            dataLines.push(line.slice(5).trimStart());
-          }
-        }
-
-        if (eventType && dataLines.length > 0) {
-          handleEvent(eventType, dataLines.join("\n"));
-        }
-      };
-
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        textBuffer += decoder.decode(value, { stream: true });
-        const normalizedBuffer = textBuffer.replace(/\r\n/g, "\n");
-        const blocks = normalizedBuffer.split("\n\n");
-        textBuffer = blocks.pop() ?? "";
-        blocks.forEach(parseEventBlock);
+        const chunkText = decoder.decode(value, { stream: true });
+        const parsed = parseSseChunk(textBuffer, chunkText);
+        textBuffer = parsed.buffer;
+        parsed.events.forEach((event) => handleEvent(event.event, event.data));
       }
 
-      const trailingBlock = textBuffer.replace(/\r\n/g, "\n").trim();
-      if (trailingBlock) {
-        parseEventBlock(trailingBlock);
-      }
+      flushSseBuffer(textBuffer).forEach((event) => handleEvent(event.event, event.data));
 
       setIsDispatching(false);
       return localHasMore ? "hasMore" : "done";
