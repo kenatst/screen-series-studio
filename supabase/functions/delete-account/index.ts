@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 async function listAllObjectPaths(
-  client: ReturnType<typeof createClient>,
+  client: any,
   bucket: string,
   prefix: string,
 ): Promise<string[]> {
