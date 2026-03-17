@@ -298,7 +298,6 @@ ${langDirective}${feedbackBlock}
 Generate the image now. Continue the set.
 `.trim();
   return prompt;
-Generate the image now. Recreate the template EXACTLY with the new content.`.trim();
   }
 
   // ── CASE 2: Beyond template range — continuity mode ──
