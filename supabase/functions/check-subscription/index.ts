@@ -124,9 +124,10 @@ serve(async (req) => {
     const resolvedPlan = PRODUCT_NAME_TO_PLAN[product.name] ?? "starter";
 
     const monthlyCredits = PLAN_CREDITS[resolvedPlan] ?? 3;
-    // Always grant full plan credits when plan changes or when credits are below plan allocation
+    // Only grant full credits when the plan actually changes (upgrade/downgrade)
+    // Do NOT touch credits on routine checks — let the generation engine handle deductions
     const planChanged = currentPlan !== resolvedPlan;
-    const nextCredits = planChanged ? monthlyCredits : Math.max(currentCredits, monthlyCredits);
+    const nextCredits = planChanged ? monthlyCredits : currentCredits;
 
     const subscriptionEnd = safeIsoFromUnixSeconds(subscription.current_period_end);
 

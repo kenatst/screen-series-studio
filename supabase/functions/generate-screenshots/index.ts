@@ -186,6 +186,9 @@ function buildSlidePrompt(params: {
   const primaryFormat = deviceFormats[0] || "iphone-6-5";
   const aspectStr = primaryFormat.includes("ipad") ? "3:4 (iPad portrait)" : "9:16 (iPhone portrait)";
 
+  const appCategory = config?.appCategory || "Not specified";
+  const appDescription = config?.appDescription || project.app_description || "";
+
   // ── CASE 1: Slide within template range — match specific template slide ──
   if (!isBeyondTemplate && slideLayout && templateSetAnalysis) {
     return `
@@ -193,44 +196,54 @@ You are an elite-tier App Store screenshot designer — your work rivals the bes
 
 === YOUR MISSION ===
 IMAGE #1 is a TEMPLATE SET showing ${templateSetAnalysis.totalSlides} slides side by side.
-You are generating slide ${slide.slide_number} of ${totalSlides} for this project.
-Your job: recreate the design of SLIDE #${slideLayout.slidePosition} (counting left to right) from the template image, but with the new app content below.
-The output must look like it was made by the SAME designer who created the template — same quality, same visual DNA, same attention to detail.
+You are generating slide ${slide.slide_number} of ${totalSlides} for a "${appCategory}" app called "${appName}".
+Your job: recreate the DESIGN STRUCTURE of SLIDE #${slideLayout.slidePosition} (counting left to right) from the template, but fully adapted to the new app's theme and content.
 
-=== TEMPLATE SET IDENTITY ===
+=== CRITICAL: THEME ADAPTATION ===
+The template was designed for a DIFFERENT app. You MUST adapt ALL visual elements to match "${appName}" (${appCategory}):
+- DO NOT copy the template's mascots, characters, or brand-specific icons literally
+- DO NOT copy the template's background scenery if it's app-specific (e.g., lavender fields for a lifestyle app → replace with weather-themed visuals for a weather app)
+- DO adapt decorative elements to match the app's category: ${appCategory}${appDescription ? ` — ${appDescription.slice(0, 150)}` : ""}
+- DO keep the template's LAYOUT STRUCTURE (positions, proportions, spacing, visual hierarchy)
+- DO keep the template's DESIGN QUALITY (gradient richness, shadow depth, typography style)
+- Think of it as: same designer, same skill level, but designing for a completely different app
+
+=== TEMPLATE SET STYLE (design DNA to keep) ===
 ${templateSetAnalysis.overallStyle}
 Color palette: ${templateSetAnalysis.colorPalette}
 
 === TARGET SLIDE LAYOUT (slide #${slideLayout.slidePosition} from the template) ===
 ${slideLayout.detailedComposition}
 
-Layout details to reproduce PRECISELY:
-- Device mockup: ${slideLayout.hasDeviceMockup ? `YES — positioned ${slideLayout.devicePosition}, scale ${slideLayout.deviceScale}. Match the EXACT device angle, shadow, and frame style.` : "NO device mockup — DO NOT add one. This is a text/graphic-only slide."}
-- Text placement: ${slideLayout.textPosition} — match the EXACT vertical/horizontal position, font size ratio, and spacing
+Layout structure to reproduce:
+- Device mockup: ${slideLayout.hasDeviceMockup ? `YES — positioned ${slideLayout.devicePosition}, scale ${slideLayout.deviceScale}. Match the EXACT device angle, shadow, and frame style.` : "NO device mockup — DO NOT add one."}
+- Text placement: ${slideLayout.textPosition} — match the EXACT position and spacing proportions
 - Headline style: ${slideLayout.headlineStyle}, large and impactful
-- Background: ${slideLayout.backgroundType}${slideLayout.decorativeElements.length > 0 ? ` with: ${slideLayout.decorativeElements.join(", ")}` : ""}
-- 3D elements: ${slideLayout.has3DElements ? "YES — match the template's 3D style, lighting, and material" : "NO — keep flat/2D"}
-${slideLayout.hasMascot ? `- Mascot/Character: YES — ${slideLayout.mascotDescription}` : ""}
+- Background TYPE: ${slideLayout.backgroundType} — keep the same TYPE but adapt the THEME to ${appCategory}
+${slideLayout.decorativeElements.length > 0 ? `- Decorative elements in template: ${slideLayout.decorativeElements.join(", ")} — adapt these to ${appCategory}-themed equivalents` : ""}
+- 3D elements: ${slideLayout.has3DElements ? `YES — create 3D elements relevant to ${appCategory} (NOT the template's original 3D objects)` : "NO — keep flat/2D"}
+${slideLayout.hasMascot ? `- Template has mascot: "${slideLayout.mascotDescription}" — create a NEW mascot/character relevant to ${appCategory} in the SAME position and scale, OR replace with a thematic icon/illustration` : ""}
 - Mood: ${slideLayout.mood}
 
-=== APP CONTENT TO INSERT ===
-App name: "${appName}" | Category: "${config?.appCategory || "Not specified"}"
+=== APP CONTENT ===
+App: "${appName}" | Category: "${appCategory}"
 >>> HEADLINE (render EXACTLY): "${slide.headline || ""}" <<<
 >>> SUBHEADLINE (render EXACTLY): "${slide.subheadline || ""}" <<<
 ${brandBlock ? `\n=== BRAND IDENTITY ===\n${brandBlock}` : ""}
-Color adaptation: ${brandKit?.colors?.length > 0 ? `Adapt the template's color scheme to use ${brandKit.colors.join(", ")} as primary/accent colors while preserving the same visual energy and contrast ratios.` : "Keep the template's original color palette, adapting hues to match any brand colors from the raw app screenshot."}
+Color adaptation: ${brandKit?.colors?.length > 0 ? `Use ${brandKit.colors.join(", ")} as primary/accent colors, adapting the template's gradient style and contrast ratios.` : "Create a color palette appropriate for ${appCategory}, inspired by the template's color relationships."}
 
 ${hasRawScreen ? `=== RAW APP SCREEN (next image after template) ===
-This is the REAL app screenshot. Composite it INTO the device frame EXACTLY as-is.
-- Preserve EVERY pixel — do NOT redesign or modify the UI
-- Place it inside the phone frame at the SAME position/angle as the template's device
-- If the screen is too tall, crop the bottom naturally` : `=== NO RAW SCREEN ===
-${slideLayout.hasDeviceMockup ? "Include a phone mockup with a generic branded screen matching the app's color scheme." : "Focus on headline, subheadline, and background visual energy — matching the template's layout."}`}
+Composite this REAL app screenshot INTO the device frame as-is. Preserve EVERY pixel.` : `=== NO RAW SCREEN ===
+${slideLayout.hasDeviceMockup ? "Include a phone mockup with a generic branded screen matching the app's color scheme." : "Focus on headline, subheadline, and background visual energy."}`}
 
 === SLIDE CONTEXT ===
-Slide ${slide.slide_number} of ${totalSlides} | Objective: ${slide.objective || "Feature spotlight"} | Emphasis: ${slide.emphasis || "balanced"} | Importance: ${slide.importance || "high"} | Format: ${aspectStr}
+Slide ${slide.slide_number} of ${totalSlides} | Objective: ${slide.objective || "Feature spotlight"} | Emphasis: ${slide.emphasis || "balanced"} | Format: ${aspectStr}
 
 ${!isFirstSlide && hasPreviousSlides ? `=== VISUAL CONTINUITY (CRITICAL) ===
+Previously generated slides from THIS SET are attached after the template.
+- LAYOUT: Follow template slide #${slideLayout.slidePosition}'s structure
+- VISUAL IDENTITY: Match the exact colors, typography, device frames from the previous slides
+- ONE designer, ONE Figma file, ONE session
 Previously generated slides from THIS SET are also attached after the template and raw screen.
 - LAYOUT: Follow the template slide #${slideLayout.slidePosition}'s composition (IMAGE #1)
 - VISUAL IDENTITY: Match the exact color palette, typography, device frames, background treatment, and lighting from the previously generated slides
@@ -244,6 +257,47 @@ Previously generated slides from THIS SET are also attached after the template a
 6. Photorealistic device frames with proper shadows
 ${langDirective}${feedbackBlock}
 
+Generate the image now.
+`.trim();
+    return prompt;
+  }
+
+  // ── CASE 2: Beyond template range — continuity-only mode ──
+  const prompt = `
+You are an elite-tier App Store screenshot designer.
+
+=== YOUR MISSION ===
+You are generating slide ${slide.slide_number} of ${totalSlides} for "${appName}" (${appCategory}).
+${templateSetAnalysis ? `The template had ${templateSetAnalysis.totalSlides} slides but you are creating slide #${slide.slide_number} which is beyond the template.` : ""}
+Your PRIMARY reference is the previously generated slides — continue the set with the same visual DNA.
+
+${templateSetAnalysis ? `=== SET STYLE DNA ===
+${templateSetAnalysis.overallStyle}
+` : ""}
+=== CONTINUITY (#1 PRIORITY) ===
+Match the previously generated slides EXACTLY:
+- Same color palette, gradients, lighting
+- Same typography (font, weight, sizes, kerning)
+- Same device frame style, angle, shadow
+- Same background treatment and decorative elements style
+- Vary layout naturally to keep the set interesting
+- ONE designer, ONE Figma file
+
+=== APP CONTENT ===
+App: "${appName}" | Category: "${appCategory}"
+>>> HEADLINE: "${slide.headline || ""}" <<<
+>>> SUBHEADLINE: "${slide.subheadline || ""}" <<<
+${brandBlock ? `\n${brandBlock}` : ""}
+
+${hasRawScreen ? `=== RAW APP SCREEN ===
+Composite into device frame as-is.` : "=== NO RAW SCREEN ===\nCreate a visually engaging slide matching the set's style."}
+
+Slide ${slide.slide_number} of ${totalSlides} | Objective: ${slide.objective || "Feature spotlight"} | Format: ${aspectStr}
+${langDirective}${feedbackBlock}
+
+Generate the image now. Continue the set.
+`.trim();
+  return prompt;
 Generate the image now. Recreate the template EXACTLY with the new content.`.trim();
   }
 

@@ -240,10 +240,10 @@ const Results = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: index * 0.05 }}
                 onClick={() => setSelectedIndex(index)}
-                className={`relative aspect-[9/19.5] rounded-xl border-2 overflow-hidden cursor-pointer transition-all duration-200 group ${selectedIndex === index ? 'border-primary ring-2 ring-primary/30 shadow-glow' : 'border-border hover:border-primary/40'}`}
+                className={`relative aspect-[9/16] rounded-xl border-2 overflow-hidden cursor-pointer transition-all duration-200 group ${selectedIndex === index ? 'border-primary ring-2 ring-primary/30 shadow-glow' : 'border-border hover:border-primary/40'}`}
               >
                 {imgUrl && !locked ? (
-                  <img src={imgUrl} alt={`Slide ${slide.slide_number}`} className="w-full h-full object-cover transition-transform group-hover:scale-105" loading="lazy" />
+                  <img src={imgUrl} alt={`Slide ${slide.slide_number}`} className="w-full h-full object-contain transition-transform group-hover:scale-105" loading="lazy" />
                 ) : (
                   <div className="w-full h-full bg-muted flex items-center justify-center">
                     {locked ? (
@@ -280,9 +280,9 @@ const Results = () => {
             <div className="flex flex-col md:flex-row gap-6">
               {/* Image preview */}
               <div className="flex-shrink-0 relative">
-                <div className="w-full max-w-xs mx-auto md:mx-0 aspect-[9/19.5] rounded-xl overflow-hidden border border-border bg-muted">
+                <div className="w-full max-w-xs mx-auto md:mx-0 aspect-[9/16] rounded-xl overflow-hidden border border-border bg-muted">
                   {selectedImageUrl && !isSlideLocked ? (
-                    <img src={selectedImageUrl} alt={`Slide ${selectedSlide.slide_number}`} className="w-full h-full object-cover" />
+                    <img src={selectedImageUrl} alt={`Slide ${selectedSlide.slide_number}`} className="w-full h-full object-contain" />
                   ) : isSlideLocked ? (
                     <div className="w-full h-full flex flex-col items-center justify-center gap-3 p-6 text-center">
                       <Lock className="h-10 w-10 text-muted-foreground" />
