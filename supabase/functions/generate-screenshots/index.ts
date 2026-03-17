@@ -300,9 +300,11 @@ serve(async (req: Request) => {
 
     // ── SSE Stream ──
     const encoder = new TextEncoder();
-    const deviceFormats = (project.device_formats as string[]) || ["iphone-6-5"];
-    const primaryFormat = deviceFormats[0] || "iphone-6-5";
-    const aspectRatio = primaryFormat.includes("ipad") ? "3:4" : "9:16";
+    // ALWAYS generate base images as 6.5" iPhone (9:16).
+    // Other sizes (6.9", iPad) are produced later via resize-slides.
+    const deviceFormats = ["iphone-6-5"];
+    const primaryFormat = "iphone-6-5";
+    const aspectRatio = "9:16";
     const brandKit = project.brand_kit as any || {};
 
     const stream = new ReadableStream({
