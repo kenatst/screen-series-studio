@@ -152,7 +152,62 @@ function buildSlidePrompt(params: {
   const aspectStr = primaryFormat.includes("ipad") ? "3:4 (iPad portrait)" : "9:16 (iPhone portrait)";
 
   const prompt = `
-You are an elite-tier App Store screenshot designer — your work rivals the best studios on Dribbble and Behance. You are recreating a SPECIFIC TEMPLATE SLIDE with new app content.
+You are an elite-tier App Store screenshot designer. Your work rivals the best studios on Dribbble and Behance.
+
+=== YOUR MISSION ===
+Create slide ${slide.slide_number} of ${totalSlides} for the app "${appName}".
+IMAGE #1 is YOUR MASTER REFERENCE TEMPLATE for THIS EXACT SLIDE — you MUST reproduce its layout, composition, spacing, and visual energy PRECISELY.
+The ONLY things that change are the headline, subheadline, app screen, and brand colors.
+
+=== OUTPUT SPEC ===
+- Format: ${aspectStr}
+- Resolution: Ultra-crisp, Retina-quality, 2K
+- Style: Premium, editorial-grade App Store screenshot
+
+=== TEMPLATE LAYOUT ANALYSIS (from IMAGE #1) ===
+${layout.detailedComposition}
+
+MATCH THESE EXACT PROPORTIONS:
+- Device mockup: ${layout.hasDeviceMockup ? `YES — ${layout.devicePosition} position, ${layout.deviceScale} scale. Copy the EXACT device angle, shadow, frame style.` : "NO device — this is a text/typographic slide. DO NOT add a phone."}
+- Text placement: ${layout.textPosition} — match the EXACT position, font size ratio, and spacing
+- Headline style: ${layout.headlineStyle}, large and impactful
+- Background: ${layout.backgroundType}${layout.decorativeElements.length > 0 ? ` with elements: ${layout.decorativeElements.join(", ")}` : ""} — reproduce the EXACT treatment
+- 3D elements: ${layout.has3DElements ? "YES — include matching 3D objects with same lighting/material" : "NO — keep flat/2D"}
+${layout.hasMascot ? `- Mascot/Character: YES — ${layout.mascotDescription}. Same position and scale as template.` : ""}
+- Mood: ${layout.mood}
+
+=== CONTENT TO RENDER (EXACT TEXT) ===
+>>> HEADLINE: "${slide.headline || ""}"
+>>> SUBHEADLINE: "${slide.subheadline || ""}"
+Category: ${config?.appCategory || "App"} | Purpose: ${slide.objective || "Feature highlight"}
+Visual emphasis: ${slide.emphasis || "balanced"} | Importance: ${slide.importance || "high"}
+${brandBlock ? `\n=== BRAND IDENTITY ===\n${brandBlock}` : ""}
+Color direction: ${brandKit?.colors?.length > 0 ? `Adapt template colors to use ${brandKit.colors.join(", ")} as primary palette while keeping same contrast ratios.` : "Keep template's original palette, adjusting hue to match any brand colors from the raw screenshot."}
+
+${hasRawScreen ? `=== RAW APP SCREEN (IMAGE #2) ===
+This is the REAL app screenshot. Composite it INTO the device frame EXACTLY as-is.
+- Preserve EVERY pixel — do NOT redesign, rearrange, or hallucinate new UI
+- Place inside the phone frame at the SAME position/angle as template's device
+- Crop bottom naturally if screen is too tall` : `=== NO RAW SCREEN PROVIDED ===
+${layout.hasDeviceMockup ? "Include a phone mockup with a clean branded placeholder screen." : "Focus on headline impact and background design — this is a pure typographic slide."}`}
+
+${!isFirstSlide && hasPreviousSlides ? `=== VISUAL CONTINUITY (CRITICAL) ===
+Previously generated slides from THIS SET are attached after the template and raw screen.
+LAYOUT → follows THIS SLIDE'S template reference (IMAGE #1)
+VISUAL IDENTITY → matches the previously generated slides for set consistency
+Match: exact color palette, gradient logic, typography, device frame style, shadow treatment, background rendering.
+The set must look like ONE designer made it in ONE Figma session.` : ""}
+
+=== ABSOLUTE QUALITY RULES ===
+1. Text MUST be pixel-perfect: crisp, well-kerned, no artifacts, no warping, no misspellings
+2. Render the EXACT headline and subheadline — zero placeholder text, zero lorem ipsum
+3. Output must be INDISTINGUISHABLE from a professional design studio's work
+4. Rich backgrounds with proper depth, lighting, and detail matching the template
+5. Photorealistic device frames (if applicable) with proper shadows and reflections
+${langDirective}${feedbackBlock}
+
+Generate the image now.
+`.trim();
 
 === YOUR MISSION ===
 IMAGE #1 is your MASTER REFERENCE TEMPLATE for THIS EXACT SLIDE (slide ${slide.slide_number} of ${totalSlides}).
