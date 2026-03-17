@@ -31,6 +31,7 @@ interface SavedTranslation {
   target_language: string;
   source_language: string;
   storage_path: string;
+  device_format: string;
   created_at: string;
   signedUrl?: string;
 }
@@ -152,27 +153,45 @@ const Results = () => {
 
     const zip = new JSZip();
     const langSlug = lang.toLowerCase().replace(/[^a-z]/g, '');
-    const folder = zip.folder(`${project?.app_name || 'export'}-${langSlug}`);
-    if (!folder) return;
+    const appLabel = project?.app_name || 'export';
+    const formats = [...new Set(langTranslations.map(t => t.device_format || 'iphone-6-5'))];
 
-    for (const tr of langTranslations) {
-      try {
-        const res = await fetch(tr.signedUrl!);
-        const blob = await res.blob();
-        folder.file(`slide-${String(tr.slide_number).padStart(2, '0')}-${langSlug}.png`, blob);
-      } catch { /* skip */ }
+    for (const fmt of formats) {
+      const fmtSlug = fmt.replace(/[^a-z0-9-]/g, '');
+      const folderName = formats.length > 1 ? `${appLabel}-${langSlug}-${fmtSlug}` : `${appLabel}-${langSlug}`;
+      const folder = zip.folder(folderName);
+      if (!folder) continue;
+
+      const fmtTranslations = langTranslations.filter(t => (t.device_format || 'iphone-6-5') === fmt);
+      for (const tr of fmtTranslations) {
+        try {
+          const res = await fetch(tr.signedUrl!);
+          const blob = await res.blob();
+          folder.file(`slide-${String(tr.slide_number).padStart(2, '0')}-${langSlug}.png`, blob);
+        } catch { /* skip */ }
+      }
     }
 
     const content = await zip.generateAsync({ type: 'blob' });
-    saveAs(content, `${project?.app_name || 'export'}-${langSlug}.zip`);
+    saveAs(content, `${appLabel}-${langSlug}.zip`);
   };
 
-  // Group translations by language
-  const translationsByLang = savedTranslations.reduce<Record<string, SavedTranslation[]>>((acc, tr) => {
-    if (!acc[tr.target_language]) acc[tr.target_language] = [];
-    acc[tr.target_language].push(tr);
+  // Group translations by language + format
+  const translationsByLangFormat = savedTranslations.reduce<Record<string, SavedTranslation[]>>((acc, tr) => {
+    const key = `${tr.target_language}|||${tr.device_format || 'iphone-6-5'}`;
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(tr);
     return acc;
   }, {});
+
+  // Also group just by language for the accordion headers
+  const translationLanguages = [...new Set(savedTranslations.map(tr => tr.target_language))];
+
+  const FORMAT_SHORT: Record<string, string> = {
+    'iphone-6-5': '6.5"',
+    'iphone-6-9': '6.9"',
+    'ipad-12-9': '12.9" iPad',
+  };
 
   const FORMAT_LABELS: Record<string, { label: string; icon: typeof Smartphone }> = {
     'iphone-6-5': { label: '6.5"', icon: Smartphone },
@@ -278,27 +297,46 @@ const Results = () => {
     setShowWatermarkWarning(false);
     try {
       const zip = new JSZip();
-      const folder = zip.folder(project?.app_name || project?.name || 'export');
-      if (!folder) throw new Error("Failed to create ZIP folder");
+      const appLabel = project?.app_name || project?.name || 'export';
 
+      // Original format slides
+      const originalFolder = zip.folder(`${appLabel}-${primaryFormat}`);
       let count = 0;
-      for (const slide of slides) {
-        const url = getImageUrl(slide);
-        if (!url) continue;
-        try {
-          const res = await fetch(url);
-          if (!res.ok) continue;
-          const blob = await res.blob();
-          const ext = blob.type.includes('png') ? 'png' : 'jpg';
-          folder.file(`slide-${String(slide.slide_number).padStart(2, '0')}.${ext}`, blob);
-          count++;
-        } catch { /* skip */ }
+      if (originalFolder) {
+        for (const slide of slides) {
+          const url = getImageUrl(slide);
+          if (!url) continue;
+          try {
+            const res = await fetch(url);
+            if (!res.ok) continue;
+            const blob = await res.blob();
+            const ext = blob.type.includes('png') ? 'png' : 'jpg';
+            originalFolder.file(`slide-${String(slide.slide_number).padStart(2, '0')}.${ext}`, blob);
+            count++;
+          } catch { /* skip */ }
+        }
+      }
+
+      // Include resized format slides in separate subfolders
+      for (const [fmt, fmtSlides] of Object.entries(resizedFormats)) {
+        if (!fmtSlides?.length) continue;
+        const fmtFolder = zip.folder(`${appLabel}-${fmt}`);
+        if (!fmtFolder) continue;
+        for (const slide of fmtSlides) {
+          try {
+            const res = await fetch(slide.imageUrl);
+            if (!res.ok) continue;
+            const blob = await res.blob();
+            fmtFolder.file(`slide-${String(slide.slide_number).padStart(2, '0')}.png`, blob);
+            count++;
+          } catch { /* skip */ }
+        }
       }
 
       if (count === 0) { toast({ title: t('results.noImages'), variant: "destructive" }); return; }
 
       const content = await zip.generateAsync({ type: "blob" });
-      saveAs(content, `${project?.app_name || project?.name || 'export'}.zip`);
+      saveAs(content, `${appLabel}.zip`);
       toast({ title: isFreePlan ? t('results.exportWatermark') : t('results.exportComplete') });
     } catch (e) {
       toast({ title: t('results.exportFailed'), variant: "destructive" });
@@ -630,67 +668,93 @@ const Results = () => {
       </div>
 
       {/* Saved Translations Section */}
-      {Object.keys(translationsByLang).length > 0 && (
+      {translationLanguages.length > 0 && (
         <div className="p-4 md:p-8 max-w-6xl mx-auto -mt-4">
           <div className="rounded-2xl border border-border bg-card/50 backdrop-blur-sm p-4 md:p-6">
             <h3 className="text-lg font-black text-foreground flex items-center gap-2 mb-4">
               <Globe className="h-5 w-5 text-primary" /> Translations
             </h3>
             <div className="space-y-3">
-              {Object.entries(translationsByLang).map(([lang, translations]) => (
-                <div key={lang} className="border border-border/50 rounded-xl overflow-hidden">
-                  <button
-                    onClick={() => setExpandedLang(expandedLang === lang ? null : lang)}
-                    className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Globe className="h-4 w-4 text-primary" />
-                      <span className="font-bold text-sm">{LANGUAGE_LABELS[lang] || lang}</span>
-                      <Badge variant="outline" className="text-xs">{translations.length} slide(s)</Badge>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost" size="sm" className="text-xs h-7 rounded-lg"
-                        onClick={(e) => { e.stopPropagation(); handleDownloadTranslationSet(lang); }}
-                      >
-                        <Download className="h-3 w-3 mr-1" /> ZIP
-                      </Button>
-                      <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${expandedLang === lang ? 'rotate-90' : ''}`} />
-                    </div>
-                  </button>
-                  <AnimatePresence>
-                    {expandedLang === lang && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 p-4 pt-0">
-                          {translations.map(tr => (
-                            <div key={tr.id} className="relative group rounded-lg overflow-hidden border border-border aspect-[9/16]">
-                              {tr.signedUrl ? (
-                                <img src={tr.signedUrl} alt={`Slide ${tr.slide_number} - ${lang}`} className="w-full h-full object-contain" loading="lazy" />
-                              ) : (
-                                <div className="w-full h-full bg-muted flex items-center justify-center">
-                                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              {translationLanguages.map(lang => {
+                const langTranslations = savedTranslations.filter(tr => tr.target_language === lang);
+                const langFormats = [...new Set(langTranslations.map(tr => tr.device_format || 'iphone-6-5'))];
+
+                return (
+                  <div key={lang} className="border border-border/50 rounded-xl overflow-hidden">
+                    <button
+                      onClick={() => setExpandedLang(expandedLang === lang ? null : lang)}
+                      className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Globe className="h-4 w-4 text-primary" />
+                        <span className="font-bold text-sm">{LANGUAGE_LABELS[lang] || lang}</span>
+                        <Badge variant="outline" className="text-xs">{langTranslations.length} slide(s)</Badge>
+                        {langFormats.length > 1 && (
+                          <Badge variant="outline" className="text-xs">{langFormats.length} sizes</Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost" size="sm" className="text-xs h-7 rounded-lg"
+                          onClick={(e) => { e.stopPropagation(); handleDownloadTranslationSet(lang); }}
+                        >
+                          <Download className="h-3 w-3 mr-1" /> ZIP
+                        </Button>
+                        <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${expandedLang === lang ? 'rotate-90' : ''}`} />
+                      </div>
+                    </button>
+                    <AnimatePresence>
+                      {expandedLang === lang && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="p-4 pt-0 space-y-4">
+                            {langFormats.map(fmt => {
+                              const fmtKey = `${lang}|||${fmt}`;
+                              const fmtTranslations = translationsByLangFormat[fmtKey] || [];
+                              const isIpad = fmt.includes('ipad');
+
+                              return (
+                                <div key={fmt}>
+                                  {langFormats.length > 1 && (
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <Badge variant="secondary" className="text-[10px] font-bold">{FORMAT_SHORT[fmt] || fmt}</Badge>
+                                      <span className="text-[10px] text-muted-foreground">{fmtTranslations.length} slide(s)</span>
+                                    </div>
+                                  )}
+                                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                                    {fmtTranslations.map(tr => (
+                                      <div key={tr.id} className={`relative group rounded-lg overflow-hidden border border-border ${isIpad ? 'aspect-[3/4]' : 'aspect-[9/16]'}`}>
+                                        {tr.signedUrl ? (
+                                          <img src={tr.signedUrl} alt={`Slide ${tr.slide_number} - ${lang} - ${fmt}`} className="w-full h-full object-contain" loading="lazy" />
+                                        ) : (
+                                          <div className="w-full h-full bg-muted flex items-center justify-center">
+                                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                          </div>
+                                        )}
+                                        <button
+                                          onClick={() => handleDownloadTranslation(tr)}
+                                          className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                                        >
+                                          <Download className="h-5 w-5 text-foreground" />
+                                        </button>
+                                        <div className="absolute bottom-1 left-1 bg-background/80 rounded px-1 py-0.5 text-[10px] font-bold">{tr.slide_number}</div>
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
-                              )}
-                              <button
-                                onClick={() => handleDownloadTranslation(tr)}
-                                className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                              >
-                                <Download className="h-5 w-5 text-foreground" />
-                              </button>
-                              <div className="absolute bottom-1 left-1 bg-background/80 rounded px-1 py-0.5 text-[10px] font-bold">{tr.slide_number}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              ))}
+                              );
+                            })}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -700,6 +764,8 @@ const Results = () => {
         isOpen={isTranslationModalOpen}
         onOpenChange={setIsTranslationModalOpen}
         projectId={projectId || ''}
+        deviceFormats={projectFormats}
+        generatedFormats={Object.keys(resizedFormats).filter(f => resizedFormats[f]?.length > 0)}
         onSuccess={() => { refetchSlides(); refreshProfile(); fetchSavedTranslations(); }}
       />
 

@@ -51,10 +51,21 @@ serve(async (req) => {
     }
     const userId = userData.user.id;
 
-    const { project_id, target_language, source_language } = await req.json();
+    const { project_id, target_language, source_language, device_format } = await req.json();
     if (!project_id || !target_language) {
       return new Response(JSON.stringify({ error: "project_id and target_language required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+
+    // Device format config
+    const FORMAT_SUFFIX: Record<string, string> = {
+      "iphone-6-5": "6-5",
+      "iphone-6-9": "6-9",
+      "ipad-12-9": "ipad",
+    };
+    const activeFormat = device_format || "iphone-6-5";
+    const formatSuffix = FORMAT_SUFFIX[activeFormat] || "";
+    const isPrimary = !device_format || device_format === "iphone-6-5";
+    const aspectRatio = activeFormat.includes("ipad") ? "3:4" : "9:16";
 
     // Verify project ownership
     const { data: projectCheck } = await userClient.from("projects").select("id").eq("id", project_id).single();
@@ -107,13 +118,18 @@ serve(async (req) => {
     // Process all slides in batch
     for (const slide of completedSlides) {
       try {
-        // Resolve storage path - image_url might be a storage path or full URL
+        // Resolve storage path based on device format
         let storagePath: string;
-        if (slide.image_url!.startsWith("http")) {
-          // It's a signed URL - construct the storage path instead
-          storagePath = `${userId}/${project_id}/slide-${slide.slide_number}.png`;
+        if (isPrimary) {
+          // Primary format — use original slide image
+          if (slide.image_url!.startsWith("http")) {
+            storagePath = `${userId}/${project_id}/slide-${slide.slide_number}.png`;
+          } else {
+            storagePath = slide.image_url!;
+          }
         } else {
-          storagePath = slide.image_url!;
+          // Non-primary format — load from resized path
+          storagePath = `${userId}/${project_id}/slide-${slide.slide_number}-${formatSuffix}.png`;
         }
 
         const { data: fileData, error: downloadError } = await adminClient.storage.from("generated-outputs").download(storagePath);
@@ -144,7 +160,7 @@ CRITICAL RULES:
           contents,
           config: {
             responseModalities: ["TEXT", "IMAGE"],
-            imageConfig: { aspectRatio: "9:16", imageSize: "2K" },
+            imageConfig: { aspectRatio, imageSize: "2K" },
           } as any,
         });
 
@@ -164,7 +180,8 @@ CRITICAL RULES:
 
         // Upload translated image
         const langCode = target_language.toLowerCase().replace(/[^a-z0-9]/g, "-").slice(0, 5);
-        const translatedPath = `${userId}/${project_id}/slide-${slide.slide_number}-${langCode}.png`;
+        const formatTag = isPrimary ? "" : `-${formatSuffix}`;
+        const translatedPath = `${userId}/${project_id}/slide-${slide.slide_number}${formatTag}-${langCode}.png`;
 
         // Chunked decode
         const raw = atob(newImageBase64);
@@ -193,6 +210,7 @@ CRITICAL RULES:
           target_language,
           source_language: source_language || "English",
           storage_path: translatedPath,
+          device_format: activeFormat,
         });
 
         // Deduct 1 credit per successful slide
