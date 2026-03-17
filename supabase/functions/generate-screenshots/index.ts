@@ -259,7 +259,6 @@ ${langDirective}${feedbackBlock}
 
 Generate the image now.
 `.trim();
-    return prompt;
   }
 
 

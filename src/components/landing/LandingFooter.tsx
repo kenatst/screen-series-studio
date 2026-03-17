@@ -41,4 +41,6 @@ export const LandingFooter = forwardRef<HTMLElement>((_, ref) => {
             </div>
         </footer>
     );
-};
+});
+
+LandingFooter.displayName = 'LandingFooter';
