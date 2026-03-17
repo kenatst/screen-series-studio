@@ -812,10 +812,8 @@ serve(async (req: Request) => {
             });
 
             // Deduct credit AFTER successful generation
-            const { data: freshProfile } = await adminClient.from("profiles").select("credits").eq("id", userId).single();
-            if (freshProfile) {
-              await adminClient.from("profiles").update({ credits: Math.max(0, freshProfile.credits - CREDIT_COST_PER_SLIDE) }).eq("id", userId);
-            }
+            // Atomic credit deduction — prevents race conditions
+            await adminClient.rpc('deduct_credits', { p_user_id: userId, p_amount: CREDIT_COST_PER_SLIDE });
 
             const qualityScore = parseQualityScore(text);
             const generationMs = Date.now() - slideStartMs;

@@ -1,21 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { isStoragePath } from "@/lib/storage-utils";
 
 type Project = Database["public"]["Tables"]["projects"]["Row"];
 type ProjectInsert = Database["public"]["Tables"]["projects"]["Insert"];
 type ProjectSlide = Database["public"]["Tables"]["project_slides"]["Row"];
 type ProjectSlideInsert = Database["public"]["Tables"]["project_slides"]["Insert"];
-
-/**
- * Checks if a string looks like a storage path (not a full URL).
- * Storage paths look like: "userId/projectId/slide-1.png"
- * Signed URLs start with "https://"
- */
-function isStoragePath(value: string | null): boolean {
-  if (!value) return false;
-  return !value.startsWith("http://") && !value.startsWith("https://");
-}
 
 export function useProjects() {
   return useQuery({

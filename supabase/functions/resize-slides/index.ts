@@ -198,10 +198,13 @@ CRITICAL RULES:
           format: target_format,
         });
 
-        // Deduct credit
+        // Atomic credit deduction — prevents race conditions
         creditsDeducted += 1;
-        const newCredits = Math.max(0, currentCredits - creditsDeducted);
-        await adminClient.from("profiles").update({ credits: newCredits }).eq("id", userId);
+        const { data: deductResult } = await adminClient.rpc('deduct_credits', { p_user_id: userId, p_amount: 1 });
+        if (deductResult === -1) {
+          console.warn(`[RESIZE] Insufficient credits for slide ${slide.slide_number}, stopping.`);
+          break;
+        }
 
       } catch (err: any) {
         console.error(`Resize error for slide ${slide.slide_number}:`, err?.message || err);

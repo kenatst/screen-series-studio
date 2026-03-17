@@ -23,15 +23,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useProject, useProjectSlides } from "@/hooks/useProjects";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { isStoragePath } from "@/lib/storage-utils";
 
-const phases = [
-  { label: "Analyzing brand identity", icon: "🎨" },
-  { label: "Processing visual references", icon: "🖼️" },
-  { label: "Building creative direction", icon: "✨" },
-  { label: "Planning slide compositions", icon: "📐" },
-  { label: "Rendering slide visuals", icon: "🔥" },
-  { label: "Harmonizing set consistency", icon: "🎯" },
-  { label: "All slides generated", icon: "✅" },
+const PHASE_KEYS = [
+  { key: "analyzingBrand", icon: "🎨" },
+  { key: "processingVisuals", icon: "🖼️" },
+  { key: "buildingDirection", icon: "✨" },
+  { key: "planningSlides", icon: "📐" },
+  { key: "renderingVisuals", icon: "🔥" },
+  { key: "harmonizingSet", icon: "🎯" },
+  { key: "allGenerated", icon: "✅" },
 ];
 
 const fadeUp = {
@@ -41,11 +42,6 @@ const fadeUp = {
 
 type SlideUiStatus = "pending" | "generating" | "completed" | "error";
 type SlideSnapshot = { slide_number: number; status: string; image_url: string | null };
-
-const isStoragePath = (value: string | null) => {
-  if (!value) return false;
-  return !value.startsWith("http://") && !value.startsWith("https://");
-};
 
 const normalizeStatus = (status: string, imageUrl: string | null): SlideUiStatus => {
   if (imageUrl || status === "completed") return "completed";
@@ -433,8 +429,8 @@ const Generating = () => {
               <span className="text-xs text-muted-foreground font-medium">{t('generating.credits')}</span>
             </div>
             <div className="hidden md:flex items-center gap-2">
-              <span className="text-sm font-bold text-primary">{phases[currentPhase]?.icon}</span>
-              <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{phases[currentPhase]?.label}</span>
+              <span className="text-sm font-bold text-primary">{PHASE_KEYS[currentPhase]?.icon}</span>
+              <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{t(`generatingPhases.${PHASE_KEYS[currentPhase]?.key}`)}</span>
               <span className="text-sm font-black ml-2">{progress}%</span>
             </div>
             <AlertDialog>

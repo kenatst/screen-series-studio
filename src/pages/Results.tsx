@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,11 +20,7 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { useTranslation } from "react-i18next";
 import { resizeImageForDevice, DEVICE_DIMENSIONS } from "@/lib/image-resize";
-
-const isStoragePath = (value: string | null) => {
-  if (!value) return false;
-  return !value.startsWith("http://") && !value.startsWith("https://");
-};
+import { isStoragePath, LANGUAGE_LABELS } from "@/lib/storage-utils";
 
 interface SavedTranslation {
   id: string;
@@ -36,21 +32,6 @@ interface SavedTranslation {
   created_at: string;
   signedUrl?: string;
 }
-
-const LANGUAGE_LABELS: Record<string, string> = {
-  French: 'French (Fran\u00e7ais)',
-  Spanish: 'Spanish (Espa\u00f1ol)',
-  German: 'German (Deutsch)',
-  Japanese: 'Japanese (\u65e5\u672c\u8a9e)',
-  Portuguese: 'Portuguese (Portugu\u00eas)',
-  Chinese: 'Chinese (\u4e2d\u6587)',
-  Korean: 'Korean (\ud55c\uad6d\uc5b4)',
-  Italian: 'Italian (Italiano)',
-  Arabic: 'Arabic (\u0627\u0644\u0639\u0631\u0628\u064a\u0629)',
-  Russian: 'Russian (\u0420\u0443\u0441\u0441\u043a\u0438\u0439)',
-  Turkish: 'Turkish (T\u00fcrk\u00e7e)',
-  Hindi: 'Hindi (\u0939\u093f\u0928\u094d\u0926\u0940)',
-};
 
 const Results = () => {
   const navigate = useNavigate();
@@ -81,26 +62,41 @@ const Results = () => {
   const { handleUpgrade: billingUpgrade, isOpeningPortal } = useBilling();
   const [showWatermarkWarning, setShowWatermarkWarning] = useState(false);
 
-  // Resolve storage paths to signed URLs
+  // Track resolved slide IDs to avoid re-fetching signed URLs unnecessarily
+  const resolvedRef = useRef<Set<string>>(new Set());
+
+  // Resolve storage paths to signed URLs — fixes circular dependency
   const resolveImages = useCallback(async () => {
     if (!slides?.length) return;
-    const toResolve = slides.filter(s => s.image_url && isStoragePath(s.image_url) && !resolvedImages[s.id]);
+    const toResolve = slides.filter(s => s.image_url && isStoragePath(s.image_url) && !resolvedRef.current.has(s.id));
     if (toResolve.length === 0) return;
 
     const newResolved: Record<string, string> = {};
     await Promise.all(toResolve.map(async (slide) => {
       try {
         const { data } = await supabase.storage.from("generated-outputs").createSignedUrl(slide.image_url!, 60 * 60 * 2);
-        if (data?.signedUrl) newResolved[slide.id] = data.signedUrl;
+        if (data?.signedUrl) {
+          newResolved[slide.id] = data.signedUrl;
+          resolvedRef.current.add(slide.id);
+        }
       } catch { /* skip */ }
     }));
 
     if (Object.keys(newResolved).length > 0) {
       setResolvedImages(prev => ({ ...prev, ...newResolved }));
     }
-  }, [slides, resolvedImages]);
+  }, [slides]);
 
   useEffect(() => { resolveImages(); }, [resolveImages]);
+
+  // Auto-refresh signed URLs every 90 minutes (they expire in 120 minutes)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      resolvedRef.current.clear();
+      setResolvedImages({});
+    }, 90 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Fetch saved translations from DB
   const fetchSavedTranslations = useCallback(async () => {

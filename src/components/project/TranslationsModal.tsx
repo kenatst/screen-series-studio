@@ -6,6 +6,7 @@ import { Loader2, Globe, CheckCircle2, Download, AlertCircle } from 'lucide-reac
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
+import { useTranslation } from 'react-i18next';
 
 interface TranslationsModalProps {
     isOpen: boolean;
@@ -50,6 +51,7 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, deviceForma
     const [error, setError] = useState('');
     const [progressPercent, setProgressPercent] = useState(0);
     const { toast } = useToast();
+    const { t } = useTranslation();
 
     // Available formats = primary format + any resized formats
     const primaryFormat = deviceFormats[0] || 'iphone-6-5';
@@ -126,7 +128,7 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, deviceForma
                 });
                 onSuccess?.();
             } else {
-                setError('No slides were translated. Make sure you have generated slides with images first.');
+                setError(t('translations.noSlides'));
             }
         } catch (err: any) {
             setError(err.message || 'Translation failed');
@@ -178,10 +180,10 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, deviceForma
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 text-xl font-bold">
                         <Globe className="h-5 w-5 text-primary" />
-                        1-Click Batch Localization
+                        {t('translations.title')}
                     </DialogTitle>
                     <DialogDescription className="text-muted-foreground pt-2">
-                        Translate all slides at once. Costs 1 credit per slide.
+                        {t('translations.description')}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -190,7 +192,7 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, deviceForma
                         <div className="py-4 space-y-4">
                             <Select value={language} onValueChange={setLanguage}>
                                 <SelectTrigger className="w-full bg-secondary border-border/60">
-                                    <SelectValue placeholder="Select target language" />
+                                    <SelectValue placeholder={t('translations.selectLanguage')} />
                                 </SelectTrigger>
                                 <SelectContent className="bg-popover border-border/50">
                                     {LANGUAGES.map(lang => (
@@ -203,7 +205,7 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, deviceForma
 
                             {availableFormats.length > 1 && (
                                 <div className="space-y-2">
-                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Device sizes to translate</p>
+                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('translations.deviceSizes')}</p>
                                     <div className="flex flex-wrap gap-2">
                                         {availableFormats.map(fmt => {
                                             const isSelected = selectedFormats.includes(fmt) || (selectedFormats.length === 0 && fmt === primaryFormat);
@@ -224,7 +226,7 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, deviceForma
                                         })}
                                     </div>
                                     <p className="text-[10px] text-muted-foreground">
-                                        {(selectedFormats.length || 1)} format(s) selected — costs 1 credit per slide per format
+                                        {t('translations.formatsSelected', { count: selectedFormats.length || 1 })}
                                     </p>
                                 </div>
                             )}
@@ -233,7 +235,7 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, deviceForma
                                 <div className="space-y-2">
                                     <Progress value={progressPercent} className="h-2" />
                                     <p className="text-xs text-muted-foreground text-center">
-                                        Translating all slides to {LANGUAGES.find(l => l.value === language)?.label}...
+                                        {t('translations.translating', { language: LANGUAGES.find(l => l.value === language)?.label })}
                                     </p>
                                 </div>
                             )}
@@ -246,10 +248,10 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, deviceForma
                             )}
                         </div>
                         <DialogFooter>
-                            <Button variant="outline" onClick={() => handleClose(false)} className="border-border/60">Cancel</Button>
+                            <Button variant="outline" onClick={() => handleClose(false)} className="border-border/60">{t('translations.cancel')}</Button>
                             <Button onClick={handleTranslate} disabled={!language || isTranslating} className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-glow">
                                 {isTranslating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Globe className="mr-2 h-4 w-4" />}
-                                {isTranslating ? 'Translating batch...' : `Translate All Slides${selectedFormats.length > 1 ? ` (${selectedFormats.length} sizes)` : ''}`}
+                                {isTranslating ? t('translations.translatingBatch') : selectedFormats.length > 1 ? t('translations.translateAllSizes', { count: selectedFormats.length }) : t('translations.translateAll')}
                             </Button>
                         </DialogFooter>
                     </>
@@ -258,10 +260,10 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, deviceForma
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-sm text-primary font-bold">
                                 <CheckCircle2 className="h-4 w-4" />
-                                {translatedSlides.length} slide(s) translated to {LANGUAGES.find(l => l.value === language)?.label}
+                                {t('translations.completed', { count: translatedSlides.length, language: LANGUAGES.find(l => l.value === language)?.label })}
                             </div>
                             <Button variant="outline" size="sm" onClick={handleDownloadAll} className="text-xs rounded-lg">
-                                <Download className="h-3 w-3 mr-1" /> Download All
+                                <Download className="h-3 w-3 mr-1" /> {t('translations.downloadAll')}
                             </Button>
                         </div>
                         <div className="grid grid-cols-3 gap-2">
@@ -279,7 +281,7 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, deviceForma
                             ))}
                         </div>
                         <DialogFooter>
-                            <Button variant="outline" onClick={() => handleClose(false)}>Done</Button>
+                            <Button variant="outline" onClick={() => handleClose(false)}>{t('translations.done')}</Button>
                         </DialogFooter>
                     </div>
                 )}

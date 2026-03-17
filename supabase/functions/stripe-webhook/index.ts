@@ -111,9 +111,14 @@ serve(async (req) => {
           if (sub.data.length > 0) {
             const priceId = sub.data[0].items.data[0]?.price?.id;
             const activePlan = await resolvePlanFromPrice(stripe, priceId);
-            const credits = PLAN_CREDITS[activePlan] || 50;
-            await supabase.from("profiles").update({ plan: activePlan, credits }).eq("id", prof.id);
-            logStep("Plan synced + credits refilled on invoice.paid", { userId: prof.id, plan: activePlan, credits });
+            const monthlyCredits = PLAN_CREDITS[activePlan] || 50;
+            // ADD monthly credits instead of replacing — preserves unused credits
+            const { data: currentProfile } = await supabase.from("profiles").select("credits").eq("id", prof.id).single();
+            const currentCredits = currentProfile?.credits ?? 0;
+            const maxCredits = monthlyCredits * 3; // Cap at 3x monthly to prevent infinite accumulation
+            const newCredits = Math.min(currentCredits + monthlyCredits, maxCredits);
+            await supabase.from("profiles").update({ plan: activePlan, credits: newCredits }).eq("id", prof.id);
+            logStep("Plan synced + credits added on invoice.paid", { userId: prof.id, plan: activePlan, added: monthlyCredits, total: newCredits });
           }
         }
         break;
@@ -153,9 +158,12 @@ serve(async (req) => {
 
         const priceId = subscription.items.data[0]?.price?.id;
         const plan = isActive ? await resolvePlanFromPrice(stripe, priceId) : "free";
-        const credits = PLAN_CREDITS[plan] || 3;
+        // Only reset credits on plan change, not on routine updates
+        const { data: currentProfile } = await supabase.from("profiles").select("plan, credits").eq("id", profile.id).single();
+        const planChanged = currentProfile?.plan !== plan;
+        const credits = planChanged ? (PLAN_CREDITS[plan] || 3) : (currentProfile?.credits ?? PLAN_CREDITS[plan] || 3);
         await supabase.from("profiles").update({ plan, credits }).eq("id", profile.id);
-        logStep("Plan updated", { userId: profile.id, plan, credits, status: subscription.status });
+        logStep("Plan updated", { userId: profile.id, plan, credits, planChanged, status: subscription.status });
         break;
       }
 

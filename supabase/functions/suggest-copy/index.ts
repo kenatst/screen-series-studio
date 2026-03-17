@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,7 +22,7 @@ serve(async (req) => {
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    const userClient = (await import("https://esm.sh/@supabase/supabase-js@2.98.0")).createClient(supabaseUrl, supabaseAnonKey, {
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: userData } = await userClient.auth.getUser();
@@ -30,7 +31,7 @@ serve(async (req) => {
     }
 
     // Optional: Charge credits for suggestions or just verify existence
-    const adminClient = (await import("https://esm.sh/@supabase/supabase-js@2.98.0")).createClient(supabaseUrl, supabaseServiceKey);
+    const adminClient = createClient(supabaseUrl, supabaseServiceKey);
     const { data: profile } = await adminClient.from("profiles").select("credits").eq("id", userData.user.id).single();
     if ((profile?.credits ?? 0) < 1) {
       return new Response(JSON.stringify({ error: "Insufficient credits" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -168,7 +169,8 @@ serve(async (req) => {
     const result = toolCall ? JSON.parse(toolCall.function.arguments) : {};
 
     // Deduct 1 credit after successful AI response
-    await adminClient.from("profiles").update({ credits: (profile?.credits ?? 1) - 1 }).eq("id", userData.user.id);
+    // Atomic credit deduction
+    await adminClient.rpc('deduct_credits', { p_user_id: userData.user.id, p_amount: 1 });
 
     return new Response(JSON.stringify({ type, result }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
