@@ -77,7 +77,8 @@
         "statusUpdated": "Status updated",
         "projectArchived": "Project archived",
         "projectRestored": "Project restored",
-        "archiveConfirm": "Are you sure you want to archive this project?"
+        "archiveConfirm": "Are you sure you want to archive this project?",
+        "updated": "Updated"
     },
     "login": {
         "appName": "ShotApp AI",
@@ -166,7 +167,16 @@
         "viewDownload": "View & Download Results",
         "redesigning": "Redesigning slide...",
         "redesigningDesc": "Applying your feedback to the creative engine.",
-        "generationFailed": "Generation Failed"
+        "generationFailed": "Generation Failed",
+        "phases": {
+            "0": "Analyzing brand identity",
+            "1": "Processing visual references",
+            "2": "Building creative direction",
+            "3": "Planning slide compositions",
+            "4": "Rendering slide visuals",
+            "5": "Harmonizing set consistency",
+            "6": "All slides generated"
+        }
     },
     "results": {
         "slides": "{{count}} slides",
@@ -205,6 +215,133 @@
         "saveDraft": "Save draft",
         "back": "Back",
         "continue": "Continue"
+    },
+    "step": {
+        "project": {
+            "title": "Create project",
+            "subtitle": "Set up your screenshot project basics.",
+            "appName": "App name",
+            "appNamePlaceholder": "e.g. LinguaPal",
+            "projectName": "Project name",
+            "projectNameOptional": "(optional)",
+            "platform": "Platform",
+            "category": "App category",
+            "categoryPlaceholder": "e.g. Education, Finance, Health",
+            "audience": "Target audience",
+            "audiencePlaceholder": "e.g. Young professionals, students",
+            "goal": "Primary goal",
+            "outputLanguage": "Output language",
+            "outputLanguageHint": "The language used for headlines and subheadlines.",
+            "deviceFormats": "Device formats (App Store Compliance)",
+            "deviceFormatsRequired": "Required",
+            "deviceFormatsHint": "Assets will be batch-generated for all selected device metrics.",
+            "goals": {
+                "installs": "Increase installs",
+                "features": "Highlight features",
+                "conversion": "Improve conversion",
+                "localize": "Localize assets",
+                "launch": "Launch new app",
+                "ab": "A/B testing"
+            }
+        },
+        "appInfo": {
+            "title": "App information",
+            "subtitle": "Tell us about your app so we can craft the perfect screenshots.",
+            "shortDesc": "Short description",
+            "shortDescPlaceholder": "A brief summary of your app",
+            "longDesc": "Long description",
+            "longDescPlaceholder": "Full app description...",
+            "valueProp": "Value proposition",
+            "valuePropPlaceholder": "One line that captures your app's value",
+            "keyFeatures": "Key features",
+            "keyFeaturesPlaceholder": "List main features (one per line)...",
+            "topBenefits": "Top benefits",
+            "topBenefitsPlaceholder": "What users gain (one per line)...",
+            "tone": "Tone of voice"
+        },
+        "screens": {
+            "title": "Upload raw screens",
+            "subtitle": "Drag & drop your app screenshots. Tag and organize them.",
+            "dropHere": "Drop screenshots here",
+            "fileTypes": "PNG, JPG up to 10MB each",
+            "uploaded": "Uploaded screens",
+            "files": "{{count}} files",
+            "addMore": "Add more"
+        },
+        "brandKit": {
+            "title": "Brand kit",
+            "subtitle": "Set your visual identity for consistent branding.",
+            "upload": "Upload {{type}}",
+            "brandColors": "Brand colors",
+            "autoDetect": "Auto-detect from assets",
+            "noColors": "No colors yet — add your brand palette manually or auto-detect.",
+            "addColor": "Add color",
+            "add": "Add",
+            "brandFont": "Brand font",
+            "brandFontPlaceholder": "e.g. SF Pro, Inter, Montserrat",
+            "visualPrefs": "Visual preferences",
+            "visualPrefOptions": {
+                "untouched": "Keep app UI untouched",
+                "enhance": "Allow visual enhancement",
+                "palette": "Use premium preset palette",
+                "autoDetect": "Auto-detect from assets"
+            }
+        },
+        "style": {
+            "title": "Choose your style",
+            "subtitle": "Pick a template or upload references for inspiration.",
+            "templates": "Templates",
+            "references": "References",
+            "recommendedFor": "Recommended for {{name}}",
+            "yourApp": "your app",
+            "noMatch": "No templates match your filters.",
+            "mood": "Mood:",
+            "category": "Category:",
+            "uploadRef": "Upload your reference mockups",
+            "uploadRefTypes": "PNG/JPG/WEBP • multiple files supported",
+            "inspirationNotes": "Inspiration notes",
+            "inspirationPlaceholder": "e.g. Keep this cinematic rhythm, but preserve my app UI exactly and avoid tilted device mockups.",
+            "proFeature": "Pro Feature",
+            "refMockups": "Reference mockups",
+            "files": "{{count}} files",
+            "premiumTemplate": "\"{{name}}\" is a Premium template. Upgrade to unlock all styles? We'll save your draft so you can continue immediately.",
+            "referenceProFeature": "Reference-based generation is a Pro feature. Upgrade to unlock? We'll save your draft so you can continue immediately."
+        },
+        "planner": {
+            "title": "Screenshot set planner",
+            "subtitle": "Define each slide's content and objective.",
+            "autoFill": "Auto-fill with AI",
+            "slides": "Slides:",
+            "addSlide": "Add slide",
+            "consistency": "Consistency Engine",
+            "upgradeSlides": "Upgrade to unlock {{count}} slides? We'll save your draft so you can pick up exactly where you left off.",
+            "strictDesc": "All slides remain very homogeneous — same palette, framing, density. Recommended for traditional app store pages.",
+            "balancedDesc": "Same visual universe with controlled variations for each slide. Great for feature showcases.",
+            "exploratoryDesc": "More creative freedom while maintaining a coherent base brand identity. High contrast allowed."
+        },
+        "review": {
+            "title": "Pre-generation review",
+            "subtitle": "Review everything before generating your screenshot set.",
+            "projectSummary": "Project summary",
+            "slideHeadlines": "Slide headlines",
+            "app": "App:",
+            "platform": "Platform:",
+            "tone": "Tone:",
+            "template": "Template:",
+            "formats": "Formats:",
+            "slides": "Slides:",
+            "screens": "Screens:",
+            "brandAssets": "Brand assets:",
+            "consistency": "Consistency:",
+            "outputLanguage": "Output language:",
+            "notSet": "Not set",
+            "notSelected": "Not selected",
+            "uploaded": "uploaded",
+            "noHeadline": "No headline set",
+            "saveDraft": "Save draft",
+            "generate": "Generate Cinematic Screenshots",
+            "preparing": "Preparing Output..."
+        }
     },
     "templates": {
         "badge": "Template Gallery",
