@@ -152,37 +152,40 @@ function buildSlidePrompt(params: {
   const aspectStr = primaryFormat.includes("ipad") ? "3:4 (iPad portrait)" : "9:16 (iPhone portrait)";
 
   const prompt = `
-You are a world-class App Store screenshot designer. Your SOLE task is to recreate the EXACT SAME visual design, layout, and composition as the reference template image provided, but with different app content.
+You are an elite-tier App Store screenshot designer — your work rivals the best studios on Dribbble and Behance. You are recreating a SPECIFIC TEMPLATE SLIDE with new app content.
 
-=== REFERENCE TEMPLATE (IMAGE #1) ===
-The FIRST image attached is your MASTER TEMPLATE. You must reproduce its EXACT spatial composition:
+=== YOUR MISSION ===
+IMAGE #1 is your MASTER REFERENCE TEMPLATE for THIS EXACT SLIDE (slide ${slide.slide_number} of ${totalSlides}).
+You MUST produce an output that looks like it was made by the SAME DESIGNER who made IMAGE #1.
+Copy the EXACT layout, composition, spacing, visual weight, background style, decorative elements, and typographic hierarchy.
+The ONLY things that change are the app content (headline, subheadline, app screen, brand colors).
+
+=== TEMPLATE COMPOSITION ANALYSIS ===
 ${layout.detailedComposition}
 
-=== CRITICAL LAYOUT INSTRUCTIONS ===
-Reproduce the EXACT spatial composition of the reference template:
-- Device mockup: ${layout.hasDeviceMockup ? `YES — positioned ${layout.devicePosition}, scale ${layout.deviceScale}` : "NO device mockup in template — DO NOT add one"}
-- Text placement: ${layout.textPosition}
-- Headline style: ${layout.headlineStyle}, large and impactful
-- Background: ${layout.backgroundType} style${layout.decorativeElements.length > 0 ? ` with elements like: ${layout.decorativeElements.join(", ")}` : ""}
-- 3D elements: ${layout.has3DElements ? "YES — include 3D rendered decorative elements matching template" : "NO"}
-${layout.hasMascot ? `- Mascot/Character: YES — ${layout.mascotDescription}` : ""}
+=== LAYOUT BLUEPRINT (match PRECISELY) ===
+- Device mockup: ${layout.hasDeviceMockup ? `YES — positioned ${layout.devicePosition}, scale ${layout.deviceScale}. Match the EXACT device angle, shadow, and frame style from the template.` : "NO device mockup in template — DO NOT add one. This is a text/graphic-only slide."}
+- Text placement: ${layout.textPosition} — match the EXACT vertical/horizontal position, font size ratio, and spacing from template
+- Headline style: ${layout.headlineStyle}, large and impactful — match the EXACT weight, size, and kerning from template
+- Background: ${layout.backgroundType} style${layout.decorativeElements.length > 0 ? ` with elements like: ${layout.decorativeElements.join(", ")}` : ""} — reproduce the EXACT background treatment (gradients, patterns, 3D objects, particles, shapes)
+- 3D elements: ${layout.has3DElements ? "YES — include 3D rendered decorative elements matching the template's 3D style, lighting, and material" : "NO — keep flat/2D as in template"}
+${layout.hasMascot ? `- Mascot/Character: YES — ${layout.mascotDescription}. Reproduce in the SAME position and scale as template.` : ""}
 - Overall mood: ${layout.mood}
 
-=== APP CONTENT TO USE ===
+=== APP CONTENT TO INSERT ===
 - App name: "${appName}"
 - Category: "${config?.appCategory || "Not specified"}"
-- >>> HEADLINE TO RENDER: "${slide.headline || ""}" <<<
-- >>> SUBHEADLINE TO RENDER: "${slide.subheadline || ""}" <<<
+- >>> HEADLINE TO RENDER (EXACT TEXT): "${slide.headline || ""}" <<<
+- >>> SUBHEADLINE TO RENDER (EXACT TEXT): "${slide.subheadline || ""}" <<<
 ${brandBlock ? `\n=== BRAND IDENTITY ===\n${brandBlock}` : ""}
-- Color palette: ${brandKit?.colors?.length > 0 ? `Use ${brandKit.colors.join(", ")} as primary/accent colors, adapting to the template's composition style.` : "Derive colors from the template's palette, adjusting hue to match any brand colors visible in the raw app screenshot."}
+- Color palette: ${brandKit?.colors?.length > 0 ? `Adapt the template's color scheme to use ${brandKit.colors.join(", ")} as primary/accent colors while keeping the SAME visual energy and contrast ratios as the template.` : "Keep the template's original color palette, adjusting hue only to match any brand colors visible in the raw app screenshot."}
 
-${hasRawScreen ? `=== RAW APP SCREEN (IMAGE #2) ===
-The second image is an actual screenshot of the app. 
-This raw screenshot MUST be composited INTO the device screen of the mockup.
-- Preserve the EXACT pixel layout of the raw screen inside the phone frame
-- Do NOT redesign, rearrange, or add UI elements
+${hasRawScreen ? `=== RAW APP SCREEN (next image after template) ===
+This is the REAL app screenshot. Composite it INTO the device frame EXACTLY as-is.
+- Preserve EVERY pixel — do NOT redesign, rearrange, or modify the UI
+- Place it inside the phone frame at the SAME position/angle as the template's device
 - If the screen is too tall, crop the bottom naturally within the phone frame` : `=== NO RAW SCREEN PROVIDED ===
-This is a PURE TEXT / TYPOGRAPHIC slide. ${layout.hasDeviceMockup ? "You may still include a phone mockup with a generic branded screen." : "Focus 100% on headline, subheadline, and background visual energy."}`}
+This is a PURE TEXT / TYPOGRAPHIC slide. ${layout.hasDeviceMockup ? "Include a phone mockup with a generic branded screen that matches the app's color scheme." : "Focus 100% on headline, subheadline, and background visual energy — matching the template's exact layout."}`}
 
 === SLIDE CONTEXT ===
 - Slide ${slide.slide_number} of ${totalSlides}
@@ -191,24 +194,27 @@ This is a PURE TEXT / TYPOGRAPHIC slide. ${layout.hasDeviceMockup ? "You may sti
 - Importance: ${slide.importance || "high"}
 - Output format: ${aspectStr}
 
-=== QUALITY REQUIREMENTS ===
-- This must look IDENTICAL in style to the reference template — same proportions, same visual weight
-- Text must be crisp, perfectly kerned, and readable
-- Match the EXACT proportions and spacing of the reference template
-- The result should be INDISTINGUISHABLE in quality from the reference
-- DO NOT write "Lorem Ipsum", "Slide X", or any placeholder text
-- Render the EXACT headline and subheadline strings provided above
-
 ${!isFirstSlide && hasPreviousSlides ? `
-=== VISUAL CONTINUITY (CRITICAL) ===
-Previously generated slide(s) are also provided as reference images.
-CRITICAL: Match the exact same color palette, typography style, background treatment, and overall visual identity from the previous slides.
-This set must look like it was designed by ONE designer in ONE Figma file.
-The lighting model, gradient logic, device style, and background rendering MUST be pixel-perfect consistent.
+=== VISUAL CONTINUITY WITH PREVIOUS SLIDES (CRITICAL) ===
+Previously generated slides from this SAME SET are also attached as reference images (after the template and raw screen).
+You are creating a COHESIVE SET. This slide must look like it belongs to the same family:
+- Match the EXACT color palette, gradient style, and lighting model from the previous slides
+- Match the EXACT typography style (font, weight, size ratios, kerning) from the previous slides
+- Match the EXACT device frame style, shadow treatment, and background rendering
+- The set must look like ONE designer made it in ONE Figma file in ONE session
+BUT: The LAYOUT and COMPOSITION must follow THIS SLIDE'S template reference (IMAGE #1), NOT the previous slides.
+Think of it as: LAYOUT from template, VISUAL IDENTITY from previous slides.
 ` : ""}
+=== ABSOLUTE QUALITY RULES ===
+1. Text MUST be pixel-perfect, crisp, perfectly kerned — no artifacts, no blur, no cutoff
+2. Render the EXACT headline and subheadline strings above — ZERO placeholder text, no "Lorem Ipsum"
+3. Output must be INDISTINGUISHABLE from a professional design studio's work
+4. Match the template's proportions, spacing, and visual weight PRECISELY
+5. Rich backgrounds with proper depth, lighting, and detail matching the template
+6. Photorealistic device frames (if applicable) with proper reflections and shadows
 ${langDirective}${feedbackBlock}
 
-Generate the image now. Follow the template EXACTLY.
+Generate the image now. Recreate the template EXACTLY with the new content.
 `.trim();
 
   return prompt;
@@ -455,13 +461,13 @@ serve(async (req: Request) => {
       } catch { /* skip */ }
     }
 
-    // ── Load template preview image ──
-    let templateImage: { mimeType: string; data: string } | null = null;
+    // ── Load template images (per-slide + fallback global) ──
     const templateKey = (project.template_id || "").toLowerCase().replace(/\s+/g, "-");
     console.log(`[TEMPLATE] Looking for template: "${templateKey}"`);
 
-    if (templateKey) {
-      const possibleNames = [`${templateKey}.png`, `${templateKey}.jpg`, `${templateKey}.jpeg`, `${templateKey}.webp`];
+    // Helper to download a template image by trying multiple extensions
+    async function downloadTemplateImage(baseName: string): Promise<{ mimeType: string; data: string } | null> {
+      const possibleNames = [`${baseName}.png`, `${baseName}.jpg`, `${baseName}.jpeg`, `${baseName}.webp`];
       for (const name of possibleNames) {
         try {
           const { data: tmplData, error: tmplError } = await adminClient.storage.from("templates").download(name);
@@ -470,26 +476,55 @@ serve(async (req: Request) => {
             const ab = await tmplData.arrayBuffer();
             const b64 = safeBase64(ab);
             const ext = name.split(".").pop() || "png";
-            templateImage = { mimeType: ext === "jpg" || ext === "jpeg" ? "image/jpeg" : `image/${ext}`, data: b64 };
             console.log(`[TEMPLATE] ✅ Loaded: ${name} (${Math.round(ab.byteLength / 1024)}KB)`);
-            break;
+            return { mimeType: ext === "jpg" || ext === "jpeg" ? "image/jpeg" : `image/${ext}`, data: b64 };
           }
         } catch (e: any) {
           console.error(`[TEMPLATE] Error downloading ${name}:`, e?.message);
         }
       }
+      return null;
     }
 
-    if (!templateImage) {
-      console.warn(`[TEMPLATE] ⚠️ No template image found for "${templateKey}".`);
+    // Load the global fallback template image (used when no per-slide image exists)
+    let globalTemplateImage: { mimeType: string; data: string } | null = null;
+    // Cache of per-slide template images: slideNumber → image
+    const perSlideTemplateCache = new Map<number, { mimeType: string; data: string } | null>();
+
+    if (templateKey) {
+      // Pre-load per-slide template images for all slides we need to generate
+      const slideNumbers = slidesToGenerate.map((s: any) => s.slide_number as number);
+      const perSlideResults = await Promise.all(
+        slideNumbers.map(async (num) => {
+          const img = await downloadTemplateImage(`${templateKey}-${num}`);
+          return { num, img };
+        })
+      );
+      for (const { num, img } of perSlideResults) {
+        perSlideTemplateCache.set(num, img);
+      }
+
+      // Load global fallback
+      globalTemplateImage = await downloadTemplateImage(templateKey);
+
+      const perSlideCount = perSlideResults.filter(r => r.img !== null).length;
+      console.log(`[TEMPLATE] Per-slide images found: ${perSlideCount}/${slideNumbers.length}, global fallback: ${globalTemplateImage ? "yes" : "no"}`);
     }
 
-    // ── Analyze template layout (ONCE) ──
+    if (!globalTemplateImage && perSlideTemplateCache.size === 0) {
+      console.warn(`[TEMPLATE] ⚠️ No template images found for "${templateKey}".`);
+    }
+
     const ai = new GoogleGenAI({ apiKey: geminiApiKey });
-    let templateLayout: SlideLayoutAnalysis | null = null;
 
-    if (templateImage) {
-      templateLayout = await analyzeTemplateSlide(ai, templateImage.data, templateImage.mimeType);
+    // Cache of per-slide template analyses: slideNumber → layout
+    const perSlideLayoutCache = new Map<number, SlideLayoutAnalysis>();
+
+    // Analyze global template layout as fallback (only if no per-slide images exist)
+    let globalTemplateLayout: SlideLayoutAnalysis | null = null;
+    const hasAnyPerSlideTemplates = Array.from(perSlideTemplateCache.values()).some(v => v !== null);
+    if (!hasAnyPerSlideTemplates && globalTemplateImage) {
+      globalTemplateLayout = await analyzeTemplateSlide(ai, globalTemplateImage.data, globalTemplateImage.mimeType);
     }
 
     // ── Update project status ──
@@ -543,7 +578,6 @@ serve(async (req: Request) => {
           await adminClient.from("project_slides").update({ status: "generating", attempt_count: (slide.attempt_count || 0) + 1 }).eq("id", slide.id);
 
           try {
-            // Build prompt using template analysis
             const fallbackLayout: SlideLayoutAnalysis = {
               hasDeviceMockup: true,
               devicePosition: "center",
@@ -559,6 +593,25 @@ serve(async (req: Request) => {
               detailedComposition: "Standard centered layout with large phone mockup and headline text above.",
             };
 
+            // ── Resolve per-slide template image & analysis ──
+            // Priority: per-slide template (template-key-N.png) > global template (template-key.png)
+            const perSlideTemplate = perSlideTemplateCache.get(displayNum) || null;
+            const slideTemplateImage = perSlideTemplate || globalTemplateImage;
+
+            let slideLayout: SlideLayoutAnalysis | null = null;
+            if (perSlideTemplate) {
+              // Analyze this specific template slide (cache to avoid re-analyzing on retry)
+              if (!perSlideLayoutCache.has(displayNum)) {
+                console.log(`[ANALYSIS] Analyzing per-slide template for slide ${displayNum}...`);
+                perSlideLayoutCache.set(displayNum, await analyzeTemplateSlide(ai, perSlideTemplate.data, perSlideTemplate.mimeType));
+              }
+              slideLayout = perSlideLayoutCache.get(displayNum)!;
+            } else {
+              slideLayout = globalTemplateLayout;
+            }
+
+            console.log(`[TEMPLATE] Slide ${displayNum}: using ${perSlideTemplate ? "per-slide" : globalTemplateImage ? "global fallback" : "no"} template`);
+
             const rawScreenReferences = referenceImages.filter((r) => r.assetType === "raw_screen");
             const exactRawScreen = rawScreenReferences.find((r) => r.tag === slide.raw_screen_tag);
             const fallbackRawScreen = rawScreenReferences[Math.min(displayNum - 1, Math.max(rawScreenReferences.length - 1, 0))] || rawScreenReferences[0];
@@ -568,7 +621,7 @@ serve(async (req: Request) => {
               slide: { ...slide, total_slides: allSlides.length },
               project,
               brandKit,
-              layout: templateLayout || fallbackLayout,
+              layout: slideLayout || fallbackLayout,
               isFirstSlide: displayNum === 1,
               totalSlides: allSlides.length,
               hasPreviousSlides: previousSlideImages.length > 0,
@@ -583,10 +636,10 @@ serve(async (req: Request) => {
             // PART 1: The prompt text
             parts.push({ text: prompt });
 
-            // PART 2: Template image (PRIMARY VISUAL REFERENCE — MUST be first image)
-            if (templateImage) {
+            // PART 2: Template image for THIS SPECIFIC SLIDE (PRIMARY VISUAL REFERENCE — MUST be first image)
+            if (slideTemplateImage) {
               parts.push({
-                inlineData: { mimeType: templateImage.mimeType, data: templateImage.data },
+                inlineData: { mimeType: slideTemplateImage.mimeType, data: slideTemplateImage.data },
               });
             }
 
@@ -598,16 +651,26 @@ serve(async (req: Request) => {
             }
 
             // PART 4: Brand assets (logo, icon, mascot)
-            for (const img of referenceImages.filter((r) => ["logo", "icon", "mascot"].includes(r.tag || "")).slice(0, 2)) {
-              parts.push({ inlineData: { mimeType: img.mimeType, data: img.data } });
+            const brandAssets = referenceImages.filter((r) => ["logo", "icon", "mascot"].includes(r.assetType || "")).slice(0, 2);
+            if (brandAssets.length > 0) {
+              parts.push({ text: "[BRAND ASSETS — logo/icon to incorporate into the design]" });
+              for (const img of brandAssets) {
+                parts.push({ inlineData: { mimeType: img.mimeType, data: img.data } });
+              }
             }
 
-            // PART 5: Previously generated slides for continuity (max 2 most recent)
+            // PART 5: Previously generated slides for continuity (max 3: first + 2 most recent)
             if (previousSlideImages.length > 0) {
-              // First generated slide (anchor) + most recent slide
-              const anchors = previousSlideImages.length > 1
-                ? [previousSlideImages[0], previousSlideImages[previousSlideImages.length - 1]]
-                : [previousSlideImages[0]];
+              parts.push({ text: "[PREVIOUSLY GENERATED SLIDES — match their visual identity, color palette, and typography for set consistency]" });
+              // Include: anchor slide (first) + up to 2 most recent for maximum continuity signal
+              const anchors: typeof previousSlideImages = [];
+              anchors.push(previousSlideImages[0]); // First slide = anchor identity
+              if (previousSlideImages.length > 2) {
+                anchors.push(previousSlideImages[previousSlideImages.length - 2]); // Second-to-last
+              }
+              if (previousSlideImages.length > 1) {
+                anchors.push(previousSlideImages[previousSlideImages.length - 1]); // Most recent
+              }
               for (const prevImg of anchors) {
                 parts.push({ inlineData: { mimeType: prevImg.mimeType, data: prevImg.data } });
               }
@@ -622,7 +685,7 @@ serve(async (req: Request) => {
               }
             }
 
-            console.log(`[GENERATE] Slide ${displayNum}: ${imgCount} images in context, template=${!!templateImage}, rawScreen=${!!selectedRawScreen}, prevSlides=${previousSlideImages.length}`);
+            console.log(`[GENERATE] Slide ${displayNum}: ${imgCount} images in context, template=${perSlideTemplate ? "per-slide" : slideTemplateImage ? "global" : "none"}, rawScreen=${!!selectedRawScreen}, prevSlides=${previousSlideImages.length}`);
 
             // Call Nano Banana 2 (Gemini 3.1 Flash Image Preview)
             const response = await ai.models.generateContent({
@@ -650,7 +713,7 @@ serve(async (req: Request) => {
               console.warn(`[GENERATE] Slide ${displayNum}: No image on first attempt, retrying...`);
               const retryResponse = await ai.models.generateContent({
                 model: "gemini-3.1-flash-image-preview",
-                contents: [{ text: `${prompt}\n\nCRITICAL: You MUST generate an image. Return an App Store screenshot image.` }, ...(templateImage ? [{ inlineData: { mimeType: templateImage.mimeType, data: templateImage.data } }] : [])],
+                contents: [{ text: `${prompt}\n\nCRITICAL: You MUST generate an image. Return an App Store screenshot image.` }, ...(slideTemplateImage ? [{ inlineData: { mimeType: slideTemplateImage.mimeType, data: slideTemplateImage.data } }] : [])],
                 config: {
                   responseModalities: ["TEXT", "IMAGE"],
                   imageConfig: { aspectRatio, imageSize: "2K" },
