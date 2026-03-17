@@ -198,8 +198,8 @@ export const TranslationsModal = ({ isOpen, onOpenChange, projectId, onSuccess }
                         </div>
                         <div className="grid grid-cols-3 gap-2">
                             {translatedSlides.map(slide => (
-                                <div key={slide.slide_number} className="relative group rounded-lg overflow-hidden border border-border aspect-[9/19.5]">
-                                    <img src={slide.imageUrl} alt={`Translated slide ${slide.slide_number}`} className="w-full h-full object-cover" />
+                                <div key={slide.slide_number} className="relative group rounded-lg overflow-hidden border border-border aspect-[9/16]">
+                                    <img src={slide.imageUrl} alt={`Translated slide ${slide.slide_number}`} className="w-full h-full object-contain" />
                                     <button
                                         onClick={() => handleDownloadTranslated(slide)}
                                         className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"

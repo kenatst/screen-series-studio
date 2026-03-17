@@ -8,14 +8,18 @@ const corsHeaders = {
 
 const CREDIT_COST_PER_SLIDE = 1;
 
-/** Chunked base64 encoding that doesn't blow the stack */
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
+const FORMAT_CONFIG: Record<string, { label: string; aspectRatio: string; suffix: string }> = {
+  "iphone-6-5": { label: '6.5" iPhone', aspectRatio: "9:16", suffix: "6-5" },
+  "iphone-6-9": { label: '6.9" iPhone', aspectRatio: "9:16", suffix: "6-9" },
+  "ipad-12-9": { label: '12.9" iPad', aspectRatio: "3:4", suffix: "ipad" },
+};
+
+function safeBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
   const chunks: string[] = [];
   const chunkSize = 8192;
   for (let i = 0; i < bytes.length; i += chunkSize) {
-    const slice = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
-    chunks.push(String.fromCharCode(...slice));
+    chunks.push(String.fromCharCode(...bytes.subarray(i, Math.min(i + chunkSize, bytes.length))));
   }
   return btoa(chunks.join(""));
 }
@@ -32,13 +36,9 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
     const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
 
-    // We need native Gemini for image generation (gateway doesn't support IMAGE modality)
-    // Use GoogleGenAI if available, otherwise fail gracefully
-    const apiKey = geminiApiKey || lovableApiKey;
-    if (!apiKey) {
+    if (!geminiApiKey) {
       return new Response(JSON.stringify({ error: "AI API key not configured" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
@@ -51,66 +51,64 @@ serve(async (req) => {
     }
     const userId = userData.user.id;
 
-    const { project_id, target_language, source_language } = await req.json();
-    if (!project_id || !target_language) {
-      return new Response(JSON.stringify({ error: "project_id and target_language required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const { project_id, target_format } = await req.json();
+    if (!project_id || !target_format) {
+      return new Response(JSON.stringify({ error: "project_id and target_format required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const formatConfig = FORMAT_CONFIG[target_format];
+    if (!formatConfig) {
+      return new Response(JSON.stringify({ error: `Unknown format: ${target_format}. Valid: ${Object.keys(FORMAT_CONFIG).join(", ")}` }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Verify project ownership
-    const { data: projectCheck } = await userClient.from("projects").select("id").eq("id", project_id).single();
-    if (!projectCheck) {
+    const { data: project } = await userClient.from("projects").select("id, app_name, name, device_formats").eq("id", project_id).single();
+    if (!project) {
       return new Response(JSON.stringify({ error: "Project not found or access denied" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Fetch slides - check for completed status OR slides with image_url
-    const { data: slides, error } = await adminClient
+    // Fetch completed slides
+    const { data: slides, error: slidesError } = await adminClient
       .from("project_slides")
       .select("id, slide_number, image_url, headline, subheadline, status")
       .eq("project_id", project_id)
       .order("slide_number");
 
-    if (error) {
-      console.error("Error fetching slides:", error);
+    if (slidesError) {
       return new Response(JSON.stringify({ error: "Failed to fetch slides" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Filter to slides that have an image (completed or with image_url)
-    const completedSlides = (slides || []).filter(
-      (s: any) => s.image_url && (s.status === "completed" || s.image_url)
-    );
-
+    const completedSlides = (slides || []).filter((s: any) => s.image_url && s.status === "completed");
     if (completedSlides.length === 0) {
-      console.error("No slides with images found. Slides:", JSON.stringify(slides?.map(s => ({ id: s.id, status: s.status, has_image: !!s.image_url }))));
-      return new Response(JSON.stringify({ error: "No slides with images found. Generate screenshots first." }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "No completed slides found. Generate screenshots first." }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // Credit check
     const totalCost = completedSlides.length * CREDIT_COST_PER_SLIDE;
     const { data: profileData } = await adminClient.from("profiles").select("credits").eq("id", userId).single();
     const currentCredits = profileData?.credits ?? 0;
 
     if (currentCredits < totalCost) {
       return new Response(JSON.stringify({ error: `Insufficient credits. Need ${totalCost}, have ${currentCredits}.` }), {
-        status: 402,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Dynamic import of GoogleGenAI
     const { GoogleGenAI } = await import("https://esm.sh/@google/genai@1.44.0");
-    const ai = new GoogleGenAI({ apiKey: geminiApiKey || apiKey });
+    const ai = new GoogleGenAI({ apiKey: geminiApiKey });
 
-    const translatedSlides: { slide_number: number; imageUrl: string }[] = [];
+    const resizedSlides: { slide_number: number; imageUrl: string; format: string }[] = [];
     let creditsDeducted = 0;
+    const appName = project.app_name || project.name || "App";
+    const isIpad = target_format.includes("ipad");
 
-    // Process all slides in batch
     for (const slide of completedSlides) {
       try {
-        // Resolve storage path - image_url might be a storage path or full URL
+        // Download original slide
         let storagePath: string;
         if (slide.image_url!.startsWith("http")) {
-          // It's a signed URL - construct the storage path instead
           storagePath = `${userId}/${project_id}/slide-${slide.slide_number}.png`;
         } else {
           storagePath = slide.image_url!;
@@ -118,24 +116,37 @@ serve(async (req) => {
 
         const { data: fileData, error: downloadError } = await adminClient.storage.from("generated-outputs").download(storagePath);
         if (downloadError || !fileData) {
-          console.error(`Download failed for slide ${slide.slide_number}:`, downloadError?.message, "path:", storagePath);
+          console.error(`Download failed for slide ${slide.slide_number}:`, downloadError?.message);
           continue;
         }
 
         const arrayBuffer = await fileData.arrayBuffer();
-        const imageBase64 = arrayBufferToBase64(arrayBuffer);
+        const imageBase64 = safeBase64(arrayBuffer);
 
-        const translationPrompt = `Translate all visible text in this app store screenshot image from ${source_language || "English"} to natural ${target_language}.
+        const resizePrompt = isIpad
+          ? `Adapt this iPhone App Store screenshot to an iPad 12.9" format (3:4 portrait aspect ratio).
 
 CRITICAL RULES:
-- Only translate text. Do not modify layout, spacing, alignment, font size, font weight, colors, or image composition.
-- Do not add, remove, or rephrase content.
-- Keep the tone calm, minimal, and reassuring.
-- Preserve all UI elements, icons, and graphics exactly as they are.
-- The output must be a complete image identical to the input except with translated text.`;
+- KEEP the exact same design: same colors, typography, layout proportions, device mockup style
+- ADAPT the composition for the wider 3:4 aspect ratio — expand the background naturally, reposition elements to fill the wider canvas
+- If there's a phone mockup, replace it with an iPad mockup showing the same screen content
+- Keep ALL text exactly as-is: headline "${slide.headline || ""}", subheadline "${slide.subheadline || ""}"
+- Maintain the same visual quality, gradients, shadows, and decorative elements
+- The result must look like the same designer created both versions — one for iPhone, one for iPad
+- Output a complete, polished App Store screenshot for iPad`
+          : `Adapt this App Store screenshot to a ${formatConfig.label} display format.
+
+CRITICAL RULES:
+- This is the SAME screenshot, just optimized for a ${formatConfig.label} display
+- KEEP the exact same design: same colors, typography, layout, device mockup, background
+- Keep ALL text exactly as-is: headline "${slide.headline || ""}", subheadline "${slide.subheadline || ""}"
+- Maintain identical visual quality — same gradients, shadows, decorative elements
+- Only make subtle adjustments for the display size — slightly different spacing or proportions if needed
+- The output must be virtually identical to the input, just formatted for ${formatConfig.label}
+- Output a complete, polished App Store screenshot`;
 
         const contents: any[] = [
-          { text: translationPrompt },
+          { text: resizePrompt },
           { inlineData: { mimeType: "image/png", data: imageBase64 } },
         ];
 
@@ -144,7 +155,7 @@ CRITICAL RULES:
           contents,
           config: {
             responseModalities: ["TEXT", "IMAGE"],
-            imageConfig: { aspectRatio: "9:16", imageSize: "2K" },
+            imageConfig: { aspectRatio: formatConfig.aspectRatio, imageSize: "2K" },
           } as any,
         });
 
@@ -158,57 +169,46 @@ CRITICAL RULES:
         }
 
         if (!newImageBase64) {
-          console.error(`No translated image generated for slide ${slide.slide_number}`);
+          console.error(`No resized image generated for slide ${slide.slide_number}`);
           continue;
         }
 
-        // Upload translated image
-        const langCode = target_language.toLowerCase().replace(/[^a-z0-9]/g, "-").slice(0, 5);
-        const translatedPath = `${userId}/${project_id}/slide-${slide.slide_number}-${langCode}.png`;
-
-        // Chunked decode
+        // Upload resized image
+        const resizedPath = `${userId}/${project_id}/slide-${slide.slide_number}-${formatConfig.suffix}.png`;
         const raw = atob(newImageBase64);
         const imageBytes = new Uint8Array(raw.length);
         for (let j = 0; j < raw.length; j++) {
           imageBytes[j] = raw.charCodeAt(j);
         }
 
-        await adminClient.storage.from("generated-outputs").upload(translatedPath, imageBytes, {
+        await adminClient.storage.from("generated-outputs").upload(resizedPath, imageBytes, {
           contentType: "image/png",
           upsert: true,
         });
 
-        const { data: signedData } = await adminClient.storage.from("generated-outputs").createSignedUrl(translatedPath, 60 * 60 * 24 * 7);
+        const { data: signedData } = await adminClient.storage.from("generated-outputs").createSignedUrl(resizedPath, 60 * 60 * 24 * 7);
 
-        translatedSlides.push({
+        resizedSlides.push({
           slide_number: slide.slide_number,
           imageUrl: signedData?.signedUrl || "",
+          format: target_format,
         });
 
-        // Persist translation record to DB
-        await adminClient.from("project_translations").insert({
-          project_id,
-          user_id: userId,
-          slide_number: slide.slide_number,
-          target_language,
-          source_language: source_language || "English",
-          storage_path: translatedPath,
-        });
-
-        // Deduct 1 credit per successful slide
+        // Deduct credit
         creditsDeducted += 1;
         const newCredits = Math.max(0, currentCredits - creditsDeducted);
         await adminClient.from("profiles").update({ credits: newCredits }).eq("id", userId);
+
       } catch (err: any) {
-        console.error(`Translation error for slide ${slide.slide_number}:`, err?.message || err);
+        console.error(`Resize error for slide ${slide.slide_number}:`, err?.message || err);
       }
     }
 
-    return new Response(JSON.stringify({ translations: translatedSlides }), {
+    return new Response(JSON.stringify({ slides: resizedSlides, format: target_format }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: any) {
-    console.error("translate-copy error:", error);
+    console.error("resize-slides error:", error);
     return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });

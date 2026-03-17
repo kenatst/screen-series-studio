@@ -89,6 +89,54 @@ export type Database = {
         }
         Relationships: []
       }
+      project_translations: {
+        Row: {
+          id: string
+          project_id: string
+          user_id: string
+          slide_number: number
+          target_language: string
+          source_language: string
+          storage_path: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          user_id: string
+          slide_number: number
+          target_language: string
+          source_language?: string
+          storage_path: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          user_id?: string
+          slide_number?: number
+          target_language?: string
+          source_language?: string
+          storage_path?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_translations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_translations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_slides: {
         Row: {
           attempt_count: number

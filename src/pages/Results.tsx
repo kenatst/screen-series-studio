@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  Download, RefreshCw, Globe, Loader2, Wand2, Send, Lock, Sparkles, ImageDown, ChevronLeft, ChevronRight, Coins, CheckCircle2
+  Download, RefreshCw, Globe, Loader2, Wand2, Send, Lock, Sparkles, ImageDown, ChevronLeft, ChevronRight, Coins, CheckCircle2, Smartphone, Tablet, Monitor
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useProject, useProjectSlides } from "@/hooks/useProjects";
@@ -23,6 +23,31 @@ import { useTranslation } from "react-i18next";
 const isStoragePath = (value: string | null) => {
   if (!value) return false;
   return !value.startsWith("http://") && !value.startsWith("https://");
+};
+
+interface SavedTranslation {
+  id: string;
+  slide_number: number;
+  target_language: string;
+  source_language: string;
+  storage_path: string;
+  created_at: string;
+  signedUrl?: string;
+}
+
+const LANGUAGE_LABELS: Record<string, string> = {
+  French: 'French (Fran\u00e7ais)',
+  Spanish: 'Spanish (Espa\u00f1ol)',
+  German: 'German (Deutsch)',
+  Japanese: 'Japanese (\u65e5\u672c\u8a9e)',
+  Portuguese: 'Portuguese (Portugu\u00eas)',
+  Chinese: 'Chinese (\u4e2d\u6587)',
+  Korean: 'Korean (\ud55c\uad6d\uc5b4)',
+  Italian: 'Italian (Italiano)',
+  Arabic: 'Arabic (\u0627\u0644\u0639\u0631\u0628\u064a\u0629)',
+  Russian: 'Russian (\u0420\u0443\u0441\u0441\u043a\u0438\u0439)',
+  Turkish: 'Turkish (T\u00fcrk\u00e7e)',
+  Hindi: 'Hindi (\u0939\u093f\u0928\u094d\u0926\u0940)',
 };
 
 const Results = () => {
@@ -43,6 +68,11 @@ const Results = () => {
   const [regenPrompt, setRegenPrompt] = useState('');
   const [showRegenPrompt, setShowRegenPrompt] = useState(false);
   const [resolvedImages, setResolvedImages] = useState<Record<string, string>>({});
+  const [savedTranslations, setSavedTranslations] = useState<SavedTranslation[]>([]);
+  const [expandedLang, setExpandedLang] = useState<string | null>(null);
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizedFormats, setResizedFormats] = useState<Record<string, { slide_number: number; imageUrl: string }[]>>({});
+  const [activeFormatTab, setActiveFormatTab] = useState<string | null>(null);
 
   const userPlan = (profile?.plan || 'free') as any;
   const userCredits = profile?.credits ?? 0;
@@ -69,6 +99,151 @@ const Results = () => {
   }, [slides, resolvedImages]);
 
   useEffect(() => { resolveImages(); }, [resolveImages]);
+
+  // Fetch saved translations from DB
+  const fetchSavedTranslations = useCallback(async () => {
+    if (!projectId) return;
+    try {
+      const { data, error } = await supabase
+        .from('project_translations')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('target_language')
+        .order('slide_number');
+      if (error || !data) return;
+
+      // Resolve signed URLs for all translations
+      const withUrls = await Promise.all(data.map(async (tr: any) => {
+        try {
+          const { data: signed } = await supabase.storage.from('generated-outputs').createSignedUrl(tr.storage_path, 60 * 60 * 2);
+          return { ...tr, signedUrl: signed?.signedUrl || '' };
+        } catch {
+          return { ...tr, signedUrl: '' };
+        }
+      }));
+      setSavedTranslations(withUrls);
+    } catch { /* ignore */ }
+  }, [projectId]);
+
+  useEffect(() => { fetchSavedTranslations(); }, [fetchSavedTranslations]);
+
+  const handleDownloadTranslation = async (tr: SavedTranslation) => {
+    if (!tr.signedUrl) return;
+    try {
+      const res = await fetch(tr.signedUrl);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const langSlug = tr.target_language.toLowerCase().replace(/[^a-z]/g, '');
+      a.download = `slide-${tr.slide_number}-${langSlug}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      toast({ title: 'Download failed', variant: 'destructive' });
+    }
+  };
+
+  const handleDownloadTranslationSet = async (lang: string) => {
+    const langTranslations = savedTranslations.filter(t => t.target_language === lang && t.signedUrl);
+    if (langTranslations.length === 0) return;
+
+    const zip = new JSZip();
+    const langSlug = lang.toLowerCase().replace(/[^a-z]/g, '');
+    const folder = zip.folder(`${project?.app_name || 'export'}-${langSlug}`);
+    if (!folder) return;
+
+    for (const tr of langTranslations) {
+      try {
+        const res = await fetch(tr.signedUrl!);
+        const blob = await res.blob();
+        folder.file(`slide-${String(tr.slide_number).padStart(2, '0')}-${langSlug}.png`, blob);
+      } catch { /* skip */ }
+    }
+
+    const content = await zip.generateAsync({ type: 'blob' });
+    saveAs(content, `${project?.app_name || 'export'}-${langSlug}.zip`);
+  };
+
+  // Group translations by language
+  const translationsByLang = savedTranslations.reduce<Record<string, SavedTranslation[]>>((acc, tr) => {
+    if (!acc[tr.target_language]) acc[tr.target_language] = [];
+    acc[tr.target_language].push(tr);
+    return acc;
+  }, {});
+
+  const FORMAT_LABELS: Record<string, { label: string; icon: typeof Smartphone }> = {
+    'iphone-6-5': { label: '6.5"', icon: Smartphone },
+    'iphone-6-9': { label: '6.9"', icon: Smartphone },
+    'ipad-12-9': { label: '12.9" iPad', icon: Tablet },
+  };
+
+  const projectFormats = (project?.device_formats as string[]) || ['iphone-6-5'];
+  const primaryFormat = projectFormats[0] || 'iphone-6-5';
+  const additionalFormats = projectFormats.filter(f => f !== primaryFormat);
+
+  const handleResizeFormat = async (targetFormat: string) => {
+    if (!projectId || isResizing) return;
+    const slideCount = slides?.length || 0;
+    if (!checkCredits(slideCount * CREDIT_COSTS.regenerateSlide)) return;
+
+    setIsResizing(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const response = await fetch(`${supabaseUrl}/functions/v1/resize-slides`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ project_id: projectId, target_format: targetFormat }),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({ error: 'Server error' }));
+        throw new Error(errData.error || `Error ${response.status}`);
+      }
+
+      const result = await response.json();
+      if (result.slides?.length > 0) {
+        setResizedFormats(prev => ({ ...prev, [targetFormat]: result.slides }));
+        setActiveFormatTab(targetFormat);
+        toast({ title: `${FORMAT_LABELS[targetFormat]?.label || targetFormat} format generated!`, description: `${result.slides.length} slide(s) resized.` });
+        await refreshProfile();
+      }
+    } catch (err: any) {
+      toast({ title: 'Resize failed', description: err.message || 'Unknown error', variant: 'destructive' });
+    } finally {
+      setIsResizing(false);
+    }
+  };
+
+  const handleDownloadFormat = async (format: string) => {
+    const formatSlides = resizedFormats[format];
+    if (!formatSlides?.length) return;
+
+    const zip = new JSZip();
+    const formatSlug = format.replace(/[^a-z0-9-]/g, '');
+    const folder = zip.folder(`${project?.app_name || 'export'}-${formatSlug}`);
+    if (!folder) return;
+
+    for (const slide of formatSlides) {
+      try {
+        const res = await fetch(slide.imageUrl);
+        const blob = await res.blob();
+        folder.file(`slide-${String(slide.slide_number).padStart(2, '0')}-${formatSlug}.png`, blob);
+      } catch { /* skip */ }
+    }
+
+    const content = await zip.generateAsync({ type: 'blob' });
+    saveAs(content, `${project?.app_name || 'export'}-${formatSlug}.zip`);
+  };
 
   const getImageUrl = (slide: any) => {
     if (!slide?.image_url) return null;
@@ -269,6 +444,86 @@ const Results = () => {
           })}
         </div>
 
+        {/* Multi-format resize section */}
+        {additionalFormats.length > 0 && (
+          <div className="mb-8 rounded-2xl border border-border bg-card/50 backdrop-blur-sm p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-black text-foreground flex items-center gap-2">
+                <Monitor className="h-4 w-4 text-primary" /> Device Formats
+              </h3>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={activeFormatTab === null ? 'default' : 'outline'}
+                size="sm"
+                className="rounded-lg text-xs"
+                onClick={() => setActiveFormatTab(null)}
+              >
+                <Smartphone className="h-3 w-3 mr-1" />
+                {FORMAT_LABELS[primaryFormat]?.label || primaryFormat} (original)
+              </Button>
+              {additionalFormats.map(fmt => {
+                const hasGenerated = !!resizedFormats[fmt]?.length;
+                const FormatIcon = FORMAT_LABELS[fmt]?.icon || Smartphone;
+                return (
+                  <div key={fmt} className="flex gap-1">
+                    {hasGenerated ? (
+                      <>
+                        <Button
+                          variant={activeFormatTab === fmt ? 'default' : 'outline'}
+                          size="sm"
+                          className="rounded-lg text-xs"
+                          onClick={() => setActiveFormatTab(fmt)}
+                        >
+                          <FormatIcon className="h-3 w-3 mr-1" />
+                          {FORMAT_LABELS[fmt]?.label || fmt}
+                        </Button>
+                        <Button
+                          variant="ghost" size="sm" className="rounded-lg text-xs h-8 px-2"
+                          onClick={() => handleDownloadFormat(fmt)}
+                        >
+                          <Download className="h-3 w-3" />
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-lg text-xs border-dashed"
+                        onClick={() => handleResizeFormat(fmt)}
+                        disabled={isResizing}
+                      >
+                        {isResizing ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <FormatIcon className="h-3 w-3 mr-1" />}
+                        Generate {FORMAT_LABELS[fmt]?.label || fmt}
+                        <Badge variant="outline" className="ml-1 text-[10px] px-1 py-0">{slides?.length || 0} cr</Badge>
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Show resized slides when a format tab is active */}
+            {activeFormatTab && resizedFormats[activeFormatTab] && (
+              <div className="mt-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                  {resizedFormats[activeFormatTab].map((slide) => (
+                    <div
+                      key={slide.slide_number}
+                      className={`relative rounded-xl border-2 border-border overflow-hidden ${activeFormatTab.includes('ipad') ? 'aspect-[3/4]' : 'aspect-[9/16]'}`}
+                    >
+                      <img src={slide.imageUrl} alt={`Slide ${slide.slide_number} - ${activeFormatTab}`} className="w-full h-full object-contain" loading="lazy" />
+                      <div className="absolute bottom-1.5 left-1.5 bg-background/80 backdrop-blur-sm rounded-md px-1.5 py-0.5">
+                        <span className="text-[10px] font-black text-foreground">{slide.slide_number}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Selected slide detail */}
         {selectedSlide && (
           <motion.div
@@ -374,11 +629,78 @@ const Results = () => {
         )}
       </div>
 
+      {/* Saved Translations Section */}
+      {Object.keys(translationsByLang).length > 0 && (
+        <div className="p-4 md:p-8 max-w-6xl mx-auto -mt-4">
+          <div className="rounded-2xl border border-border bg-card/50 backdrop-blur-sm p-4 md:p-6">
+            <h3 className="text-lg font-black text-foreground flex items-center gap-2 mb-4">
+              <Globe className="h-5 w-5 text-primary" /> Translations
+            </h3>
+            <div className="space-y-3">
+              {Object.entries(translationsByLang).map(([lang, translations]) => (
+                <div key={lang} className="border border-border/50 rounded-xl overflow-hidden">
+                  <button
+                    onClick={() => setExpandedLang(expandedLang === lang ? null : lang)}
+                    className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Globe className="h-4 w-4 text-primary" />
+                      <span className="font-bold text-sm">{LANGUAGE_LABELS[lang] || lang}</span>
+                      <Badge variant="outline" className="text-xs">{translations.length} slide(s)</Badge>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost" size="sm" className="text-xs h-7 rounded-lg"
+                        onClick={(e) => { e.stopPropagation(); handleDownloadTranslationSet(lang); }}
+                      >
+                        <Download className="h-3 w-3 mr-1" /> ZIP
+                      </Button>
+                      <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${expandedLang === lang ? 'rotate-90' : ''}`} />
+                    </div>
+                  </button>
+                  <AnimatePresence>
+                    {expandedLang === lang && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 p-4 pt-0">
+                          {translations.map(tr => (
+                            <div key={tr.id} className="relative group rounded-lg overflow-hidden border border-border aspect-[9/16]">
+                              {tr.signedUrl ? (
+                                <img src={tr.signedUrl} alt={`Slide ${tr.slide_number} - ${lang}`} className="w-full h-full object-contain" loading="lazy" />
+                              ) : (
+                                <div className="w-full h-full bg-muted flex items-center justify-center">
+                                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                </div>
+                              )}
+                              <button
+                                onClick={() => handleDownloadTranslation(tr)}
+                                className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                              >
+                                <Download className="h-5 w-5 text-foreground" />
+                              </button>
+                              <div className="absolute bottom-1 left-1 bg-background/80 rounded px-1 py-0.5 text-[10px] font-bold">{tr.slide_number}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       <TranslationsModal
         isOpen={isTranslationModalOpen}
         onOpenChange={setIsTranslationModalOpen}
         projectId={projectId || ''}
-        onSuccess={() => { refetchSlides(); refreshProfile(); }}
+        onSuccess={() => { refetchSlides(); refreshProfile(); fetchSavedTranslations(); }}
       />
 
       <Dialog open={showWatermarkWarning} onOpenChange={setShowWatermarkWarning}>
