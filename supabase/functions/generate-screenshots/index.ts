@@ -262,44 +262,6 @@ Generate the image now.
     return prompt;
   }
 
-  // ── CASE 2: Beyond template range — continuity-only mode ──
-  const prompt = `
-You are an elite-tier App Store screenshot designer.
-
-=== YOUR MISSION ===
-You are generating slide ${slide.slide_number} of ${totalSlides} for "${appName}" (${appCategory}).
-${templateSetAnalysis ? `The template had ${templateSetAnalysis.totalSlides} slides but you are creating slide #${slide.slide_number} which is beyond the template.` : ""}
-Your PRIMARY reference is the previously generated slides — continue the set with the same visual DNA.
-
-${templateSetAnalysis ? `=== SET STYLE DNA ===
-${templateSetAnalysis.overallStyle}
-` : ""}
-=== CONTINUITY (#1 PRIORITY) ===
-Match the previously generated slides EXACTLY:
-- Same color palette, gradients, lighting
-- Same typography (font, weight, sizes, kerning)
-- Same device frame style, angle, shadow
-- Same background treatment and decorative elements style
-- Vary layout naturally to keep the set interesting
-- ONE designer, ONE Figma file
-
-=== APP CONTENT ===
-App: "${appName}" | Category: "${appCategory}"
->>> HEADLINE: "${slide.headline || ""}" <<<
->>> SUBHEADLINE: "${slide.subheadline || ""}" <<<
-${brandBlock ? `\n${brandBlock}` : ""}
-
-${hasRawScreen ? `=== RAW APP SCREEN ===
-Composite into device frame as-is.` : "=== NO RAW SCREEN ===\nCreate a visually engaging slide matching the set's style."}
-
-Slide ${slide.slide_number} of ${totalSlides} | Objective: ${slide.objective || "Feature spotlight"} | Format: ${aspectStr}
-${langDirective}${feedbackBlock}
-
-Generate the image now. Continue the set.
-`.trim();
-  return prompt;
-Generate the image now. Recreate the template EXACTLY with the new content.`.trim();
-  }
 
   // ── CASE 2: Beyond template range — continuity mode ──
   return `
