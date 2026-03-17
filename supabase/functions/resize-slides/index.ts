@@ -8,10 +8,10 @@ const corsHeaders = {
 
 const CREDIT_COST_PER_SLIDE = 1;
 
-const FORMAT_CONFIG: Record<string, { label: string; aspectRatio: string; suffix: string }> = {
-  "iphone-6-5": { label: '6.5" iPhone', aspectRatio: "9:16", suffix: "6-5" },
-  "iphone-6-9": { label: '6.9" iPhone', aspectRatio: "9:16", suffix: "6-9" },
-  "ipad-12-9": { label: '12.9" iPad', aspectRatio: "3:4", suffix: "ipad" },
+const FORMAT_CONFIG: Record<string, { label: string; aspectRatio: string; suffix: string; width: number; height: number }> = {
+  "iphone-6-5": { label: '6.5" iPhone', aspectRatio: "9:16", suffix: "6-5", width: 1242, height: 2688 },
+  "iphone-6-9": { label: '6.9" iPhone', aspectRatio: "9:16", suffix: "6-9", width: 1320, height: 2868 },
+  "ipad-12-9": { label: '12.9" iPad', aspectRatio: "3:4", suffix: "ipad", width: 2048, height: 2732 },
 };
 
 function safeBase64(buffer: ArrayBuffer): string {
@@ -125,6 +125,7 @@ serve(async (req) => {
 
         const resizePrompt = isIpad
           ? `Adapt this iPhone App Store screenshot to an iPad 12.9" format (3:4 portrait aspect ratio).
+Target pixel dimensions: ${formatConfig.width} × ${formatConfig.height} pixels.
 
 CRITICAL RULES:
 - KEEP the exact same design: same colors, typography, layout proportions, device mockup style
@@ -132,15 +133,18 @@ CRITICAL RULES:
 - If there's a phone mockup, replace it with an iPad mockup showing the same screen content
 - Keep ALL text exactly as-is: headline "${slide.headline || ""}", subheadline "${slide.subheadline || ""}"
 - Maintain the same visual quality, gradients, shadows, and decorative elements
+- Scale text and UI elements appropriately for the ${formatConfig.width}×${formatConfig.height} resolution
 - The result must look like the same designer created both versions — one for iPhone, one for iPad
 - Output a complete, polished App Store screenshot for iPad`
           : `Adapt this App Store screenshot to a ${formatConfig.label} display format.
+Target pixel dimensions: ${formatConfig.width} × ${formatConfig.height} pixels.
 
 CRITICAL RULES:
-- This is the SAME screenshot, just optimized for a ${formatConfig.label} display
+- This is the SAME screenshot, just optimized for a ${formatConfig.label} display (${formatConfig.width}×${formatConfig.height}px)
 - KEEP the exact same design: same colors, typography, layout, device mockup, background
 - Keep ALL text exactly as-is: headline "${slide.headline || ""}", subheadline "${slide.subheadline || ""}"
 - Maintain identical visual quality — same gradients, shadows, decorative elements
+- Scale text and elements appropriately for the target ${formatConfig.width}×${formatConfig.height} resolution
 - Only make subtle adjustments for the display size — slightly different spacing or proportions if needed
 - The output must be virtually identical to the input, just formatted for ${formatConfig.label}
 - Output a complete, polished App Store screenshot`;

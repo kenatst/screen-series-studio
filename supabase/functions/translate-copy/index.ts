@@ -56,16 +56,17 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "project_id and target_language required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Device format config
-    const FORMAT_SUFFIX: Record<string, string> = {
-      "iphone-6-5": "6-5",
-      "iphone-6-9": "6-9",
-      "ipad-12-9": "ipad",
+    // Device format config with exact App Store pixel dimensions
+    const FORMAT_CONFIG: Record<string, { suffix: string; width: number; height: number; aspectRatio: string }> = {
+      "iphone-6-5": { suffix: "6-5", width: 1242, height: 2688, aspectRatio: "9:16" },
+      "iphone-6-9": { suffix: "6-9", width: 1320, height: 2868, aspectRatio: "9:16" },
+      "ipad-12-9":  { suffix: "ipad", width: 2048, height: 2732, aspectRatio: "3:4" },
     };
     const activeFormat = device_format || "iphone-6-5";
-    const formatSuffix = FORMAT_SUFFIX[activeFormat] || "";
+    const fmtConfig = FORMAT_CONFIG[activeFormat] || FORMAT_CONFIG["iphone-6-5"];
+    const formatSuffix = fmtConfig.suffix;
     const isPrimary = !device_format || device_format === "iphone-6-5";
-    const aspectRatio = activeFormat.includes("ipad") ? "3:4" : "9:16";
+    const aspectRatio = fmtConfig.aspectRatio;
 
     // Verify project ownership
     const { data: projectCheck } = await userClient.from("projects").select("id").eq("id", project_id).single();
@@ -142,12 +143,14 @@ serve(async (req) => {
         const imageBase64 = arrayBufferToBase64(arrayBuffer);
 
         const translationPrompt = `Translate all visible text in this app store screenshot image from ${source_language || "English"} to natural ${target_language}.
+Target display: ${fmtConfig.width}×${fmtConfig.height} pixels.
 
 CRITICAL RULES:
 - Only translate text. Do not modify layout, spacing, alignment, font size, font weight, colors, or image composition.
 - Do not add, remove, or rephrase content.
 - Keep the tone calm, minimal, and reassuring.
 - Preserve all UI elements, icons, and graphics exactly as they are.
+- Maintain text at a scale appropriate for the ${fmtConfig.width}×${fmtConfig.height} resolution.
 - The output must be a complete image identical to the input except with translated text.`;
 
         const contents: any[] = [

@@ -12,6 +12,15 @@ const corsHeaders = {
 const CREDIT_COST_PER_SLIDE = 1;
 
 // ─────────────────────────────────────────────────────────────
+// App Store exact pixel dimensions per device format
+// ─────────────────────────────────────────────────────────────
+const DEVICE_DIMENSIONS: Record<string, { width: number; height: number; label: string }> = {
+  "iphone-6-5": { width: 1242, height: 2688, label: '6.5" iPhone (1242×2688)' },
+  "iphone-6-9": { width: 1320, height: 2868, label: '6.9" iPhone (1320×2868)' },
+  "ipad-12-9":  { width: 2048, height: 2732, label: '12.9" iPad (2048×2732)' },
+};
+
+// ─────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────
 
@@ -184,7 +193,10 @@ function buildSlidePrompt(params: {
     : "";
 
   const primaryFormat = deviceFormats[0] || "iphone-6-5";
-  const aspectStr = primaryFormat.includes("ipad") ? "3:4 (iPad portrait)" : "9:16 (iPhone portrait)";
+  const dims = DEVICE_DIMENSIONS[primaryFormat] || DEVICE_DIMENSIONS["iphone-6-5"];
+  const aspectStr = primaryFormat.includes("ipad")
+    ? `3:4 (iPad portrait — target: ${dims.width}×${dims.height}px)`
+    : `9:16 (iPhone portrait — target: ${dims.width}×${dims.height}px)`;
 
   const appCategory = config?.appCategory || "Not specified";
   const appDescription = config?.appDescription || project.app_description || "";
@@ -248,7 +260,13 @@ Previously generated slides from THIS SET are also attached after the template a
 - LAYOUT: Follow the template slide #${slideLayout.slidePosition}'s composition (IMAGE #1)
 - VISUAL IDENTITY: Match the exact color palette, typography, device frames, background treatment, and lighting from the previously generated slides
 - Think of it as: ONE designer, ONE Figma file, ONE session — each slide has a different layout but shares the same visual DNA
-` : ""}=== QUALITY RULES ===
+` : ""}=== TARGET DISPLAY ===
+This screenshot is for an Apple App Store ${dims.label} display.
+Target pixel dimensions: ${dims.width} × ${dims.height} pixels.
+Design all text, UI elements, and device mockups at a scale appropriate for this exact resolution.
+Headlines should be large and readable at this resolution — typically 60-90pt equivalent.
+
+=== QUALITY RULES ===
 1. Text pixel-perfect, crisp, perfectly kerned — zero artifacts
 2. Render the EXACT headline/subheadline strings — NO placeholders
 3. INDISTINGUISHABLE from the template's professional quality
@@ -304,6 +322,11 @@ Match EVERYTHING from them:
 - Spacing: same margins, padding, text-to-device ratios
 ONE designer, ONE Figma file, ONE session — this slide must feel like a natural continuation.
 ${langDirective}${feedbackBlock}
+
+=== TARGET DISPLAY ===
+This screenshot is for an Apple App Store ${dims.label} display.
+Target pixel dimensions: ${dims.width} × ${dims.height} pixels.
+Design all text, UI elements, and device mockups at a scale appropriate for this exact resolution.
 
 === QUALITY RULES ===
 1. Text pixel-perfect, crisp, perfectly kerned — zero artifacts
