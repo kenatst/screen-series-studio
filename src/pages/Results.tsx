@@ -68,27 +68,7 @@ const Results = () => {
   // Track resolved slide IDs to avoid re-fetching signed URLs unnecessarily
   const resolvedRef = useRef<Set<string>>(new Set());
 
-  // Resolve storage paths to signed URLs — fixes circular dependency
-  const resolveImages = useCallback(async () => {
-    if (!slides?.length) return;
-    const toResolve = slides.filter(s => s.image_url && isStoragePath(s.image_url) && !resolvedRef.current.has(s.id));
-    if (toResolve.length === 0) return;
-
-    const newResolved: Record<string, string> = {};
-    await Promise.all(toResolve.map(async (slide) => {
-      try {
-        const { data } = await supabase.storage.from("generated-outputs").createSignedUrl(slide.image_url!, 60 * 60 * 2);
-        if (data?.signedUrl) {
-          newResolved[slide.id] = data.signedUrl;
-          resolvedRef.current.add(slide.id);
-        }
-      } catch { /* skip */ }
-    }));
-  useEffect(() => {
-    resolvedImagesRef.current = resolvedImages;
-  }, [resolvedImages]);
-
-  // Resolve storage paths to signed URLs
+  // Resolve storage paths to signed URLs with 90-minute auto-refresh
   const resolveImages = useCallback(async () => {
     if (!slides?.length) return;
     const toResolve = slides.filter(
