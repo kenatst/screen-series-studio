@@ -157,6 +157,54 @@ export type Database = {
           },
         ]
       }
+      project_translations: {
+        Row: {
+          created_at: string
+          id: string
+          project_id: string
+          slide_number: number
+          source_language: string
+          storage_path: string
+          target_language: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          project_id: string
+          slide_number: number
+          source_language?: string
+          storage_path: string
+          target_language: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          project_id?: string
+          slide_number?: number
+          source_language?: string
+          storage_path?: string
+          target_language?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_translations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_translations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           app_description: string | null
