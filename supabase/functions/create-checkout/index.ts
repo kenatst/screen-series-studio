@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
 import { PLAN_DEFS } from "../_shared/billing.ts";
+import { getStripeSecretKey, resolveSiteOrigin } from "../_shared/stripe.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -83,8 +84,8 @@ serve(async (req) => {
     const { plan, redirect_path } = await req.json();
     if (!PLAN_DEFS[plan as keyof typeof PLAN_DEFS]) throw new Error(`Invalid plan: ${plan}`);
 
-    const stripeKey = Deno.env.get("STRIPE_TEST_SECRET") || "";
-    if (!stripeKey) throw new Error("STRIPE_TEST_SECRET is not set");
+    const stripeKey = getStripeSecretKey();
+    if (!stripeKey) throw new Error("Stripe secret is not set (STRIPE_SECRET_KEY or STRIPE_TEST_SECRET)");
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
     // Log which Stripe account we're using
@@ -100,7 +101,7 @@ serve(async (req) => {
       customerId = customers.data[0].id;
     }
 
-    const origin = req.headers.get("origin") || Deno.env.get("SITE_URL") || "https://shotapp.ai";
+    const origin = resolveSiteOrigin(req.headers.get("origin"));
     const successPath = redirect_path || "/dashboard/settings";
     const successUrl = `${origin}${successPath}${successPath.includes('?') ? '&' : '?'}checkout=success`;
 

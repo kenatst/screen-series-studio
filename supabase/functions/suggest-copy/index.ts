@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
 import { creditCreditsAtomic, debitCreditsAtomic } from "../_shared/credits.ts";
+import { checkFunctionRateLimit } from "../_shared/rate-limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,6 +34,11 @@ serve(async (req) => {
 
     // Optional: Charge credits for suggestions or just verify existence
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
+    const withinLimit = await checkFunctionRateLimit(adminClient as any, userData.user.id, "suggest-copy", 30);
+    if (!withinLimit) {
+      return new Response(JSON.stringify({ error: "Too many suggestion requests. Please wait a minute." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     const { data: profile } = await adminClient.from("profiles").select("credits").eq("id", userData.user.id).single();
     if ((profile?.credits ?? 0) < 1) {
       return new Response(JSON.stringify({ error: "Insufficient credits" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -145,7 +151,9 @@ serve(async (req) => {
     }
 
     let result = {};
+    let reservedCredit = false;
     try {
+      reservedCredit = true;
       const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -165,10 +173,20 @@ serve(async (req) => {
 
       if (!aiResponse.ok) {
         const status = aiResponse.status;
-        // Refund credit on upstream errors
-        await creditCreditsAtomic(adminClient as any, userData.user.id, 1);
-        if (status === 429) return new Response(JSON.stringify({ error: "Rate limited, try again later" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        if (status === 402) return new Response(JSON.stringify({ error: "Payment required" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (status === 429) {
+          if (reservedCredit) {
+            await creditCreditsAtomic(adminClient as any, userData.user.id, 1);
+            reservedCredit = false;
+          }
+          return new Response(JSON.stringify({ error: "Rate limited, try again later" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        if (status === 402) {
+          if (reservedCredit) {
+            await creditCreditsAtomic(adminClient as any, userData.user.id, 1);
+            reservedCredit = false;
+          }
+          return new Response(JSON.stringify({ error: "Payment required" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
         const errText = await aiResponse.text();
         console.error("AI error:", status, errText);
         throw new Error("AI request failed");
@@ -178,7 +196,9 @@ serve(async (req) => {
       const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
       result = toolCall ? JSON.parse(toolCall.function.arguments) : {};
     } catch (aiError) {
-      await creditCreditsAtomic(adminClient as any, userData.user.id, 1);
+      if (reservedCredit) {
+        await creditCreditsAtomic(adminClient as any, userData.user.id, 1);
+      }
       throw aiError;
     }
 

@@ -16,8 +16,21 @@ import NotFound from "./pages/NotFound";
 import Settings from "./pages/Settings";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
+import { PageErrorBoundary } from "@/components/errors/PageErrorBoundary";
 
 const queryClient = new QueryClient();
+
+const GeneratingRoute = () => (
+  <PageErrorBoundary pageName="Generation">
+    <Generating />
+  </PageErrorBoundary>
+);
+
+const ResultsRoute = () => (
+  <PageErrorBoundary pageName="Results">
+    <Results />
+  </PageErrorBoundary>
+);
 
 const RouteAwareToasters = () => {
   const { pathname } = useLocation();
@@ -45,8 +58,8 @@ const App = () => (
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/dashboard/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/project/new" element={<ProtectedRoute><NewProject /></ProtectedRoute>} />
-            <Route path="/project/:projectId/generating" element={<ProtectedRoute><Generating /></ProtectedRoute>} />
-            <Route path="/project/:projectId/results" element={<ProtectedRoute><Results /></ProtectedRoute>} />
+            <Route path="/project/:projectId/generating" element={<ProtectedRoute><GeneratingRoute /></ProtectedRoute>} />
+            <Route path="/project/:projectId/results" element={<ProtectedRoute><ResultsRoute /></ProtectedRoute>} />
             <Route path="/project/:projectId/planner" element={<ProtectedRoute><NewProject /></ProtectedRoute>} />
             <Route path="/templates" element={<ProtectedRoute><Templates /></ProtectedRoute>} />
             <Route path="/privacy" element={<Privacy />} />

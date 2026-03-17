@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
 import { creditCreditsAtomic, debitCreditsAtomic } from "../_shared/credits.ts";
 import { arrayBufferToBase64, base64ToUint8Array } from "../_shared/base64.ts";
+import { checkFunctionRateLimit } from "../_shared/rate-limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,6 +10,16 @@ const corsHeaders = {
 };
 
 const CREDIT_COST_PER_SLIDE = 1;
+const RESIZE_RATE_LIMIT_PER_MINUTE = 6;
+
+type SlideRow = {
+  id: string;
+  slide_number: number;
+  image_url: string | null;
+  headline: string | null;
+  subheadline: string | null;
+  status: string | null;
+};
 
 const FORMAT_CONFIG: Record<string, { label: string; aspectRatio: string; suffix: string; width: number; height: number }> = {
   "iphone-6-5": { label: '6.5" iPhone', aspectRatio: "9:16", suffix: "6-5", width: 1242, height: 2688 },
@@ -60,6 +71,13 @@ serve(async (req) => {
     }
 
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
+    const withinLimit = await checkFunctionRateLimit(adminClient as any, userId, "resize-slides", RESIZE_RATE_LIMIT_PER_MINUTE);
+    if (!withinLimit) {
+      return new Response(JSON.stringify({ error: "Too many resize requests. Please wait a minute." }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Fetch completed slides
     const { data: slides, error: slidesError } = await adminClient
@@ -72,7 +90,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Failed to fetch slides" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const completedSlides = (slides || []).filter((s: any) => s.image_url && s.status === "completed");
+    const completedSlides = ((slides || []) as SlideRow[]).filter((slide) => Boolean(slide.image_url) && slide.status === "completed");
     if (completedSlides.length === 0) {
       return new Response(JSON.stringify({ error: "No completed slides found. Generate screenshots first." }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -108,16 +126,15 @@ serve(async (req) => {
 
         // Download original slide
         let storagePath: string;
-        if (slide.image_url!.startsWith("http")) {
+        if (slide.image_url?.startsWith("http")) {
           storagePath = `${userId}/${project_id}/slide-${slide.slide_number}.png`;
         } else {
-          storagePath = slide.image_url!;
+          storagePath = slide.image_url || `${userId}/${project_id}/slide-${slide.slide_number}.png`;
         }
 
         const { data: fileData, error: downloadError } = await adminClient.storage.from("generated-outputs").download(storagePath);
         if (downloadError || !fileData) {
-          console.error(`Download failed for slide ${slide.slide_number}:`, downloadError?.message);
-          continue;
+          throw new Error(`Download failed for slide ${slide.slide_number}`);
         }
 
         const arrayBuffer = await fileData.arrayBuffer();
@@ -149,7 +166,7 @@ CRITICAL RULES:
 - The output must be virtually identical to the input, just formatted for ${formatConfig.label}
 - Output a complete, polished App Store screenshot`;
 
-        const contents: any[] = [
+        const contents = [
           { text: resizePrompt },
           { inlineData: { mimeType: "image/png", data: imageBase64 } },
         ];
@@ -160,21 +177,20 @@ CRITICAL RULES:
           config: {
             responseModalities: ["TEXT", "IMAGE"],
             imageConfig: { aspectRatio: formatConfig.aspectRatio, imageSize: "2K" },
-          } as any,
+          },
         });
 
         let newImageBase64 = "";
-        if (response.candidates && response.candidates[0]) {
-          for (const part of response.candidates[0].content!.parts!) {
-            if ((part as any).inlineData) {
-              newImageBase64 = (part as any).inlineData.data;
-            }
+        const candidateParts = response.candidates?.[0]?.content?.parts || [];
+        for (const part of candidateParts) {
+          const inlineData = (part as { inlineData?: { data?: string } }).inlineData;
+          if (inlineData?.data) {
+            newImageBase64 = inlineData.data;
           }
         }
 
         if (!newImageBase64) {
-          console.error(`No resized image generated for slide ${slide.slide_number}`);
-          continue;
+          throw new Error(`No resized image generated for slide ${slide.slide_number}`);
         }
 
         // Upload resized image
@@ -195,7 +211,7 @@ CRITICAL RULES:
           storage_path: resizedPath,
         });
 
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (reservedCredit) {
           try {
             await creditCreditsAtomic(adminClient as any, userId, CREDIT_COST_PER_SLIDE);
@@ -203,7 +219,7 @@ CRITICAL RULES:
             console.error(`Refund failed for slide ${slide.slide_number}:`, refundError);
           }
         }
-        console.error(`Resize error for slide ${slide.slide_number}:`, err?.message || err);
+        console.error(`Resize error for slide ${slide.slide_number}:`, err instanceof Error ? err.message : String(err));
       }
     }
 

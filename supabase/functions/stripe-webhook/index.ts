@@ -3,6 +3,7 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
 import { creditsCapForPlan, PLAN_CREDITS, PRODUCT_NAME_TO_PLAN, toPlanId } from "../_shared/billing.ts";
 import { creditCreditsAtomic } from "../_shared/credits.ts";
+import { getStripeSecretKey } from "../_shared/stripe.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -47,10 +48,10 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const stripeKey = Deno.env.get("STRIPE_TEST_SECRET");
+  const stripeKey = getStripeSecretKey();
   const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
   if (!stripeKey || !webhookSecret) {
-    logStep("ERROR", { message: "Missing STRIPE_TEST_SECRET or STRIPE_WEBHOOK_SECRET" });
+    logStep("ERROR", { message: "Missing Stripe secret (STRIPE_SECRET_KEY/STRIPE_TEST_SECRET) or STRIPE_WEBHOOK_SECRET" });
     return new Response(JSON.stringify({ error: "Server misconfigured" }), { status: 500 });
   }
 
@@ -67,7 +68,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: "No signature" }), { status: 400 });
   }
 
-  let event: Stripe.Event;
+  let event: Stripe.Event | null = null;
   try {
     event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
   } catch (err: any) {
@@ -75,7 +76,36 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: "Invalid signature" }), { status: 400 });
   }
 
+  if (!event) {
+    return new Response(JSON.stringify({ error: "Invalid event payload" }), { status: 400 });
+  }
+
   logStep("Event received", { type: event.type, id: event.id });
+
+  const { error: claimEventError } = await supabase
+    .from("stripe_webhook_events")
+    .insert({
+      event_id: event.id,
+      event_type: event.type,
+    });
+
+  if (claimEventError) {
+    if ((claimEventError as any).code === "23505") {
+      logStep("Duplicate event ignored", { id: event.id, type: event.type });
+      return new Response(JSON.stringify({ received: true, duplicate: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+    throw new Error(`Could not claim event: ${claimEventError.message}`);
+  }
+
+  // Best-effort retention cleanup for old idempotency rows.
+  const retentionThreshold = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  await supabase
+    .from("stripe_webhook_events")
+    .delete()
+    .lt("processed_at", retentionThreshold);
 
   try {
     switch (event.type) {
@@ -110,7 +140,7 @@ serve(async (req) => {
 
         const { data: prof } = await supabase
           .from("profiles")
-          .select("id, credits")
+          .select("id")
           .eq("stripe_customer_id", customerId)
           .single();
 
@@ -125,9 +155,15 @@ serve(async (req) => {
             const activePlan = await resolvePlanFromSubscriptionItem(stripe, sub.data[0].items.data[0]);
             const monthlyCredits = PLAN_CREDITS[activePlan] || PLAN_CREDITS.free;
             const cap = creditsCapForPlan(activePlan);
-
-            // Use atomic RPC to add credits with cap — avoids read-then-write race condition
             const newBalance = await creditCreditsAtomic(supabase as any, prof.id, monthlyCredits, cap);
+            if (newBalance === null) {
+              logStep("Could not top up credits on invoice.paid", {
+                userId: prof.id,
+                plan: activePlan,
+                monthlyCredits,
+              });
+              break;
+            }
             await supabase
               .from("profiles")
               .update({ plan: activePlan })
@@ -207,6 +243,12 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error: any) {
+    if (event?.id) {
+      await supabase
+        .from("stripe_webhook_events")
+        .delete()
+        .eq("event_id", event.id);
+    }
     logStep("ERROR processing event", { message: error.message });
     return new Response(JSON.stringify({ error: error.message }), { status: 500 });
   }

@@ -145,7 +145,7 @@ const Settings_Page = () => {
             </div>
 
             <p className="text-xs text-muted-foreground">
-              Your <span className="font-bold text-primary">{plan.name}</span> plan includes <span className="font-bold text-foreground">{plan.monthlyCredits} credits/mo</span>.
+              {t('settings.planIncludes', { planName: plan.name, credits: plan.monthlyCredits })}
               {plan.id === 'free' && ` ${t('settings.upgradePrompt')}`}
             </p>
           </div>
@@ -167,7 +167,7 @@ const Settings_Page = () => {
             </div>
             <div className="text-right flex flex-col items-end">
               <span className="text-3xl font-black text-foreground">{plan.priceValue === 0 ? "€0" : plan.price}</span>
-              <span className="text-muted-foreground text-sm">/mo</span>
+              <span className="text-muted-foreground text-sm">{t('settings.perMonth')}</span>
             </div>
           </div>
 

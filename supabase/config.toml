@@ -31,7 +31,7 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.generate-project-embedding]
-verify_jwt = false
+verify_jwt = true
 
 [functions.seed-template-embeddings]
 verify_jwt = false

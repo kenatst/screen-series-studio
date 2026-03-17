@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
 import { creditCreditsAtomic, debitCreditsAtomic } from "../_shared/credits.ts";
 import { arrayBufferToBase64, base64ToUint8Array } from "../_shared/base64.ts";
+import { checkFunctionRateLimit } from "../_shared/rate-limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,6 +10,17 @@ const corsHeaders = {
 };
 
 const CREDIT_COST_PER_SLIDE = 1;
+const TRANSLATE_CONCURRENCY = 3;
+const TRANSLATE_RATE_LIMIT_PER_MINUTE = 6;
+
+type SlideRow = {
+  id: string;
+  slide_number: number;
+  image_url: string | null;
+  headline: string | null;
+  subheadline: string | null;
+  status: string | null;
+};
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -66,6 +78,14 @@ serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
+    const withinLimit = await checkFunctionRateLimit(adminClient as any, userId, "translate-copy", TRANSLATE_RATE_LIMIT_PER_MINUTE);
+    if (!withinLimit) {
+      return new Response(JSON.stringify({ error: "Too many translation requests. Please wait a minute." }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Fetch slides - check for completed status OR slides with image_url
     const { data: slides, error } = await adminClient
       .from("project_slides")
@@ -78,10 +98,10 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Failed to fetch slides" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Filter to slides that have an image (completed or with image_url)
-    const completedSlides = (slides || []).filter(
-      (s: any) => s.image_url && (s.status === "completed" || s.image_url)
-    );
+    const allSlides = (slides || []) as SlideRow[];
+
+    // Filter to slides that have an image (completed or already rendered)
+    const completedSlides = allSlides.filter((slide) => Boolean(slide.image_url));
 
     if (completedSlides.length === 0) {
       console.error("No slides with images found. Slides:", JSON.stringify(slides?.map(s => ({ id: s.id, status: s.status, has_image: !!s.image_url }))));
@@ -106,14 +126,13 @@ serve(async (req) => {
     const translatedSlides: { slide_number: number; imageUrl: string }[] = [];
     let insufficientCreditsDuringRun = false;
 
-    // Process all slides in batch
-    for (const slide of completedSlides) {
+    const processSlide = async (slide: SlideRow) => {
       let reservedCredit = false;
       try {
         const reserved = await debitCreditsAtomic(adminClient as any, userId, CREDIT_COST_PER_SLIDE);
         if (reserved === null) {
           insufficientCreditsDuringRun = true;
-          break;
+          return;
         }
         reservedCredit = true;
 
@@ -121,10 +140,10 @@ serve(async (req) => {
         let storagePath: string;
         if (isPrimary) {
           // Primary format — use original slide image
-          if (slide.image_url!.startsWith("http")) {
+          if (slide.image_url?.startsWith("http")) {
             storagePath = `${userId}/${project_id}/slide-${slide.slide_number}.png`;
           } else {
-            storagePath = slide.image_url!;
+            storagePath = slide.image_url || `${userId}/${project_id}/slide-${slide.slide_number}.png`;
           }
         } else {
           // Non-primary format — load from resized path
@@ -133,8 +152,7 @@ serve(async (req) => {
 
         const { data: fileData, error: downloadError } = await adminClient.storage.from("generated-outputs").download(storagePath);
         if (downloadError || !fileData) {
-          console.error(`Download failed for slide ${slide.slide_number}:`, downloadError?.message, "path:", storagePath);
-          continue;
+          throw new Error(`Download failed for slide ${slide.slide_number} (${storagePath})`);
         }
 
         const arrayBuffer = await fileData.arrayBuffer();
@@ -154,7 +172,7 @@ CRITICAL RULES:
 - For CJK languages, avoid unnecessary spacing and keep line breaks natural for that script.
 - The output must be a complete image identical to the input except with translated text.`;
 
-        const contents: any[] = [
+        const contents = [
           { text: translationPrompt },
           { inlineData: { mimeType: "image/png", data: imageBase64 } },
         ];
@@ -165,21 +183,20 @@ CRITICAL RULES:
           config: {
             responseModalities: ["TEXT", "IMAGE"],
             imageConfig: { aspectRatio, imageSize: "2K" },
-          } as any,
+          },
         });
 
         let newImageBase64 = "";
-        if (response.candidates && response.candidates[0]) {
-          for (const part of response.candidates[0].content!.parts!) {
-            if ((part as any).inlineData) {
-              newImageBase64 = (part as any).inlineData.data;
-            }
+        const candidateParts = response.candidates?.[0]?.content?.parts || [];
+        for (const part of candidateParts) {
+          const inlineData = (part as { inlineData?: { data?: string } }).inlineData;
+          if (inlineData?.data) {
+            newImageBase64 = inlineData.data;
           }
         }
 
         if (!newImageBase64) {
-          console.error(`No translated image generated for slide ${slide.slide_number}`);
-          continue;
+          throw new Error(`No translated image generated for slide ${slide.slide_number}`);
         }
 
         // Upload translated image
@@ -203,7 +220,7 @@ CRITICAL RULES:
         });
 
         // Persist translation record to DB
-        await adminClient.from("project_translations").insert({
+        const { error: translationUpsertError } = await adminClient.from("project_translations").upsert({
           project_id,
           user_id: userId,
           slide_number: slide.slide_number,
@@ -211,9 +228,14 @@ CRITICAL RULES:
           source_language: source_language || "English",
           storage_path: translatedPath,
           device_format: activeFormat,
+        }, {
+          onConflict: "project_id,slide_number,target_language,device_format",
         });
+        if (translationUpsertError) {
+          throw translationUpsertError;
+        }
 
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (reservedCredit) {
           try {
             await creditCreditsAtomic(adminClient as any, userId, CREDIT_COST_PER_SLIDE);
@@ -221,9 +243,20 @@ CRITICAL RULES:
             console.error(`Refund failed for slide ${slide.slide_number}:`, refundError);
           }
         }
-        console.error(`Translation error for slide ${slide.slide_number}:`, err?.message || err);
+        console.error(`Translation error for slide ${slide.slide_number}:`, err instanceof Error ? err.message : String(err));
       }
-    }
+    };
+
+    const queue = [...completedSlides];
+    const workers = Array.from({ length: Math.min(TRANSLATE_CONCURRENCY, queue.length) }, async () => {
+      while (queue.length > 0) {
+        const nextSlide = queue.shift();
+        if (!nextSlide) break;
+        await processSlide(nextSlide);
+      }
+    });
+    await Promise.all(workers);
+    translatedSlides.sort((a, b) => a.slide_number - b.slide_number);
 
     return new Response(JSON.stringify({
       translations: translatedSlides,

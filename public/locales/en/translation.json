@@ -102,8 +102,7 @@
         "checkEmail": "Check your email",
         "confirmationSent": "We sent you a confirmation link.",
         "enterEmailFirst": "Enter your email first",
-        "resetSent": "Password reset link sent."
-        ,
+        "resetSent": "Password reset link sent.",
         "humanCheckLabel": "Human verification",
         "humanCheckPlaceholder": "What is {{a}} + {{b}}?",
         "humanCheckFailed": "Human verification failed",
@@ -149,11 +148,12 @@
         "passwordUpdatedDesc": "Your password has been changed successfully.",
         "accountDeleted": "Account deleted",
         "accountDeletedDesc": "Your account and all data have been permanently removed.",
-        "deletionFailed": "Deletion failed"
-        ,
+        "deletionFailed": "Deletion failed",
         "active": "Active",
         "email": "Email",
-        "plan": "Plan"
+        "plan": "Plan",
+        "planIncludes": "Your {{planName}} plan includes {{credits}} credits/mo.",
+        "perMonth": "/mo"
     },
     "generating": {
         "title": "Consistency Engine",
@@ -180,6 +180,16 @@
         "redesigning": "Redesigning slide...",
         "redesigningDesc": "Applying your feedback to the creative engine.",
         "generationFailed": "Generation Failed",
+        "upgradeSuccessTitle": "Upgrade successful",
+        "upgradeSuccessDesc": "Your subscription is active. Resuming generation...",
+        "errors": {
+            "noProjectId": "Missing project id.",
+            "insufficientCredits": "Insufficient credits. Please upgrade your plan.",
+            "authIssue": "Authentication issue. Please reconnect and retry generation.",
+            "server": "Server error ({{status}})",
+            "networkFallback": "Network/CORS error",
+            "requestFailed": "Request failed: {{reason}}"
+        },
         "phases": {
             "0": "Analyzing brand identity",
             "1": "Processing visual references",
@@ -209,12 +219,17 @@
         "slideRegenerated": "Slide regenerated",
         "regenFailed": "Regeneration failed",
         "insufficientCredits": "Insufficient credits",
+        "needCreditsDesc": "You need {{required}} credit(s). Current balance: {{current}}.",
+        "resizeGeneratedTitle": "{{format}} format generated",
+        "resizeGeneratedDesc": "{{count}} slide(s) resized.",
+        "resizeFailed": "Resize failed",
+        "unknownError": "Unknown error",
+        "serverErrorFallback": "Server error",
+        "networkError": "Network error",
         "watermarkTitle": "Export with watermark",
         "watermarkDesc": "Free plan exports include a watermark. Upgrade for clean HD exports.",
-        "downloadAnyway": "Download anyway"
-        ,
-        "regenAllConfirm": "Regenerate all slides? This will cost {{cost}} credits."
-        ,
+        "downloadAnyway": "Download anyway",
+        "regenAllConfirm": "Regenerate all slides? This will cost {{cost}} credits.",
         "translations": "Translations"
     },
     "translations": {
@@ -420,5 +435,117 @@
         "save": "Save",
         "delete": "Delete",
         "confirm": "Confirm"
+    },
+    "privacyPage": {
+        "backHome": "Back to home",
+        "title": "Privacy Policy",
+        "lastUpdated": "Last updated: {{date}}",
+        "intro": "This policy explains what data ShotApp AI collects, why we process it, and the choices you have. By using the service, you agree to this processing as described below.",
+        "sections": {
+            "data": {
+                "title": "1. Data we collect",
+                "body": "We collect account details, project metadata, uploaded assets, generated outputs, billing events, and technical logs needed to operate ShotApp AI."
+            },
+            "usage": {
+                "title": "2. How we use data",
+                "body": "We use your data to provide screenshot generation, account security, payment processing, fraud prevention, and support. We do not sell personal data."
+            },
+            "legalBasis": {
+                "title": "3. Legal basis for processing",
+                "body": "We process data to perform our contract with you, protect legitimate business interests (security and abuse prevention), and comply with legal obligations."
+            },
+            "retention": {
+                "title": "4. Data retention",
+                "body": "We retain data while your account is active, or as required for legal and financial compliance. You can request deletion from your account settings."
+            },
+            "security": {
+                "title": "5. Security measures",
+                "body": "We use access controls, encryption in transit, signed asset URLs, and role-based database policies to reduce unauthorized access risks."
+            },
+            "processors": {
+                "title": "6. Third-party processors",
+                "body": "We rely on infrastructure and payment partners such as Supabase and Stripe. These processors handle data according to their own security and privacy terms."
+            },
+            "transfers": {
+                "title": "7. International transfers",
+                "body": "Your data may be processed in countries other than your own. We use appropriate safeguards for cross-border transfers where required."
+            },
+            "rights": {
+                "title": "8. Your rights",
+                "body": "Depending on your jurisdiction, you may request access, correction, deletion, restriction, objection, or portability of your personal data."
+            },
+            "children": {
+                "title": "9. Children's privacy",
+                "body": "ShotApp AI is not intended for children under 13 (or equivalent minimum age in your jurisdiction), and we do not knowingly collect their personal data."
+            },
+            "changes": {
+                "title": "10. Policy changes",
+                "body": "We may update this policy as the product or legal requirements evolve. We will post the latest version on this page."
+            },
+            "contact": {
+                "title": "11. Contact",
+                "body": "Privacy requests can be sent to"
+            }
+        }
+    },
+    "termsPage": {
+        "backHome": "Back to home",
+        "title": "Terms of Service",
+        "lastUpdated": "Last updated: {{date}}",
+        "intro": "These Terms govern your use of ShotApp AI. If you do not agree, do not use the service.",
+        "sections": {
+            "scope": {
+                "title": "1. Service scope",
+                "body": "ShotApp AI provides software tools to generate and export app-store screenshot creatives. Features and limits depend on your active plan."
+            },
+            "eligibility": {
+                "title": "2. Eligibility",
+                "body": "You must be legally able to enter into a binding agreement and use the service in compliance with applicable laws."
+            },
+            "account": {
+                "title": "3. Account responsibility",
+                "body": "You are responsible for account credentials, uploaded materials, and generated content usage. You must have rights to all assets you upload."
+            },
+            "license": {
+                "title": "4. License",
+                "body": "We grant you a limited, non-exclusive, non-transferable right to use ShotApp AI according to your plan while your account is in good standing."
+            },
+            "aiContent": {
+                "title": "5. AI-generated output",
+                "body": "AI output may vary and should be reviewed by you before publication. You remain responsible for legal compliance, claims, and final usage decisions."
+            },
+            "billing": {
+                "title": "6. Billing and credits",
+                "body": "Paid plans are billed on a recurring monthly basis. Credits are consumed per action as shown in-product. Abuse, chargebacks, or fraud may lead to suspension."
+            },
+            "refunds": {
+                "title": "7. Refunds",
+                "body": "Unless required by law, fees are non-refundable once billed. You can cancel renewal at any time from billing settings."
+            },
+            "use": {
+                "title": "8. Acceptable use",
+                "body": "You may not use the service for unlawful, infringing, deceptive, or harmful content. We may suspend access for policy violations."
+            },
+            "suspension": {
+                "title": "9. Suspension or termination",
+                "body": "We may suspend or terminate access for non-payment, abuse, legal risk, or policy breaches. You may stop using the service at any time."
+            },
+            "disclaimers": {
+                "title": "10. Disclaimers",
+                "body": "The service is provided on an 'as is' and 'as available' basis without warranties of uninterrupted availability, fitness for a specific purpose, or error-free operation."
+            },
+            "liability": {
+                "title": "11. Limitation of liability",
+                "body": "To the maximum extent allowed by law, ShotApp AI is not liable for indirect, incidental, special, consequential, or punitive damages."
+            },
+            "law": {
+                "title": "12. Governing law",
+                "body": "These Terms are governed by the laws applicable to our operating entity, unless your local consumer protection laws require otherwise."
+            },
+            "contact": {
+                "title": "13. Contact",
+                "body": "Terms questions can be sent to"
+            }
+        }
     }
 }

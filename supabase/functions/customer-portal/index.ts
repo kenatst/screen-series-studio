@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
+import { getStripeSecretKey, resolveSiteOrigin } from "../_shared/stripe.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,8 +20,8 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    const stripeKey = Deno.env.get("STRIPE_TEST_SECRET");
-    if (!stripeKey) throw new Error("STRIPE_TEST_SECRET is not set");
+    const stripeKey = getStripeSecretKey();
+    if (!stripeKey) throw new Error("Stripe secret is not set (STRIPE_SECRET_KEY or STRIPE_TEST_SECRET)");
 
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -43,7 +44,7 @@ serve(async (req) => {
     if (customers.data.length === 0) throw new Error("No Stripe customer found for this user");
 
     const customerId = customers.data[0].id;
-    const origin = req.headers.get("origin") || Deno.env.get("SITE_URL") || "https://shotapp.ai";
+    const origin = resolveSiteOrigin(req.headers.get("origin"));
 
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customerId,
