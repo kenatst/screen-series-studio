@@ -188,7 +188,7 @@ function buildSlidePrompt(params: {
 
   // ── CASE 1: Slide within template range — match specific template slide ──
   if (!isBeyondTemplate && slideLayout && templateSetAnalysis) {
-    const prompt = `
+    return `
 You are an elite-tier App Store screenshot designer — your work rivals the best studios on Dribbble and Behance.
 
 === YOUR MISSION ===
@@ -232,7 +232,6 @@ Slide ${slide.slide_number} of ${totalSlides} | Objective: ${slide.objective || 
 
 ${!isFirstSlide && hasPreviousSlides ? `=== VISUAL CONTINUITY (CRITICAL) ===
 Previously generated slides from THIS SET are also attached after the template and raw screen.
-You MUST ensure this slide looks like it belongs to the same family:
 - LAYOUT: Follow the template slide #${slideLayout.slidePosition}'s composition (IMAGE #1)
 - VISUAL IDENTITY: Match the exact color palette, typography, device frames, background treatment, and lighting from the previously generated slides
 - Think of it as: ONE designer, ONE Figma file, ONE session — each slide has a different layout but shares the same visual DNA
@@ -245,71 +244,59 @@ You MUST ensure this slide looks like it belongs to the same family:
 6. Photorealistic device frames with proper shadows
 ${langDirective}${feedbackBlock}
 
-Generate the image now. Recreate the template EXACTLY with the new content.
-You are an elite-tier App Store screenshot designer — your work rivals the best studios on Dribbble and Behance. Your task: create ONE polished, publication-ready App Store screenshot.
-  const prompt = `
-You are an elite-tier App Store screenshot designer. Your work rivals the best studios on Dribbble and Behance.
-
-=== YOUR MISSION ===
-Create slide ${slide.slide_number} of ${totalSlides} for the app "${appName}".
-IMAGE #1 is YOUR MASTER REFERENCE TEMPLATE for THIS EXACT SLIDE — you MUST reproduce its layout, composition, spacing, and visual energy PRECISELY.
-The ONLY things that change are the headline, subheadline, app screen, and brand colors.
-
-=== OUTPUT SPEC ===
-- Format: ${aspectStr}
-- Resolution: Ultra-crisp, Retina-quality, 2K
-- Style: Premium, editorial-grade App Store screenshot
-
-=== TEMPLATE LAYOUT ANALYSIS (from IMAGE #1) ===
-${layout.detailedComposition}
-
-MATCH THESE EXACT PROPORTIONS:
-- Device mockup: ${layout.hasDeviceMockup ? `YES — ${layout.devicePosition} position, ${layout.deviceScale} scale. Copy the EXACT device angle, shadow, frame style.` : "NO device — this is a text/typographic slide. DO NOT add a phone."}
-- Text placement: ${layout.textPosition} — match the EXACT position, font size ratio, and spacing
-- Headline style: ${layout.headlineStyle}, large and impactful
-- Background: ${layout.backgroundType}${layout.decorativeElements.length > 0 ? ` with elements: ${layout.decorativeElements.join(", ")}` : ""} — reproduce the EXACT treatment
-- 3D elements: ${layout.has3DElements ? "YES — include matching 3D objects with same lighting/material" : "NO — keep flat/2D"}
-${layout.hasMascot ? `- Mascot/Character: YES — ${layout.mascotDescription}. Same position and scale as template.` : ""}
-- Mood: ${layout.mood}
-
-=== CONTENT TO RENDER (EXACT TEXT) ===
->>> HEADLINE: "${slide.headline || ""}"
->>> SUBHEADLINE: "${slide.subheadline || ""}"
-Category: ${config?.appCategory || "App"} | Purpose: ${slide.objective || "Feature highlight"}
-Visual emphasis: ${slide.emphasis || "balanced"} | Importance: ${slide.importance || "high"}
-${brandBlock ? `\n=== BRAND IDENTITY ===\n${brandBlock}` : ""}
-Color direction: ${brandKit?.colors?.length > 0 ? `Adapt template colors to use ${brandKit.colors.join(", ")} as primary palette while keeping same contrast ratios.` : "Keep template's original palette, adjusting hue to match any brand colors from the raw screenshot."}
-
-${hasRawScreen ? `=== RAW APP SCREEN (IMAGE #2) ===
-This is the REAL app screenshot. Composite it INTO the device frame EXACTLY as-is.
-- Preserve EVERY pixel — do NOT redesign, rearrange, or hallucinate new UI
-- Place inside the phone frame at the SAME position/angle as template's device
-- Crop bottom naturally if screen is too tall` : `=== NO RAW SCREEN PROVIDED ===
-${layout.hasDeviceMockup ? "Include a phone mockup with a clean branded placeholder screen." : "Focus on headline impact and background design — this is a pure typographic slide."}`}
-
-${!isFirstSlide && hasPreviousSlides ? `=== VISUAL CONTINUITY (CRITICAL) ===
-Previously generated slides from THIS SET are attached after the template and raw screen.
-LAYOUT → follows THIS SLIDE'S template reference (IMAGE #1)
-VISUAL IDENTITY → matches the previously generated slides for set consistency
-Match: exact color palette, gradient logic, typography, device frame style, shadow treatment, background rendering.
-The set must look like ONE designer made it in ONE Figma session.` : ""}
-
-=== ABSOLUTE QUALITY RULES ===
-1. Text MUST be pixel-perfect: crisp, well-kerned, no artifacts, no warping, no misspellings
-2. Render the EXACT headline and subheadline — zero placeholder text, zero lorem ipsum
-3. Output must be INDISTINGUISHABLE from a professional design studio's work
-4. Rich backgrounds with proper depth, lighting, and detail matching the template
-5. Photorealistic device frames (if applicable) with proper shadows and reflections
-${langDirective}${feedbackBlock}
-
-Generate the image now.
-`.trim();
-    return prompt;
+Generate the image now. Recreate the template EXACTLY with the new content.`.trim();
   }
 
+  // ── CASE 2: Beyond template range — continuity mode ──
+  return `
+You are an elite-tier App Store screenshot designer — your work rivals the best studios on Dribbble and Behance.
 
+=== YOUR MISSION ===
+You are generating slide ${slide.slide_number} of ${totalSlides} for the app "${appName}".
+There is NO specific template layout for this slide position — the template set only had ${templateSetAnalysis?.totalSlides || 0} slides.
+The previously generated slides (attached) are your PRIMARY VISUAL REFERENCE.
+Your job: continue the set with the EXACT same visual DNA — same quality, same style, same attention to detail.
+It must be IMPOSSIBLE to tell where the template-based slides end and the continuity slides begin.
 
-  return prompt;
+${templateSetAnalysis ? `=== SET IDENTITY (from template) ===
+${templateSetAnalysis.overallStyle}
+Color palette: ${templateSetAnalysis.colorPalette}` : ""}
+
+=== APP CONTENT TO INSERT ===
+App name: "${appName}" | Category: "${config?.appCategory || "Not specified"}"
+>>> HEADLINE (render EXACTLY): "${slide.headline || ""}" <<<
+>>> SUBHEADLINE (render EXACTLY): "${slide.subheadline || ""}" <<<
+${brandBlock ? `\n=== BRAND IDENTITY ===\n${brandBlock}` : ""}
+
+${hasRawScreen ? `=== RAW APP SCREEN ===
+This is the REAL app screenshot. Composite it INTO the device frame EXACTLY as-is.
+- Preserve EVERY pixel — do NOT redesign or modify the UI
+- Match the device frame style from previously generated slides` : `=== NO RAW SCREEN ===
+Include a phone mockup with a clean branded screen matching the app's color scheme, using the same device frame style as previous slides.`}
+
+=== SLIDE CONTEXT ===
+Slide ${slide.slide_number} of ${totalSlides} | Objective: ${slide.objective || "Feature spotlight"} | Emphasis: ${slide.emphasis || "balanced"} | Importance: ${slide.importance || "high"} | Format: ${aspectStr}
+
+=== VISUAL CONTINUITY (THIS IS YOUR #1 PRIORITY) ===
+The previously generated slides are attached — they are your ONLY layout reference.
+Match EVERYTHING from them:
+- Exact color palette, gradient directions, and color ratios
+- Typography: same font style, weight, size proportions, kerning
+- Device frame: same model, angle, shadow, reflection style
+- Background treatment: same gradient type, texture, depth, lighting
+- Decorative elements: same floating shapes, particles, or patterns if present
+- Spacing: same margins, padding, text-to-device ratios
+ONE designer, ONE Figma file, ONE session — this slide must feel like a natural continuation.
+${langDirective}${feedbackBlock}
+
+=== QUALITY RULES ===
+1. Text pixel-perfect, crisp, perfectly kerned — zero artifacts
+2. Render the EXACT headline/subheadline strings — NO placeholders
+3. INDISTINGUISHABLE from the previously generated slides in style and quality
+4. Vary the LAYOUT slightly (different text position, different device angle) to keep the set dynamic
+5. Rich backgrounds with proper depth and lighting
+
+Generate the image now. Continue the set seamlessly.`.trim();
 }
 
 // ─────────────────────────────────────────────────────────────
