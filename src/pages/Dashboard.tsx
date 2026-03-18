@@ -25,6 +25,12 @@ const statusColors: Record<string, string> = {
   archived: 'bg-muted text-muted-foreground/60',
 };
 
+const statusLabelKey: Record<string, string> = {
+  draft: "dashboard.status.draft",
+  generating: "dashboard.status.generating",
+  completed: "dashboard.status.completed",
+  archived: "dashboard.status.archived",
+};
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -45,7 +51,11 @@ const Dashboard = () => {
 
   const handleNewProject = () => {
     if (!canCreateProject(profile?.plan || 'free', activeProjects.length)) {
-      toast({ title: t('dashboard.limitReached'), description: `Your ${plan.name} plan allows ${plan.limits.maxProjects} project(s). Upgrade to a higher plan.`, variant: "destructive" });
+      toast({
+        title: t('dashboard.limitReached'),
+        description: t("dashboard.limitReachedDesc", { planName: plan.name, maxProjects: plan.limits.maxProjects }),
+        variant: "destructive",
+      });
       return;
     }
     navigate('/project/new');
@@ -55,16 +65,16 @@ const Dashboard = () => {
     setIsCheckingSub(true);
     await checkSubscription();
     setIsCheckingSub(false);
-    toast({ title: t('dashboard.statusUpdated'), description: `Current plan: ${plan.name}` });
+    toast({ title: t('dashboard.statusUpdated'), description: t("dashboard.statusUpdatedDesc", { planName: plan.name }) });
   };
 
   const handleUnarchive = async (e: React.MouseEvent, projectId: string) => {
     e.stopPropagation();
     try {
       await unarchiveProject.mutateAsync(projectId);
-      toast({ title: t('dashboard.projectRestored'), description: "Project is active again." });
+      toast({ title: t('dashboard.projectRestored'), description: t("dashboard.projectRestoredDesc") });
     } catch {
-      toast({ title: t('common.error'), description: "Could not restore the project.", variant: "destructive" });
+      toast({ title: t('common.error'), description: t("dashboard.restoreFailed"), variant: "destructive" });
     }
   };
 
@@ -78,7 +88,7 @@ const Dashboard = () => {
     } catch (err: unknown) {
       toast({
         title: t('common.error'),
-        description: err instanceof Error ? err.message : "Could not archive the project.",
+        description: err instanceof Error ? err.message : t("dashboard.archiveFailed"),
         variant: "destructive",
       });
     }
@@ -216,9 +226,11 @@ const Dashboard = () => {
                   <div>
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="text-2xl font-bold text-foreground tracking-tight">{currentProject.app_name || currentProject.name}</h3>
-                      <Badge className={statusColors[currentProject.status] || statusColors.draft}>{currentProject.status}</Badge>
+                      <Badge className={statusColors[currentProject.status] || statusColors.draft}>
+                        {t(statusLabelKey[currentProject.status] || "dashboard.status.draft")}
+                      </Badge>
                     </div>
-                    <p className="text-muted-foreground font-medium">{currentProject.app_name || 'App'} · {currentProject.platform}</p>
+                    <p className="text-muted-foreground font-medium">{currentProject.app_name || t("dashboard.appFallback")} · {currentProject.platform}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -258,7 +270,9 @@ const Dashboard = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-xs">{project.platform}</Badge>
-                    <Badge className={`text-xs ${statusColors[project.status] || statusColors.draft}`}>{project.status}</Badge>
+                    <Badge className={`text-xs ${statusColors[project.status] || statusColors.draft}`}>
+                      {t(statusLabelKey[project.status] || "dashboard.status.draft")}
+                    </Badge>
                   </div>
                   <div className="flex items-center justify-between mt-3">
                     <p className="text-xs text-muted-foreground">

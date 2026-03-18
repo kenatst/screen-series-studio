@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useTranslation } from "react-i18next";
 
 export interface UploadedScreen {
     id: string;
@@ -30,6 +31,7 @@ export const SortableSlide = ({
     getScreenOptions,
     uploadedScreens
 }: SortableSlideProps) => {
+    const { t } = useTranslation();
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: slide.id });
 
     const style = {
@@ -64,7 +66,7 @@ export const SortableSlide = ({
                                 <Input
                                     value={slide.headline}
                                     onChange={e => updateSlide(slide.id, 'headline', e.target.value)}
-                                    placeholder="Headline — your big hook for this slide"
+                                    placeholder={t("step.planner.headlinePlaceholder")}
                                     className="bg-black/5 border-border text-foreground placeholder:text-foreground/30 text-sm font-bold shadow-inner h-11 focus-visible:ring-primary transition-all rounded-xl w-full"
                                 />
                             </TooltipTrigger>
@@ -79,7 +81,7 @@ export const SortableSlide = ({
                                 <Input
                                     value={slide.subheadline}
                                     onChange={e => updateSlide(slide.id, 'subheadline', e.target.value)}
-                                    placeholder="Subheadline — supporting text"
+                                    placeholder={t("step.planner.subheadlinePlaceholder")}
                                     className="bg-black/5 border-border text-foreground placeholder:text-foreground/30 text-sm font-medium shadow-inner h-11 focus-visible:ring-primary transition-all rounded-xl w-full"
                                 />
                             </TooltipTrigger>
@@ -98,12 +100,12 @@ export const SortableSlide = ({
                                 value={slide.rawScreenTag}
                                 onChange={e => updateSlide(slide.id, 'rawScreenTag', e.target.value)}
                             >
-                                <option value="">No screen (Text only)</option>
-                                {getScreenOptions().map(t => {
-                                    const matchingScreen = uploadedScreens.find((s: UploadedScreen) => s.tag === t);
+                                <option value="">{t("step.planner.noScreen")}</option>
+                                {getScreenOptions().map((tag) => {
+                                    const matchingScreen = uploadedScreens.find((s: UploadedScreen) => s.tag === tag);
                                     return (
-                                        <option key={t} value={t}>
-                                            {matchingScreen ? `📱 ${t} (uploaded)` : t}
+                                        <option key={tag} value={tag}>
+                                            {matchingScreen ? t("step.planner.uploadedTag", { tag }) : tag}
                                         </option>
                                     );
                                 })}
@@ -120,10 +122,14 @@ export const SortableSlide = ({
                             </div>
                         )}
                         <select className="bg-black/5 border border-border rounded-lg px-3 py-2 text-xs font-bold text-muted-foreground outline-none mt-2 focus:ring-1 focus:ring-primary transition-all" value={slide.emphasis} onChange={e => updateSlide(slide.id, 'emphasis', e.target.value)}>
-                            {emphasisOptions.map(e => <option key={e} value={e}>{e}</option>)}
+                            {emphasisOptions.map((emphasis) => (
+                                <option key={emphasis} value={emphasis}>
+                                    {t(`step.planner.emphasisOptions.${emphasis}`, { defaultValue: emphasis })}
+                                </option>
+                            ))}
                         </select>
                         <div className="flex-1" />
-                        <Button variant="ghost" size="sm" onClick={() => removeSlide(slide.id)} className="h-9 text-xs font-bold mt-2 text-red-400/70 hover:text-red-400 hover:bg-red-500/10 rounded-lg"><Trash2 className="mr-1.5 h-3.5 w-3.5" />Remove</Button>
+                        <Button variant="ghost" size="sm" onClick={() => removeSlide(slide.id)} className="h-9 text-xs font-bold mt-2 text-red-400/70 hover:text-red-400 hover:bg-red-500/10 rounded-lg"><Trash2 className="mr-1.5 h-3.5 w-3.5" />{t("step.planner.removeSlide")}</Button>
                     </div>
                 </div>
             </div>

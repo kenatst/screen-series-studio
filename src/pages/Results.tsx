@@ -22,10 +22,6 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { useTranslation } from "react-i18next";
 import { resizeImageForDevice, DEVICE_DIMENSIONS } from "@/lib/image-resize";
-import { isStoragePath, LANGUAGE_LABELS } from "@/lib/storage-utils";
-
-interface SavedTranslation {
-  id: string;
 import { isStoragePath, resolveSignedUrl } from "@/lib/storage-utils";
 import { DEVICE_FORMAT_LABELS, FORMAT_SUFFIX } from "@/lib/localization";
 
@@ -69,6 +65,11 @@ const Results = () => {
   const resolvedRef = useRef<Set<string>>(new Set());
 
   // Resolve storage paths to signed URLs with 90-minute auto-refresh
+  useEffect(() => {
+    resolvedImagesRef.current = resolvedImages;
+  }, [resolvedImages]);
+
+  // Resolve storage paths to signed URLs
   const resolveImages = useCallback(async () => {
     if (!slides?.length) return;
     const toResolve = slides.filter(
@@ -115,15 +116,6 @@ const Results = () => {
 
     setResizedFormats(Object.fromEntries(refreshed));
   }, [resizedFormats]);
-
-  // Auto-refresh signed URLs every 90 minutes (they expire in 120 minutes)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      resolvedRef.current.clear();
-      setResolvedImages({});
-    }, 90 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Fetch saved translations from DB
   const fetchSavedTranslations = useCallback(async () => {

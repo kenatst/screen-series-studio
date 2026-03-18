@@ -8,8 +8,10 @@ import { useBilling } from "@/hooks/useBilling";
 import { useAuth } from "@/hooks/useAuth";
 import { useNewProject } from "@/contexts/NewProjectContext";
 import { useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 export const StepPlanner = () => {
+  const { t } = useTranslation();
   const {
     slides, slideCount, isAutoFilling, uploadedScreens,
     consistencyLevel, sensors, handleDragEnd, handleAutoFillSlides,
@@ -24,7 +26,7 @@ export const StepPlanner = () => {
 
   const onSlideCountSelect = async (n: number) => {
     if (n > maxSlides) {
-      if (window.confirm(`Upgrade to unlock ${n} slides? We'll save your draft so you can pick up exactly where you left off.`)) {
+      if (window.confirm(t("step.planner.upgradeSlides", { count: n }))) {
         await handleSaveDraft();
         handleUpgrade('starter', `/project/new?project=${projectId}&step=5`);
       }
@@ -37,8 +39,8 @@ export const StepPlanner = () => {
     <div className="space-y-8 relative z-10">
       <div className="flex items-start justify-between border-b border-border pb-5">
         <div>
-          <h2 className="text-3xl font-black tracking-tight text-foreground mb-2">Screenshot set planner</h2>
-          <p className="text-muted-foreground font-medium">Define each slide's content and objective.</p>
+          <h2 className="text-3xl font-black tracking-tight text-foreground mb-2">{t("step.planner.title")}</h2>
+          <p className="text-muted-foreground font-medium">{t("step.planner.subtitle")}</p>
         </div>
         <Button
           variant="outline"
@@ -47,7 +49,7 @@ export const StepPlanner = () => {
           className="rounded-xl font-bold border-primary/30 text-primary hover:bg-primary/10 h-10 px-4"
         >
           {isAutoFilling ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Wand2 className="h-4 w-4 mr-2" />}
-          Auto-fill with AI
+          {t("step.planner.autoFill")}
         </Button>
       </div>
 
@@ -55,7 +57,7 @@ export const StepPlanner = () => {
         <div className="md:col-span-2 space-y-6">
           <div className="flex items-center justify-end">
             <div className="flex items-center gap-3 bg-card/90 px-3 py-1.5 rounded-xl border border-border shadow-inner">
-              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Slides:</span>
+              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t("step.planner.slides")}</span>
               <div className="flex gap-1">
                 {[3, 5, 7, 10].map(n => {
                   const isLocked = n > maxSlides;
@@ -95,7 +97,7 @@ export const StepPlanner = () => {
                   ))}
                 </SortableContext>
                 <Button variant="outline" onClick={addSlide} className="w-full rounded-2xl border-dashed border-2 h-14 text-muted-foreground hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-all">
-                  <Plus className="mr-2 h-5 w-5" /> Add slide
+                  <Plus className="mr-2 h-5 w-5" /> {t("step.planner.addSlide")}
                 </Button>
               </div>
             </DndContext>
@@ -111,20 +113,20 @@ export const StepPlanner = () => {
                 <div className="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center border border-primary/30 shadow-inner">
                   <Lock className="h-5 w-5 text-primary" />
                 </div>
-                <span className="text-lg font-black tracking-tight text-foreground">Consistency Engine</span>
+                <span className="text-lg font-black tracking-tight text-foreground">{t("step.planner.consistency")}</span>
               </div>
               <div className="flex flex-col gap-3 mb-6">
                 {(['strict', 'balanced', 'exploratory'] as const).map(level => (
                   <button key={level} onClick={() => setConsistencyLevel(level)} className={`px-4 py-3.5 rounded-xl text-sm capitalize font-bold border transition-all duration-300 w-full text-left flex justify-between items-center ${consistencyLevel === level ? 'bg-primary/20 text-primary border-primary shadow-[0_0_15px_hsl(var(--primary)/0.2)]' : 'bg-card/90 text-muted-foreground border-border hover:border-primary/40 hover:text-foreground shadow-inner'}`}>
-                    {level}
+                    {t(`step.planner.levels.${level}`)}
                     {consistencyLevel === level && <CheckCircle2 className="h-4.5 w-4.5" />}
                   </button>
                 ))}
               </div>
               <div className="p-4 bg-card/90 rounded-xl border border-border text-xs text-muted-foreground font-medium leading-relaxed shadow-inner">
-                {consistencyLevel === 'strict' && 'All slides remain very homogeneous — same palette, framing, density. Recommended for traditional app store pages.'}
-                {consistencyLevel === 'balanced' && 'Same visual universe with controlled variations for each slide. Great for feature showcases.'}
-                {consistencyLevel === 'exploratory' && 'More creative freedom while maintaining a coherent base brand identity. High contrast allowed.'}
+                {consistencyLevel === 'strict' && t("step.planner.strictDesc")}
+                {consistencyLevel === 'balanced' && t("step.planner.balancedDesc")}
+                {consistencyLevel === 'exploratory' && t("step.planner.exploratoryDesc")}
               </div>
             </div>
           </div>

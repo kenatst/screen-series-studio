@@ -10,6 +10,7 @@ import { useBilling } from "@/hooks/useBilling";
 import { useSearchParams } from "react-router-dom";
 import { useTemplateRecommendations } from "@/hooks/useTemplateRecommendations";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
 const toDataUrl = (file: File) =>
   new Promise<string>((resolve, reject) => {
@@ -20,6 +21,7 @@ const toDataUrl = (file: File) =>
   });
 
 export const StepStyle = () => {
+  const { t } = useTranslation();
   const {
     selectedTemplate, setSelectedTemplate,
     templateMoodFilter, setTemplateMoodFilter,
@@ -94,7 +96,7 @@ export const StepStyle = () => {
   const onSelectTemplate = async (templateName: string) => {
     const isPremium = ["Subscription", "Finance", "RPG", "Vault", "Trainer AI"].some((p) => templateName.includes(p));
     if (isFree && isPremium) {
-      if (window.confirm(`"${templateName}" is a Premium template. Upgrade to unlock all styles? We'll save your draft so you can continue immediately.`)) {
+      if (window.confirm(t("step.style.premiumTemplate", { name: templateName }))) {
         await handleSaveDraft();
         handleUpgrade("starter", `/project/new?project=${projectId}&step=4`);
       }
@@ -105,7 +107,7 @@ export const StepStyle = () => {
 
   const onSelectReference = async () => {
     if (isFree) {
-      if (window.confirm("Reference-based generation is a Pro feature. Upgrade to unlock? We'll save your draft so you can continue immediately.")) {
+      if (window.confirm(t("step.style.referenceProFeature"))) {
         await handleSaveDraft();
         handleUpgrade("starter", `/project/new?project=${projectId}&step=4`);
       }
@@ -127,13 +129,13 @@ export const StepStyle = () => {
   return (
     <div className="space-y-8 relative z-10">
       <div className="border-b border-border pb-5">
-        <h2 className="text-3xl font-black tracking-tight text-foreground mb-2">Choose your style</h2>
-        <p className="text-muted-foreground font-medium">Pick a template or upload references for inspiration.</p>
+        <h2 className="text-3xl font-black tracking-tight text-foreground mb-2">{t("step.style.title")}</h2>
+        <p className="text-muted-foreground font-medium">{t("step.style.subtitle")}</p>
       </div>
 
       <div className="flex gap-2 p-1.5 bg-card/90 border border-border rounded-xl inline-flex mb-2 shadow-inner">
-        <Button variant={selectedTemplate !== "reference" ? "default" : "ghost"} className={`rounded-lg font-bold transition-all duration-300 ${selectedTemplate !== "reference" ? "bg-primary text-primary-foreground shadow-glow" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`} onClick={() => setSelectedTemplate("")}>Templates</Button>
-        <Button variant={selectedTemplate === "reference" ? "default" : "ghost"} className={`rounded-lg font-bold transition-all duration-300 ${selectedTemplate === "reference" ? "bg-primary text-primary-foreground shadow-glow" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`} onClick={onSelectReference}>References</Button>
+        <Button variant={selectedTemplate !== "reference" ? "default" : "ghost"} className={`rounded-lg font-bold transition-all duration-300 ${selectedTemplate !== "reference" ? "bg-primary text-primary-foreground shadow-glow" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`} onClick={() => setSelectedTemplate("")}>{t("step.style.templates")}</Button>
+        <Button variant={selectedTemplate === "reference" ? "default" : "ghost"} className={`rounded-lg font-bold transition-all duration-300 ${selectedTemplate === "reference" ? "bg-primary text-primary-foreground shadow-glow" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`} onClick={onSelectReference}>{t("step.style.references")}</Button>
       </div>
 
       {selectedTemplate !== "reference" ? (
@@ -149,7 +151,9 @@ export const StepStyle = () => {
                 <div className="flex items-center gap-2 mb-3">
                   <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-lg border border-primary/20">
                     <Brain className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-bold text-primary">✨ Recommended for {appName || "your app"}</span>
+                    <span className="text-sm font-bold text-primary">
+                      {t("step.style.recommendedFor", { name: appName || t("step.style.yourApp") })}
+                    </span>
                   </div>
                   {isLoadingRecs && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
                 </div>
@@ -185,7 +189,9 @@ export const StepStyle = () => {
                             </div>
                           )}
                           <div className="absolute top-2 left-2 z-20 bg-primary/90 backdrop-blur-md rounded-lg px-2 py-0.5 border border-primary/50">
-                            <span className="text-[10px] font-bold text-primary-foreground">{similarityPercent}% match</span>
+                            <span className="text-[10px] font-bold text-primary-foreground">
+                              {t("step.style.match", { percent: similarityPercent })}
+                            </span>
                           </div>
                           {isLocked && (
                             <div className="absolute top-2 right-2 z-20 bg-primary/20 backdrop-blur-md rounded-lg p-1.5 border border-primary/30">
@@ -213,18 +219,18 @@ export const StepStyle = () => {
 
           <div className="flex flex-wrap gap-4">
             <div className="flex gap-1.5 items-center">
-              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mr-1">Mood:</span>
+              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mr-1">{t("step.style.mood")}</span>
               {templateMoods.map((m) => (
                 <button key={m} onClick={() => setTemplateMoodFilter(m)} className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize border transition-all ${templateMoodFilter === m ? "bg-primary text-primary-foreground border-primary" : "bg-card/90 text-muted-foreground border-border hover:border-primary/30"}`}>
-                  {m === "All" ? "🎨 All" : m === "dark" ? "🌙 Dark" : m === "light" ? "☀️ Light" : m === "colorful" ? "🌈 Colorful" : "⚪ Neutral"}
+                  {m === "All" ? `🎨 ${t("templates.moods.all")}` : m === "dark" ? `🌙 ${t("templates.moods.dark")}` : m === "light" ? `☀️ ${t("templates.moods.light")}` : m === "colorful" ? `🌈 ${t("templates.moods.colorful")}` : `⚪ ${t("templates.moods.neutral")}`}
                 </button>
               ))}
             </div>
             <div className="flex gap-1.5 items-center">
-              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mr-1">Category:</span>
+              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mr-1">{t("step.style.category")}</span>
               {templateCategories.map((c) => (
                 <button key={c} onClick={() => setTemplateCategoryFilter(c)} className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${templateCategoryFilter === c ? "bg-primary text-primary-foreground border-primary" : "bg-card/90 text-muted-foreground border-border hover:border-primary/30"}`}>
-                  {c}
+                  {t(`templates.categories.${c.toLowerCase()}`, { defaultValue: c })}
                 </button>
               ))}
             </div>
@@ -265,7 +271,7 @@ export const StepStyle = () => {
 
           {filteredTemplates.length === 0 && (
             <div className="text-center py-12 text-muted-foreground">
-              <p className="text-sm font-medium">No templates match your filters.</p>
+              <p className="text-sm font-medium">{t("step.style.noMatch")}</p>
             </div>
           )}
         </div>
@@ -300,21 +306,21 @@ export const StepStyle = () => {
             className="border border-dashed border-border bg-card/90 rounded-2xl p-8 text-center hover:border-primary/40 hover:bg-muted/50 transition-all duration-300 cursor-pointer shadow-inner group"
           >
             <Upload className="h-6 w-6 text-foreground/30 mx-auto mb-3 group-hover:text-primary transition-colors" />
-            <p className="text-sm font-bold text-muted-foreground tracking-tight group-hover:text-foreground">Upload your reference mockups</p>
-            <p className="text-xs text-foreground/50 mt-1">PNG/JPG/WEBP • multiple files supported</p>
-            {isFree && <Badge className="mt-2 bg-primary/20 text-primary border-primary/30 rounded-lg">Pro Feature</Badge>}
+            <p className="text-sm font-bold text-muted-foreground tracking-tight group-hover:text-foreground">{t("step.style.uploadRef")}</p>
+            <p className="text-xs text-foreground/50 mt-1">{t("step.style.uploadRefTypes")}</p>
+            {isFree && <Badge className="mt-2 bg-primary/20 text-primary border-primary/30 rounded-lg">{t("step.style.proFeature")}</Badge>}
           </div>
 
           {referenceMockups.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Reference mockups</h3>
-                <span className="text-xs font-bold text-muted-foreground bg-muted/50 px-3 py-1 rounded-md border border-border">{referenceMockups.length} files</span>
+                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">{t("step.style.refMockups")}</h3>
+                <span className="text-xs font-bold text-muted-foreground bg-muted/50 px-3 py-1 rounded-md border border-border">{t("step.style.files", { count: referenceMockups.length })}</span>
               </div>
               <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
                 {referenceMockups.map((ref) => (
                   <div key={ref.id} className="relative rounded-xl overflow-hidden border border-border bg-card/90 group">
-                    <img src={ref.preview} alt="Reference mockup" className="w-full aspect-[9/16] object-cover" />
+                    <img src={ref.preview} alt={t("step.style.refMockups")} className="w-full aspect-[9/16] object-cover" />
                     <Button
                       type="button"
                       size="icon"
@@ -331,11 +337,11 @@ export const StepStyle = () => {
           )}
 
           <div className="space-y-3">
-            <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Inspiration notes</label>
+            <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">{t("step.style.inspirationNotes")}</label>
             <Textarea
               value={inspirationText}
               onChange={(e) => setInspirationText(e.target.value)}
-              placeholder="e.g. Keep this cinematic rhythm, but preserve my app UI exactly and avoid tilted device mockups."
+              placeholder={t("step.style.inspirationPlaceholder")}
               className="bg-muted/50 border-border text-foreground placeholder:text-foreground/30 shadow-inner min-h-[120px] focus-visible:ring-primary transition-all rounded-xl p-4"
             />
           </div>
