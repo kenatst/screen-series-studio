@@ -61,6 +61,10 @@ const Results = () => {
   const { handleUpgrade: billingUpgrade, isOpeningPortal } = useBilling();
   const [showWatermarkWarning, setShowWatermarkWarning] = useState(false);
 
+  // Track resolved slide IDs to avoid re-fetching signed URLs unnecessarily
+  const resolvedRef = useRef<Set<string>>(new Set());
+
+  // Resolve storage paths to signed URLs with 90-minute auto-refresh
   useEffect(() => {
     resolvedImagesRef.current = resolvedImages;
   }, [resolvedImages]);

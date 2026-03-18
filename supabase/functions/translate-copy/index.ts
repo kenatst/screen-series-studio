@@ -235,6 +235,8 @@ CRITICAL RULES:
           throw translationUpsertError;
         }
 
+        console.log(`[TRANSLATE] Slide ${slide.slide_number} translated to ${target_language}`);
+
       } catch (err: unknown) {
         if (reservedCredit) {
           try {
