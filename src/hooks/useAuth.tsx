@@ -195,7 +195,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       const { error } = await supabase
         .from("profiles")
-        .update({ preferred_ui_language: normalizedLanguage })
+        .update({ preferred_ui_language: normalizedLanguage } as any)
         .eq("id", session.user.id);
 
       if (error) {
