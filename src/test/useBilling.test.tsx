@@ -69,6 +69,45 @@ describe("useBilling", () => {
     );
   });
 
+  it("extracts the actual error from edge function response body", async () => {
+    // supabase.functions.invoke returns both data (with error detail) and a generic error
+    invokeMock.mockResolvedValue({
+      data: { error: "Stripe secret is not set (STRIPE_SECRET_KEY or STRIPE_TEST_SECRET)" },
+      error: { message: "Edge Function returned a non-2xx status code" },
+    });
+    const { result } = renderHook(() => useBilling());
+
+    await act(async () => {
+      await result.current.handleUpgrade("pro");
+    });
+
+    expect(toastMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        description: "Stripe secret is not set (STRIPE_SECRET_KEY or STRIPE_TEST_SECRET)",
+        variant: "destructive",
+      }),
+    );
+  });
+
+  it("shows actual error from customer-portal edge function", async () => {
+    invokeMock.mockResolvedValue({
+      data: { error: "No Stripe customer found for this user" },
+      error: { message: "Edge Function returned a non-2xx status code" },
+    });
+    const { result } = renderHook(() => useBilling());
+
+    await act(async () => {
+      await result.current.handleManageSubscription();
+    });
+
+    expect(toastMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        description: "No Stripe customer found for this user",
+        variant: "destructive",
+      }),
+    );
+  });
+
   it("opens customer portal in a new tab", async () => {
     const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
     invokeMock.mockResolvedValue({ data: { url: "https://example.com/portal" }, error: null });
