@@ -152,16 +152,6 @@ serve(async (req) => {
             expand: ["data.items.data.price.product"],
           });
           if (sub.data.length > 0) {
-            const priceId = sub.data[0].items.data[0]?.price?.id;
-            const activePlan = await resolvePlanFromPrice(stripe, priceId);
-            const monthlyCredits = PLAN_CREDITS[activePlan] || 50;
-            // ADD monthly credits instead of replacing — preserves unused credits
-            const { data: currentProfile } = await supabase.from("profiles").select("credits").eq("id", prof.id).single();
-            const currentCredits = currentProfile?.credits ?? 0;
-            const maxCredits = monthlyCredits * 3; // Cap at 3x monthly to prevent infinite accumulation
-            const newCredits = Math.min(currentCredits + monthlyCredits, maxCredits);
-            await supabase.from("profiles").update({ plan: activePlan, credits: newCredits }).eq("id", prof.id);
-            logStep("Plan synced + credits added on invoice.paid", { userId: prof.id, plan: activePlan, added: monthlyCredits, total: newCredits });
             const activePlan = await resolvePlanFromSubscriptionItem(stripe, sub.data[0].items.data[0]);
             const monthlyCredits = PLAN_CREDITS[activePlan] || PLAN_CREDITS.free;
             const cap = creditsCapForPlan(activePlan);
