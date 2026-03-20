@@ -445,13 +445,15 @@ serve(async (req: Request) => {
 
             console.log(`[GENERATE] Slide ${displayNum}: ${imgCount} images, mode=${isBeyondTemplate ? "continuity" : "template"}, rawScreen=${!!selectedRawScreen}, prevSlides=${previousSlideImages.length}`);
 
-            // Call Nano Banana 2 (Gemini 3.1 Flash Image Preview)
+            // Call Gemini 3.1 Flash Image Preview
+            // NOTE: Don't specify imageSize — Gemini will scale appropriately for the aspect ratio (9:16)
+            // Client-side Canvas resize will normalize to exact dimensions (1242×2688)
             const response = await ai.models.generateContent({
               model: "gemini-3.1-flash-image-preview",
               contents: parts,
               config: {
                 responseModalities: ["TEXT", "IMAGE"],
-                imageConfig: { aspectRatio, imageSize: "2K" },
+                imageConfig: { aspectRatio },  // ← REMOVED imageSize: "2K" to let Gemini auto-scale
                 temperature: 0.4,
                 maxOutputTokens: 8192,
               } as any,
@@ -479,7 +481,7 @@ serve(async (req: Request) => {
                 ],
                 config: {
                   responseModalities: ["TEXT", "IMAGE"],
-                  imageConfig: { aspectRatio, imageSize: "2K" },
+                  imageConfig: { aspectRatio },  // ← REMOVED imageSize: "2K" for consistency
                   temperature: 0.3,
                   maxOutputTokens: 8192,
                 } as any,

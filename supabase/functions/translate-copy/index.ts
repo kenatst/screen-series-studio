@@ -182,7 +182,7 @@ CRITICAL RULES:
           contents,
           config: {
             responseModalities: ["TEXT", "IMAGE"],
-            imageConfig: { aspectRatio, imageSize: "2K" },
+            imageConfig: { aspectRatio },  // ← REMOVED imageSize: "2K" - let Gemini auto-scale per aspect ratio
           },
         });
 
