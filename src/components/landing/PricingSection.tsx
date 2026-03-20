@@ -26,7 +26,7 @@ export const PricingSection = () => {
             return;
         }
 
-        await handleUpgrade(planId, window.location.pathname);
+        await handleUpgrade(planId, "/dashboard/settings");
     };
 
     return (

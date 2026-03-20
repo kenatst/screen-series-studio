@@ -18,7 +18,13 @@ export function useBilling() {
                     redirect_path: redirectPath
                 },
             });
-            if (error) throw error;
+            if (error) {
+                // supabase.functions.invoke wraps non-2xx responses with a generic
+                // "Edge Function returned a non-2xx status code" message.  The actual
+                // error payload from the edge function is in `data`.
+                const detail = data?.error ?? (error instanceof Error ? error.message : undefined);
+                throw new Error(detail || t("common.unknownError"));
+            }
             if (data?.url) window.location.href = data.url;
         } catch (e: unknown) {
             toast({ title: t("common.error"), description: e instanceof Error ? e.message : t("common.unknownError"), variant: "destructive" });
@@ -31,7 +37,10 @@ export function useBilling() {
         setIsOpeningPortal(true);
         try {
             const { data, error } = await supabase.functions.invoke("customer-portal");
-            if (error) throw error;
+            if (error) {
+                const detail = data?.error ?? (error instanceof Error ? error.message : undefined);
+                throw new Error(detail || t("common.unknownError"));
+            }
             if (data?.url) window.open(data.url, "_blank");
         } catch (e: unknown) {
             toast({ title: t("common.error"), description: e instanceof Error ? e.message : t("common.unknownError"), variant: "destructive" });
