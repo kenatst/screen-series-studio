@@ -149,10 +149,6 @@ serve(async (req) => {
     if (!stripeKey) throw new Error("Stripe secret is not set (STRIPE_SECRET_KEY or STRIPE_TEST_SECRET)");
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-    // Log which Stripe account we're using
-    const account = await stripe.accounts.retrieve();
-    logStep("Using Stripe account", { accountId: account.id });
-
     // Resolve or create the price in THIS account
     const priceId = await resolvePrice(stripe, plan as keyof typeof PLAN_DEFS);
 
