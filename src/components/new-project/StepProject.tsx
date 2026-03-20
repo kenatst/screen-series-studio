@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { AnimatePresence, motion } from "framer-motion";
 import { useNewProject } from "@/contexts/NewProjectContext";
 import { useTranslation } from "react-i18next";
+import { OUTPUT_LANGUAGE_CODES } from "@/lib/ui-languages";
 
 const goalOptions = [
   { value: "Increase installs", key: "installs" },
@@ -11,19 +12,6 @@ const goalOptions = [
   { value: "Localize assets", key: "localize" },
   { value: "Launch new app", key: "launch" },
   { value: "A/B testing", key: "ab" },
-] as const;
-
-const outputLanguages = [
-  { code: "en", label: "English" },
-  { code: "fr", label: "Français" },
-  { code: "de", label: "Deutsch" },
-  { code: "es", label: "Español" },
-  { code: "it", label: "Italiano" },
-  { code: "pt", label: "Português" },
-  { code: "ja", label: "日本語" },
-  { code: "ko", label: "한국어" },
-  { code: "zh", label: "中文" },
-  { code: "ar", label: "العربية" },
 ] as const;
 
 export const StepProject = () => {
@@ -100,13 +88,13 @@ export const StepProject = () => {
         <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">{t("step.project.outputLanguage")}</label>
         <p className="text-xs text-foreground/40 font-medium -mt-1">{t("step.project.outputLanguageHint")}</p>
         <div className="flex flex-wrap gap-2">
-          {outputLanguages.map((language) => (
+          {OUTPUT_LANGUAGE_CODES.map((languageCode) => (
             <button
-              key={language.code}
-              onClick={() => setOutputLanguage(language.code)}
-              className={`px-4 py-2.5 rounded-lg text-sm font-bold border transition-all duration-300 ${outputLanguage === language.code ? 'bg-primary/20 text-primary border-primary shadow-glow' : 'bg-muted/50 text-muted-foreground border-border hover:border-primary/40 hover:text-foreground'}`}
+              key={languageCode}
+              onClick={() => setOutputLanguage(languageCode)}
+              className={`px-4 py-2.5 rounded-lg text-sm font-bold border transition-all duration-300 ${outputLanguage === languageCode ? 'bg-primary/20 text-primary border-primary shadow-glow' : 'bg-muted/50 text-muted-foreground border-border hover:border-primary/40 hover:text-foreground'}`}
             >
-              {`${language.code.toUpperCase()} - ${language.label}`}
+              {`${languageCode.toUpperCase()} - ${t(`step.project.outputLanguageOptions.${languageCode}`)}`}
             </button>
           ))}
         </div>

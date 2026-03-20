@@ -15,6 +15,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { useTranslation } from "react-i18next";
+import { LanguageSelector } from "@/components/i18n/LanguageSelector";
 
 const Settings_Page = () => {
   const { profile, checkSubscription, user, refreshProfile, signOut } = useAuth();
@@ -221,6 +222,16 @@ const Settings_Page = () => {
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">{t('settings.credits')}</span>
               <span className="text-sm font-bold text-primary">{credits}</span>
+            </div>
+            <div className="pt-2 border-t border-border/50">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm text-muted-foreground">{t("settings.uiLanguage")}</span>
+                <LanguageSelector
+                  buttonClassName="border border-border bg-background/60 hover:bg-background px-3 py-1.5 rounded-lg"
+                  menuClassName="mt-1"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">{t("settings.uiLanguageDesc")}</p>
             </div>
           </div>
         </motion.div>

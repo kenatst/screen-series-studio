@@ -41,7 +41,49 @@
   },
   "faq": {
     "title": "よくある質問",
-    "subtitle": "ShotApp AI について知っておくべきことすべて。"
+    "subtitle": "ShotApp AI について知っておくべきことすべて。",
+    "items": [
+      {
+        "q": "ShotApp AI を使用するにはデザイン スキルが必要ですか?",
+        "a": "全くない。 ShotApp AI は、設計プロセスを自動化するために特別に構築されています。アプリのスクリーンショットとテキストを提供すると、当社のエンジンがレイアウト、一貫性、照明、タイポグラフィーを処理します。"
+      },
+      {
+        "q": "独自のフォントやブランドカラーを使用できますか?",
+        "a": "はい。 Pro プランと Agency プランでは、カスタム TTF/OTF フォントや正確な 16 進コードを含む完全なブランド キットをアップロードできます。エンジンは、スクリーンショット セット全体にわたってこれらをロックします。"
+      },
+      {
+        "q": "AI はどのようにして一貫性を確保するのでしょうか?",
+        "a": "一般的な画像ジェネレーターとは異なり、ShotApp AI は、一貫性エンジンによって管理される決定論的なレイアウトとスタイリング パイプラインを使用します。個別にレンダリングするのではなく、セット内のすべてのスライドにグローバル スタイル グラフを同時に適用します。"
+      },
+      {
+        "q": "最終的なスクリーンショットはどのような形式で取得できますか?",
+        "a": "App Store Connect や Google Play Console にすぐにアップロードできるように最適化された PNG を含む、完璧なサイズの高解像度 ZIP ファイルを受け取ります。"
+      },
+      {
+        "q": "スライドを 1 枚だけ再生成できますか?",
+        "a": "はい。当社の外科的編集機能を使用すると、バッチ全体の視覚的な一貫性を損なうことなく、単一のスライドを再生成できます。"
+      },
+      {
+        "q": "クレジットシステムはどのように機能しますか?",
+        "a": "スライドの生成または再生成には 1 クレジットがかかります。スライドの翻訳には言語ごとに 1 クレジットがかかります。クレジットはプランに基づいて毎月補充され、未使用のクレジットは 30 日間繰り越されます。"
+      },
+      {
+        "q": "一般的なスクリーンショット セットにはスライドが何枚ありますか?",
+        "a": "標準の App Store セットには 5 ～ 10 個のスクリーンショットが含まれています。 ShotApp AI は、単一のセッションで完全でまとまった 5 ～ 10 枚のスライド セットを生成します。無料プランでは、最初のスライドのプレビューが表示されます。有料プランではフルセットのロックが解除されます。"
+      },
+      {
+        "q": "どのプラットフォームがサポートされていますか?",
+        "a": "Apple App Store (iOS/iPadOS) と Google Play ストア (Android) の両方をサポートしています。各プラットフォームには特定のアスペクト比要件があり、当社のエンジンはそれらを自動的に処理します。"
+      },
+      {
+        "q": "無料トライアルはありますか?",
+        "a": "はい。無料プランには、完全な生成ワークフローを試すための 3 クレジットが含まれています。始めるのにクレジットカードは必要ありません。"
+      },
+      {
+        "q": "返金ポリシーは何ですか?",
+        "a": "最初のサブスクリプションのお支払いに対して、7 日間の質問なしの返金を提供します。それ以降の請求サイクルについては、払い戻しはケースバイケースで処理されます。請求日から 48 時間以内に support@shotapp.ai までご連絡ください。"
+      }
+    ]
   },
   "footer": {
     "cta": "プレミアムスクリーンショットセットを生成する準備はできていますか？",
@@ -165,7 +207,9 @@
     "email": "Email",
     "plan": "Plan",
     "planIncludes": "Your {{planName}} plan includes {{credits}} credits/mo.",
-    "perMonth": "/mo"
+    "perMonth": "/mo",
+    "uiLanguage": "インターフェース言語",
+    "uiLanguageDesc": "サインインすると、言語設定がデバイス間で同期されます。"
   },
   "generating": {
     "title": "Consistency Engine",
@@ -245,32 +289,6 @@
     "translations": "Translations",
     "sizes": "{{count}} sizes",
     "zip": "ZIP"
-  },
-  "translations": {
-    "title": "1-Click Batch Localization",
-    "subtitle": "Translate all slides at once. Costs 1 credit per slide.",
-    "selectLanguage": "Select target language",
-    "deviceSizes": "Device sizes to translate",
-    "original": "original",
-    "formatsSelectedCost": "{{count}} format(s) selected - costs 1 credit per slide per format",
-    "translatingTo": "Translating all slides to {{language}}...",
-    "translatingBatch": "Translating batch...",
-    "translateAll": "Translate All Slides{{sizes}}",
-    "resultSummary": "{{count}} slide(s) translated to {{language}}",
-    "downloadAll": "Download All",
-    "done": "Done",
-    "failed": "Translation failed",
-    "unknownError": "Unknown error",
-    "noSlidesTranslated": "No slides were translated. Make sure generated slides exist.",
-    "toastSuccessTitle": "Translation to {{language}} completed!",
-    "toastSuccessDesc": "{{slides}} slide(s) translated across {{formats}} format(s).",
-    "description": "Translate all slides at once. Costs 1 credit per slide.",
-    "formatsSelected": "{{count}} format(s) selected — costs 1 credit per slide per format",
-    "translating": "Translating all slides to {{language}}...",
-    "translateAllSizes": "Translate All Slides ({{count}} sizes)",
-    "completed": "{{count}} slide(s) translated to {{language}}",
-    "noSlides": "No slides were translated. Make sure you have generated slides with images first.",
-    "cancel": "Cancel"
   },
   "newProject": {
     "steps": {
@@ -355,6 +373,18 @@
         "iphone69": "Pro Max",
         "iphone65": "Max / Plus",
         "ipad129": "Pro"
+      },
+      "outputLanguageOptions": {
+        "en": "英語",
+        "fr": "フランセ",
+        "de": "ドイツ語",
+        "es": "スペイン語",
+        "it": "イタリアーノ",
+        "pt": "ポルトガル人",
+        "ja": "日本語",
+        "ko": "韓国人",
+        "zh": "中国語",
+        "ar": "アラビア語"
       }
     },
     "appInfo": {
@@ -539,7 +569,8 @@
     "delete": "Delete",
     "confirm": "Confirm",
     "unknownError": "Unknown error",
-    "toggleTheme": "Toggle theme"
+    "toggleTheme": "Toggle theme",
+    "selectLanguage": "言語を選択してください"
   },
   "privacyPage": {
     "backHome": "Back to home",
@@ -653,13 +684,310 @@
       }
     }
   },
-  "generatingPhases": {
-    "analyzingBrand": "Analyzing brand identity",
-    "processingVisuals": "Processing visual references",
-    "buildingDirection": "Building creative direction",
-    "planningSlides": "Planning slide compositions",
-    "renderingVisuals": "Rendering slide visuals",
-    "harmonizingSet": "Harmonizing set consistency",
-    "allGenerated": "All slides generated"
+  "localization": {
+    "title": "1-Click バッチローカリゼーション",
+    "description": "すべてのスライドを一度に翻訳します。スライドごとに 1 クレジットがかかります。",
+    "selectLanguage": "ターゲット言語を選択してください",
+    "deviceSizes": "変換するデバイスのサイズ",
+    "formatsSelected": "{{count}} 形式が選択されました — 形式ごとにスライドごとに 1 クレジットがかかります",
+    "translating": "すべてのスライドを {{language}} に翻訳しています...",
+    "translateAll": "すべてのスライドを翻訳する",
+    "translateAllSizes": "すべてのスライドを翻訳 ({{count}} サイズ)",
+    "translatingBatch": "バッチを翻訳中...",
+    "completed": "{{count}} スライドが {{language}} に翻訳されました",
+    "downloadAll": "すべてダウンロード",
+    "noSlides": "スライドは翻訳されていません。最初に画像を含むスライドを生成していることを確認してください。",
+    "done": "終わり",
+    "cancel": "キャンセル",
+    "subtitle": "すべてのスライドを一度に翻訳します。スライドごとに 1 クレジットがかかります。",
+    "original": "オリジナル",
+    "formatsSelectedCost": "{{count}} 形式が選択されました - 形式ごとにスライドごとに 1 クレジットがかかります",
+    "translatingTo": "すべてのスライドを {{language}} に翻訳しています...",
+    "resultSummary": "{{count}} スライドが {{language}} に翻訳されました",
+    "failed": "翻訳に失敗しました",
+    "unknownError": "不明なエラー",
+    "noSlidesTranslated": "スライドは翻訳されていません。生成されたスライドが存在することを確認してください。",
+    "toastSuccessTitle": "{{language}} への変換が完了しました。",
+    "toastSuccessDesc": "{{slides}} 個のスライドが {{formats}} 形式に翻訳されました。"
+  },
+  "landing": {
+    "featureShowcase": {
+      "titlePrefix": "精密工具",
+      "titleHighlight": "完璧な出力",
+      "titleSuffix": "。",
+      "items": {
+        "planner": {
+          "title": "スクリーンショット プランナー",
+          "description": "スライド 4 に何が起こるかを推測するのはやめてください。何かを作成する前に、最大 10 枚のスライドの話の流れ、見出し、強調点を定義します。"
+        },
+        "references": {
+          "title": "リファレンスベースの生成",
+          "description": "ムードボードまたは競合他社のスクリーンショットをインポートします。 ShotApp AI は、ビジュアル アイデンティティをコピーすることなく、レイアウト、雰囲気、階層を抽出します。"
+        },
+        "editing": {
+          "title": "外科的編集",
+          "description": "タイプミスを見つけましたか、それともスライド 3 に別のレイアウトが必要ですか?スライド 1、2、4、5 との視覚的な一貫性を失うことなく、分離されたパーツを再生成します。"
+        },
+        "localization": {
+          "title": "瞬時のローカリゼーション",
+          "description": "10 枚のスライド セット全体を複製し、言語を交換します。このデザインは、レイアウトを壊すことなく、長いタイポグラフィーにインテリジェントに適応します。"
+        }
+      },
+      "planner": {
+        "title": "スクリーンショットプランナー",
+        "subtitle": "各スライドの内容と目標を定義します。",
+        "slidesLabel": "スライド:",
+        "slides": [
+          {
+            "num": 1,
+            "objective": "主人公・第一印象",
+            "headline": "ここでの大きな約束",
+            "sub": "価値提案",
+            "tags": [
+              "家",
+              "テキストフォーカス"
+            ],
+            "importance": "高い"
+          },
+          {
+            "num": 2,
+            "objective": "主なメリット",
+            "headline": "ダウンロードする一番の理由",
+            "sub": "あなたをユニークにしているものは何ですか",
+            "tags": [
+              "ダッシュボード",
+              "UI フォーカス"
+            ],
+            "importance": "高い"
+          }
+        ]
+      },
+      "references": {
+        "inputSlides": [
+          "クラウディとの出会い",
+          "毎日のブリーフィング"
+        ],
+        "outputSlides": [
+          "トリポラの紹介",
+          "あなたの旅行",
+          "美しく旅する"
+        ]
+      },
+      "editing": {
+        "slides": [
+          "スライド 1",
+          "スライド 2",
+          "スライド 3"
+        ]
+      },
+      "localization": {
+        "sourceLabel": "英語",
+        "targetLabel": "日本語",
+        "sourceAlt": "英語版",
+        "targetAlt": "日本語版"
+      }
+    },
+    "workflow": {
+      "badge": "ワークフロー",
+      "title": "生のスクリーンから凝集したセットまで。",
+      "steps": [
+        {
+          "id": 1,
+          "title": "生のアプリ画面をアップロードする",
+          "description": "Figma レイヤーをいじる必要はもうありません。 iOS または Android の生のスクリーンショットを直接 Forge にドラッグ アンド ドロップするだけです。"
+        },
+        {
+          "id": 2,
+          "title": "ブランドキットを注入する",
+          "description": "ロゴをアップロードし、原色を定義し、タイポグラフィを選択します。 ShotApp AI は、これらをグローバル変数としてロックします。"
+        },
+        {
+          "id": 3,
+          "title": "テンプレートまたは参照を選択します",
+          "description": "プレミアム テンプレート ライブラリから選択するか、AI が適合する視覚的な参照としてムードボード画像をアップロードします。"
+        },
+        {
+          "id": 4,
+          "title": "ストーリーラインを計画する",
+          "description": "各スライドの目的、見出し、強調点を定義します。一貫性エンジンにより、それらがすべて同じファミリーに属することが保証されます。"
+        },
+        {
+          "id": 5,
+          "title": "即座にバッチを生成",
+          "description": "「生成」を押します。 AI が同時に最大 10 枚のストア用スクリーンショットを完璧に位置合わせされ、スタイルが設定されて作成される様子をご覧ください。"
+        },
+        {
+          "id": 6,
+          "title": "フルセットをエクスポートする",
+          "description": "高解像度のスクリーンショット セット全体を ZIP 形式でダウンロードし、App Store Connect に直接アップロードできるようにします。"
+        }
+      ],
+      "rawAlts": [
+        "生のスクリーンショット 1",
+        "生のスクリーンショット 2"
+      ],
+      "brandKitAlt": "ShotApp AI",
+      "brandKitFont": "「SF Pro」、システムUI",
+      "templateNames": [
+        "ラグジュアリー エレガント",
+        "スポーツ＆マスコット",
+        "RPG ゲーム",
+        "フレッシュオーガニック"
+      ],
+      "planCards": [
+        {
+          "title": "ヒーロー / 第一印象",
+          "priority": "高い",
+          "input": "あなたのフィットネスの旅はここから始まります"
+        },
+        {
+          "title": "コア機能",
+          "priority": "高い",
+          "input": "AI を活用したワークアウト プラン"
+        },
+        {
+          "title": "社会的証明",
+          "priority": "中くらい",
+          "input": "50万人以上のアクティブユーザーに加わりましょう"
+        }
+      ],
+      "export": {
+        "fileName": "ShotApp-Set.zip",
+        "meta": "10 個の高解像度 PNG (10.4 MB)",
+        "readyLabel": "App Store Connectの準備完了"
+      }
+    },
+    "gallery": {
+      "title": "トップエージェンシーに匹敵する成果。",
+      "subtitle": "一貫性エンジンによって生成される純粋な品質とさまざまなスタイルをご覧ください。",
+      "items": [
+        {
+          "title": "ハビットフォージ",
+          "style": "ダーク＆バイブラント"
+        },
+        {
+          "title": "メンタルモデル",
+          "style": "プレミアムエディトリアル"
+        },
+        {
+          "title": "ゼンリークローン",
+          "style": "遊び心のある3D"
+        },
+        {
+          "title": "再発する",
+          "style": "ネオンテック"
+        },
+        {
+          "title": "水分追跡装置",
+          "style": "フレンドリーなマスコット"
+        },
+        {
+          "title": "シュガーブレイク",
+          "style": "映画的な動機"
+        },
+        {
+          "title": "オーラアシスタント",
+          "style": "ソフト3Dパステル"
+        },
+        {
+          "title": "スクライブAI",
+          "style": "クリーンな企業"
+        },
+        {
+          "title": "AIトレーナー",
+          "style": "高エネルギースポーツ"
+        },
+        {
+          "title": "スタッカー",
+          "style": "大胆なブルータリスト"
+        },
+        {
+          "title": "フィットマックスAI",
+          "style": "スポーツ＆マスコット"
+        },
+        {
+          "title": "Stackr キャッシュバック",
+          "style": "黄色の太字"
+        },
+        {
+          "title": "誓い",
+          "style": "ラグジュアリー エレガント"
+        },
+        {
+          "title": "リンガクエスト",
+          "style": "RPG ゲーム"
+        },
+        {
+          "title": "詰め込む",
+          "style": "ミニマルネオン"
+        },
+        {
+          "title": "アドブロック プロ",
+          "style": "ダークテック"
+        },
+        {
+          "title": "ドリフトスリープ",
+          "style": "ダークアンビエント"
+        },
+        {
+          "title": "シンシーコーチ",
+          "style": "オーガニックウェルネス"
+        },
+        {
+          "title": "テープ",
+          "style": "ダークウォーム"
+        },
+        {
+          "title": "ソロ",
+          "style": "コーポレートブルー"
+        },
+        {
+          "title": "マインドドロップ",
+          "style": "ダークゴールドプレミアム"
+        },
+        {
+          "title": "食事の流れ",
+          "style": "フレッシュオーガニック"
+        },
+        {
+          "title": "保管庫",
+          "style": "ファイナンス・ダーク"
+        },
+        {
+          "title": "リンガフロー",
+          "style": "鮮やかなグラデーション"
+        },
+        {
+          "title": "ネスレ ホーム",
+          "style": "最小限の編集"
+        },
+        {
+          "title": "ライフプラン",
+          "style": "温かい冒険"
+        },
+        {
+          "title": "フォックスラーン",
+          "style": "キッズカラフル"
+        }
+      ]
+    },
+    "batchGeneration": {
+      "titlePrefix": "生成する",
+      "titleHighlight": "10 の完璧なビジュアル",
+      "titleSuffix": "ワンクリックで。",
+      "subtitle": "エンジンがストーリー全体を理解しているのに、なぜ画面ごとに構築する必要があるのでしょうか? ShotApp AI は完全なセットを同時に生成します。",
+      "slideLabels": [
+        "300 万人の学習者",
+        "オールインワン",
+        "一口サイズ",
+        "話し中",
+        "ストリーク",
+        "ウィジェット",
+        "文化",
+        "進捗",
+        "報酬",
+        "終わりに"
+      ]
+    }
   }
 }

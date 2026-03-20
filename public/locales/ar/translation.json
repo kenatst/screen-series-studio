@@ -41,7 +41,49 @@
   },
   "faq": {
     "title": "الأسئلة الشائعة",
-    "subtitle": "كل ما تحتاج معرفته عن ShotApp AI."
+    "subtitle": "كل ما تحتاج معرفته عن ShotApp AI.",
+    "items": [
+      {
+        "q": "Do I need design skills to use ShotApp AI?",
+        "a": "Not at all. ShotApp AI is built specifically to automate the design process. You provide the app screenshots and text, and our Engine handles layout, consistency, lighting, and typography."
+      },
+      {
+        "q": "Can I use my own fonts and brand colors?",
+        "a": "Yes. On the Pro and Agency plans, you can upload your full Brand Kit, including custom TTF/OTF fonts and exact hex codes. The engine will lock these in across your entire screenshot set."
+      },
+      {
+        "q": "How does the AI ensure consistency?",
+        "a": "Unlike generic image generators, ShotApp AI uses a deterministic layout and styling pipeline governed by the Consistency Engine. It applies a global style graph across all slides in a set simultaneously, rather than rendering them individually."
+      },
+      {
+        "q": "What format do I get the final screenshots in?",
+        "a": "You receive a perfectly sized, high-resolution ZIP file containing PNGs optimized for immediate upload to App Store Connect and Google Play Console."
+      },
+      {
+        "q": "Can I regenerate just one slide?",
+        "a": "Yes. Our surgical editing feature lets you regenerate a single slide without breaking the visual coherence of the entire batch."
+      },
+      {
+        "q": "How does the credit system work?",
+        "a": "Each slide generation or regeneration costs 1 credit. Translating a slide costs 1 credit per language. Credits are replenished monthly based on your plan, and unused credits roll over for 30 days."
+      },
+      {
+        "q": "How many slides does a typical screenshot set have?",
+        "a": "A standard App Store set contains 5–10 screenshots. ShotApp AI generates a complete, cohesive 5–10 slide set in a single session. The Free plan gives you a preview of the first slide; paid plans unlock the full set."
+      },
+      {
+        "q": "Which platforms are supported?",
+        "a": "We support both Apple App Store (iOS/iPadOS) and Google Play Store (Android). Each platform has specific aspect ratio requirements, and our engine handles them automatically."
+      },
+      {
+        "q": "Is there a free trial?",
+        "a": "Yes. The Free plan includes 3 credits to try the full generation workflow. No credit card required to start."
+      },
+      {
+        "q": "What is your refund policy?",
+        "a": "We offer a 7-day no-questions-asked refund on your first subscription payment. For subsequent billing cycles, refunds are handled case-by-case. Contact support@shotapp.ai within 48 hours of your billing date."
+      }
+    ]
   },
   "footer": {
     "cta": "هل أنت مستعد لإنشاء مجموعات لقطات شاشتك الممتازة؟",
@@ -165,7 +207,9 @@
     "email": "Email",
     "plan": "Plan",
     "planIncludes": "Your {{planName}} plan includes {{credits}} credits/mo.",
-    "perMonth": "/mo"
+    "perMonth": "/mo",
+    "uiLanguage": "Interface language",
+    "uiLanguageDesc": "Your language preference syncs across devices when you are signed in."
   },
   "generating": {
     "title": "Consistency Engine",
@@ -245,32 +289,6 @@
     "translations": "Translations",
     "sizes": "{{count}} sizes",
     "zip": "ZIP"
-  },
-  "translations": {
-    "title": "1-Click Batch Localization",
-    "subtitle": "Translate all slides at once. Costs 1 credit per slide.",
-    "selectLanguage": "Select target language",
-    "deviceSizes": "Device sizes to translate",
-    "original": "original",
-    "formatsSelectedCost": "{{count}} format(s) selected - costs 1 credit per slide per format",
-    "translatingTo": "Translating all slides to {{language}}...",
-    "translatingBatch": "Translating batch...",
-    "translateAll": "Translate All Slides{{sizes}}",
-    "resultSummary": "{{count}} slide(s) translated to {{language}}",
-    "downloadAll": "Download All",
-    "done": "Done",
-    "failed": "Translation failed",
-    "unknownError": "Unknown error",
-    "noSlidesTranslated": "No slides were translated. Make sure generated slides exist.",
-    "toastSuccessTitle": "Translation to {{language}} completed!",
-    "toastSuccessDesc": "{{slides}} slide(s) translated across {{formats}} format(s).",
-    "description": "Translate all slides at once. Costs 1 credit per slide.",
-    "formatsSelected": "{{count}} format(s) selected — costs 1 credit per slide per format",
-    "translating": "Translating all slides to {{language}}...",
-    "translateAllSizes": "Translate All Slides ({{count}} sizes)",
-    "completed": "{{count}} slide(s) translated to {{language}}",
-    "noSlides": "No slides were translated. Make sure you have generated slides with images first.",
-    "cancel": "Cancel"
   },
   "newProject": {
     "steps": {
@@ -355,6 +373,18 @@
         "iphone69": "Pro Max",
         "iphone65": "Max / Plus",
         "ipad129": "Pro"
+      },
+      "outputLanguageOptions": {
+        "en": "English",
+        "fr": "Francais",
+        "de": "Deutsch",
+        "es": "Espanol",
+        "it": "Italiano",
+        "pt": "Portugues",
+        "ja": "Japanese",
+        "ko": "Korean",
+        "zh": "Chinese",
+        "ar": "Arabic"
       }
     },
     "appInfo": {
@@ -539,7 +569,8 @@
     "delete": "Delete",
     "confirm": "Confirm",
     "unknownError": "Unknown error",
-    "toggleTheme": "Toggle theme"
+    "toggleTheme": "Toggle theme",
+    "selectLanguage": "Select language"
   },
   "privacyPage": {
     "backHome": "Back to home",
@@ -653,13 +684,310 @@
       }
     }
   },
-  "generatingPhases": {
-    "analyzingBrand": "Analyzing brand identity",
-    "processingVisuals": "Processing visual references",
-    "buildingDirection": "Building creative direction",
-    "planningSlides": "Planning slide compositions",
-    "renderingVisuals": "Rendering slide visuals",
-    "harmonizingSet": "Harmonizing set consistency",
-    "allGenerated": "All slides generated"
+  "localization": {
+    "title": "1-انقر فوق تعريب الدفعة",
+    "description": "ترجمة جميع الشرائح مرة واحدة. تكاليف 1 الائتمان لكل شريحة.",
+    "selectLanguage": "حدد اللغة المستهدفة",
+    "deviceSizes": "أحجام الأجهزة للترجمة",
+    "formatsSelected": "{{count}} التنسيق (التنسيقات) المحدد — يكلف رصيدًا واحدًا لكل شريحة لكل تنسيق",
+    "translating": "ترجمة كافة الشرائح إلى {{language}}...",
+    "translateAll": "ترجمة كافة الشرائح",
+    "translateAllSizes": "ترجمة جميع الشرائح ({{count}} الأحجام)",
+    "translatingBatch": "دفعة الترجمة...",
+    "completed": "{{count}} شريحة (شرائح) مترجمة إلى {{language}}",
+    "downloadAll": "تحميل الكل",
+    "noSlides": "لم تتم ترجمة أي شرائح. تأكد من إنشاء شرائح تحتوي على صور أولاً.",
+    "done": "منتهي",
+    "cancel": "يلغي",
+    "subtitle": "ترجمة جميع الشرائح مرة واحدة. تكاليف 1 الائتمان لكل شريحة.",
+    "original": "إبداعي",
+    "formatsSelectedCost": "{{count}} التنسيق (التنسيقات) المحدد - يكلف رصيدًا واحدًا لكل شريحة لكل تنسيق",
+    "translatingTo": "ترجمة كافة الشرائح إلى {{language}}...",
+    "resultSummary": "{{count}} شريحة (شرائح) مترجمة إلى {{language}}",
+    "failed": "فشلت الترجمة",
+    "unknownError": "خطأ غير معروف",
+    "noSlidesTranslated": "لم تتم ترجمة أي شرائح. تأكد من وجود الشرائح التي تم إنشاؤها.",
+    "toastSuccessTitle": "اكتملت الترجمة إلى {{language}}!",
+    "toastSuccessDesc": "{{slides}} شريحة (شرائح) مترجمة عبر تنسيق (تنسيقات) {{formats}}."
+  },
+  "landing": {
+    "featureShowcase": {
+      "titlePrefix": "Precision tools for",
+      "titleHighlight": "perfect outputs",
+      "titleSuffix": ".",
+      "items": {
+        "planner": {
+          "title": "The Screenshot Planner",
+          "description": "Stop guessing what goes on slide 4. Define the narrative flow, headlines, and emphasis for up to 10 slides before generating anything."
+        },
+        "references": {
+          "title": "Reference-Based Generation",
+          "description": "Import moodboards or competitor screenshots. ShotApp AI extracts the layout, mood, and hierarchy without copying their visual identity."
+        },
+        "editing": {
+          "title": "Surgical Editing",
+          "description": "Found a typo or need a different layout for slide 3? Regenerate isolated parts without losing visual consistency with slides 1, 2, 4, and 5."
+        },
+        "localization": {
+          "title": "Instant Localization",
+          "description": "Duplicate a complete 10-slide set and swap the language. The design adapts intelligently to longer typography without breaking the layout."
+        }
+      },
+      "planner": {
+        "title": "Screenshot Planner",
+        "subtitle": "Define the content and goal of each slide.",
+        "slidesLabel": "SLIDES:",
+        "slides": [
+          {
+            "num": 1,
+            "objective": "Hero / first impression",
+            "headline": "Your big promise here",
+            "sub": "Value proposition",
+            "tags": [
+              "home",
+              "text focus"
+            ],
+            "importance": "high"
+          },
+          {
+            "num": 2,
+            "objective": "Main benefit",
+            "headline": "The #1 reason to download",
+            "sub": "What makes you unique",
+            "tags": [
+              "dashboard",
+              "UI focus"
+            ],
+            "importance": "high"
+          }
+        ]
+      },
+      "references": {
+        "inputSlides": [
+          "Meet Cloudy",
+          "Daily Briefing"
+        ],
+        "outputSlides": [
+          "Meet Tripora",
+          "Your Trip",
+          "Travel Beautifully"
+        ]
+      },
+      "editing": {
+        "slides": [
+          "Slide 1",
+          "Slide 2",
+          "Slide 3"
+        ]
+      },
+      "localization": {
+        "sourceLabel": "English",
+        "targetLabel": "Japanese",
+        "sourceAlt": "English Version",
+        "targetAlt": "Japanese Version"
+      }
+    },
+    "workflow": {
+      "badge": "The Workflow",
+      "title": "From raw screens to cohesive sets.",
+      "steps": [
+        {
+          "id": 1,
+          "title": "Upload raw app screens",
+          "description": "No more messing with Figma layers. Just drag and drop your raw iOS or Android screenshots directly into the forge."
+        },
+        {
+          "id": 2,
+          "title": "Inject your Brand Kit",
+          "description": "Upload your logo, define your primary colors, and select your typography. ShotApp AI locks these in as global variables."
+        },
+        {
+          "id": 3,
+          "title": "Pick templates or references",
+          "description": "Choose from our premium template library, or upload moodboard images as visual references for the AI to match."
+        },
+        {
+          "id": 4,
+          "title": "Plan the storyline",
+          "description": "Define the objective, headline, and emphasis for each slide. The consistency engine ensures they all belong to the same family."
+        },
+        {
+          "id": 5,
+          "title": "Batch generate instantly",
+          "description": "Hit generate. Watch as the AI builds up to 10 store-ready screenshots simultaneously, perfectly aligned and styled."
+        },
+        {
+          "id": 6,
+          "title": "Export the full set",
+          "description": "Download the entire high-resolution screenshot set as a ZIP, ready to upload directly to App Store Connect."
+        }
+      ],
+      "rawAlts": [
+        "Raw screenshot 1",
+        "Raw screenshot 2"
+      ],
+      "brandKitAlt": "ShotApp AI",
+      "brandKitFont": "\"SF Pro\", system-ui",
+      "templateNames": [
+        "Luxury Elegant",
+        "Sport & Mascot",
+        "RPG Gaming",
+        "Fresh Organic"
+      ],
+      "planCards": [
+        {
+          "title": "Hero / First Impression",
+          "priority": "high",
+          "input": "Your Fitness Journey Starts Here"
+        },
+        {
+          "title": "Core Feature",
+          "priority": "high",
+          "input": "AI-Powered Workout Plans"
+        },
+        {
+          "title": "Social Proof",
+          "priority": "medium",
+          "input": "Join 500K+ Active Users"
+        }
+      ],
+      "export": {
+        "fileName": "ShotApp-Set.zip",
+        "meta": "10 High-Res PNGs (10.4 MB)",
+        "readyLabel": "Ready for App Store Connect"
+      }
+    },
+    "gallery": {
+      "title": "Outputs that rival top agencies.",
+      "subtitle": "Explore the sheer quality and variety of styles generated by our Consistency Engine.",
+      "items": [
+        {
+          "title": "HabitForge",
+          "style": "Dark & Vibrant"
+        },
+        {
+          "title": "Mental Model",
+          "style": "Premium Editorial"
+        },
+        {
+          "title": "Zenly Clone",
+          "style": "Playful 3D"
+        },
+        {
+          "title": "Recur",
+          "style": "Neon Tech"
+        },
+        {
+          "title": "Water Tracker",
+          "style": "Friendly Mascot"
+        },
+        {
+          "title": "SugarBreak",
+          "style": "Cinematic Motivation"
+        },
+        {
+          "title": "Aura Assistant",
+          "style": "Soft 3D Pastel"
+        },
+        {
+          "title": "Scribe AI",
+          "style": "Clean Corporate"
+        },
+        {
+          "title": "AI Trainer",
+          "style": "High Energy Sport"
+        },
+        {
+          "title": "Stackr",
+          "style": "Bold Brutalist"
+        },
+        {
+          "title": "FitMax AI",
+          "style": "Sport & Mascot"
+        },
+        {
+          "title": "Stackr Cashback",
+          "style": "Yellow Bold"
+        },
+        {
+          "title": "Vow",
+          "style": "Luxury Elegant"
+        },
+        {
+          "title": "LinguaQuest",
+          "style": "RPG Gaming"
+        },
+        {
+          "title": "Cram",
+          "style": "Minimal Neon"
+        },
+        {
+          "title": "AdBlock Pro",
+          "style": "Dark Tech"
+        },
+        {
+          "title": "Drift Sleep",
+          "style": "Dark Ambient"
+        },
+        {
+          "title": "Syncy Coach",
+          "style": "Organic Wellness"
+        },
+        {
+          "title": "Tape",
+          "style": "Dark Warm"
+        },
+        {
+          "title": "Solo",
+          "style": "Corporate Blue"
+        },
+        {
+          "title": "MindDrop",
+          "style": "Dark Gold Premium"
+        },
+        {
+          "title": "MealFlow",
+          "style": "Fresh Organic"
+        },
+        {
+          "title": "Vault",
+          "style": "Finance Dark"
+        },
+        {
+          "title": "LinguaFlow",
+          "style": "Gradient Vibrant"
+        },
+        {
+          "title": "Nestle Home",
+          "style": "Editorial Minimal"
+        },
+        {
+          "title": "LifePlan",
+          "style": "Warm Adventure"
+        },
+        {
+          "title": "FoxLearn",
+          "style": "Kids Colorful"
+        }
+      ]
+    },
+    "batchGeneration": {
+      "titlePrefix": "Generate",
+      "titleHighlight": "10 perfect visuals",
+      "titleSuffix": "in one click.",
+      "subtitle": "Why build screen by screen when the engine understands your entire narrative? ShotApp AI generates the complete set simultaneously.",
+      "slideLabels": [
+        "3M Learners",
+        "All-in-One",
+        "Bite-sized",
+        "Speaking",
+        "Streak",
+        "Widgets",
+        "Culture",
+        "Progress",
+        "Rewards",
+        "Closing"
+      ]
+    }
   }
 }

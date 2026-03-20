@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { UploadedScreen } from "@/components/project/SortableSlide";
 import i18n from "@/i18n";
 import { validateWizardStep, type WizardValidationError } from "@/lib/wizard-validation";
+import { normalizeUiLanguage } from "@/lib/ui-languages";
 
 export interface BrandAsset {
   type: 'logo' | 'icon' | 'mascot';
@@ -175,6 +176,23 @@ interface NewProjectContextType {
 
 const NewProjectContext = createContext<NewProjectContextType | null>(null);
 
+const UI_TO_OUTPUT_LANGUAGE: Record<string, string> = {
+  en: "en",
+  fr: "fr",
+  de: "de",
+  es: "es",
+  zh: "zh",
+  ja: "ja",
+  ar: "ar",
+  hi: "en",
+  tr: "en",
+};
+
+function getDefaultOutputLanguageFromUiLanguage() {
+  const uiLanguage = normalizeUiLanguage(i18n.resolvedLanguage ?? i18n.language);
+  return UI_TO_OUTPUT_LANGUAGE[uiLanguage] ?? "en";
+}
+
 export function useNewProject() {
   const ctx = useContext(NewProjectContext);
   if (!ctx) throw new Error("useNewProject must be used inside ProjectWizardProvider");
@@ -216,7 +234,9 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
   const [savedProjectId, setSavedProjectId] = useState<string | null>(editProjectId);
-  const [outputLanguage, setOutputLanguage] = useState('en');
+  const [outputLanguage, setOutputLanguageState] = useState(() => getDefaultOutputLanguageFromUiLanguage());
+  const [outputLanguageCustomized, setOutputLanguageCustomized] = useState(false);
+  const [uiLanguage, setUiLanguage] = useState(() => normalizeUiLanguage(i18n.resolvedLanguage ?? i18n.language));
   const [hydrated, setHydrated] = useState(false);
   const [appCategory, setAppCategory] = useState('');
   const [targetAudience, setTargetAudience] = useState('');
@@ -239,6 +259,28 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
   const { data: existingProject } = useProject(editProjectId || undefined);
   const { data: existingSlides } = useProjectSlides(editProjectId || undefined);
 
+  useEffect(() => {
+    const onLanguageChanged = (language: string) => {
+      setUiLanguage(normalizeUiLanguage(language));
+    };
+
+    i18n.on("languageChanged", onLanguageChanged);
+    return () => {
+      i18n.off("languageChanged", onLanguageChanged);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (outputLanguageCustomized || editProjectId) return;
+    const suggestedOutputLanguage = UI_TO_OUTPUT_LANGUAGE[uiLanguage] ?? "en";
+    setOutputLanguageState((current) => (current === suggestedOutputLanguage ? current : suggestedOutputLanguage));
+  }, [uiLanguage, outputLanguageCustomized, editProjectId]);
+
+  const setOutputLanguage = useCallback((value: string) => {
+    setOutputLanguageCustomized(true);
+    setOutputLanguageState(value);
+  }, []);
+
   // Hydrate state from DB when editing a draft
   useEffect(() => {
     if (hydrated || !editProjectId || !existingProject) return;
@@ -251,7 +293,8 @@ export function ProjectWizardProvider({ children }: { children: ReactNode }) {
     setConsistencyLevel((existingProject.consistency_level as any) || 'balanced');
     setDeviceFormats((existingProject.device_formats as string[]) || ['iphone-6-5', 'iphone-6-9']);
     // generationMode is always 'full'
-    setOutputLanguage(existingProject.output_language || 'en');
+    setOutputLanguageState(existingProject.output_language || 'en');
+    setOutputLanguageCustomized(true);
     const config = existingProject.config as any;
     if (config) {
       setPrimaryGoal(config.primaryGoal || '');

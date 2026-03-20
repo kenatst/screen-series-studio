@@ -1,87 +1,11 @@
-import * as React from 'react';
-import { useState, useEffect, useRef, forwardRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { Globe, Menu, X, ChevronDown } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { ThemeToggle } from '@/components/ThemeToggle';
-
-const LANGUAGES = [
-    { code: 'en', label: 'English', flag: '🇺🇸' },
-    { code: 'fr', label: 'Français', flag: '🇫🇷' },
-    { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
-    { code: 'es', label: 'Español', flag: '🇪🇸' },
-    { code: 'zh', label: '中文', flag: '🇨🇳' },
-    { code: 'ja', label: '日本語', flag: '🇯🇵' },
-    { code: 'hi', label: 'हिंदी', flag: '🇮🇳' },
-    { code: 'tr', label: 'Türkçe', flag: '🇹🇷' },
-    { code: 'ar', label: 'العربية', flag: '🇸🇦' },
-];
-
-const LanguageSwitcher = forwardRef<HTMLDivElement>((props, ref) => {
-    const { i18n } = useTranslation();
-    const [open, setOpen] = useState(false);
-    const innerRef = useRef<HTMLDivElement>(null);
-    const combinedRef = (node: HTMLDivElement | null) => {
-        (innerRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
-        if (typeof ref === 'function') {
-            ref(node);
-        } else if (ref) {
-            (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
-        }
-    };
-
-    const currentLang = LANGUAGES.find(l => l.code === i18n.language.split('-')[0]) || LANGUAGES[0];
-
-    useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            if (innerRef.current && !innerRef.current.contains(e.target as Node)) setOpen(false);
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    return (
-        <div ref={combinedRef} className="relative">
-            <button
-                onClick={() => setOpen(!open)}
-                aria-expanded={open}
-                aria-haspopup="listbox"
-                aria-label="Select language"
-                className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md"
-            >
-                <Globe className="h-4 w-4" />
-                <span>{currentLang.flag} {currentLang.code.toUpperCase()}</span>
-                <ChevronDown className={`h-3 w-3 transition-transform ${open ? 'rotate-180' : ''}`} />
-            </button>
-            <AnimatePresence>
-                {open && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -8, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute right-0 top-full mt-2 w-44 bg-card border border-border rounded-xl shadow-2xl overflow-hidden z-50"
-                    >
-                        {LANGUAGES.map(lang => (
-                            <button
-                                key={lang.code}
-                                onClick={() => { i18n.changeLanguage(lang.code); setOpen(false); }}
-                                className={`w-full text-left px-4 py-2.5 text-sm flex items-center gap-3 transition-colors hover:bg-white/5 ${i18n.language.startsWith(lang.code) ? 'text-primary font-semibold bg-primary/10' : 'text-muted-foreground'}`}
-                            >
-                                <span className="text-lg">{lang.flag}</span>
-                                {lang.label}
-                            </button>
-                        ))}
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
-    );
-});
-
-LanguageSwitcher.displayName = 'LanguageSwitcher';
+import { LanguageSelector } from '@/components/i18n/LanguageSelector';
 
 export const LandingNav = () => {
     const [scrolled, setScrolled] = useState(false);
@@ -133,7 +57,7 @@ export const LandingNav = () => {
                     </div>
 
                     <div className="hidden md:flex items-center gap-3">
-                        <LanguageSwitcher />
+                        <LanguageSelector />
                         <ThemeToggle />
                         <Link to="/login" className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-md">
                             <span className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer px-2 py-1">
@@ -180,7 +104,7 @@ export const LandingNav = () => {
                             ))}
                             <div className="w-full h-px bg-white/10 my-2" />
                             <div className="flex items-center gap-3">
-                                <LanguageSwitcher />
+                                <LanguageSelector />
                                 <ThemeToggle />
                             </div>
                             <Link to="/login" className="w-full" onClick={() => setMobileMenuOpen(false)}>

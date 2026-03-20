@@ -41,7 +41,49 @@
   },
   "faq": {
     "title": "Questions Fréquentes",
-    "subtitle": "Tout ce que vous devez savoir sur ShotApp AI."
+    "subtitle": "Tout ce que vous devez savoir sur ShotApp AI.",
+    "items": [
+      {
+        "q": "Ai-je besoin de compétences en conception pour utiliser ShotApp AI ?",
+        "a": "Pas du tout. ShotApp AI est spécialement conçu pour automatiser le processus de conception. Vous fournissez les captures d'écran et le texte de l'application, et notre moteur gère la mise en page, la cohérence, l'éclairage et la typographie."
+      },
+      {
+        "q": "Puis-je utiliser mes propres polices et couleurs de marque ?",
+        "a": "Oui. Sur les forfaits Pro et Agency, vous pouvez télécharger votre kit de marque complet, y compris les polices TTF/OTF personnalisées et les codes hexadécimaux exacts. Le moteur les verrouillera sur l’ensemble de votre ensemble de captures d’écran."
+      },
+      {
+        "q": "Comment l’IA assure-t-elle la cohérence ?",
+        "a": "Contrairement aux générateurs d'images génériques, ShotApp AI utilise un pipeline de mise en page et de style déterministe régi par le moteur de cohérence. Il applique simultanément un graphique de style global sur toutes les diapositives d’un ensemble, plutôt que de les afficher individuellement."
+      },
+      {
+        "q": "Dans quel format puis-je obtenir les captures d'écran finales ?",
+        "a": "Vous recevez un fichier ZIP haute résolution de taille parfaite contenant des fichiers PNG optimisés pour un téléchargement immédiat sur App Store Connect et Google Play Console."
+      },
+      {
+        "q": "Puis-je régénérer une seule diapositive ?",
+        "a": "Oui. Notre fonctionnalité d'édition chirurgicale vous permet de régénérer une seule diapositive sans rompre la cohérence visuelle de l'ensemble du lot."
+      },
+      {
+        "q": "Comment fonctionne le système de crédit ?",
+        "a": "Chaque génération ou régénération de diapositive coûte 1 crédit. Traduire une diapositive coûte 1 crédit par langue. Les crédits sont réapprovisionnés mensuellement en fonction de votre forfait et les crédits inutilisés sont reportés pendant 30 jours."
+      },
+      {
+        "q": "Combien de diapositives un jeu de captures d’écran typique contient-il ?",
+        "a": "Un ensemble App Store standard contient 5 à 10 captures d’écran. ShotApp AI génère un ensemble complet et cohérent de 5 à 10 diapositives en une seule session. Le forfait Gratuit vous donne un aperçu de la première diapositive ; les forfaits payants débloquent l’ensemble complet."
+      },
+      {
+        "q": "Quelles plateformes sont prises en charge ?",
+        "a": "Nous prenons en charge l'Apple App Store (iOS/iPadOS) et le Google Play Store (Android). Chaque plate-forme a des exigences spécifiques en matière de ratio d'aspect, et notre moteur les gère automatiquement."
+      },
+      {
+        "q": "Existe-t-il un essai gratuit ?",
+        "a": "Oui. Le plan gratuit comprend 3 crédits pour essayer le flux de travail de génération complet. Aucune carte de crédit requise pour commencer."
+      },
+      {
+        "q": "Quelle est votre politique de remboursement ?",
+        "a": "Nous offrons un remboursement sans poser de questions sous 7 jours sur votre premier paiement d'abonnement. Pour les cycles de facturation ultérieurs, les remboursements sont traités au cas par cas. Contactez support@shotapp.ai dans les 48 heures suivant votre date de facturation."
+      }
+    ]
   },
   "footer": {
     "cta": "Prêt à générer vos sets de captures premium ?",
@@ -165,7 +207,9 @@
     "email": "Email",
     "plan": "Plan",
     "planIncludes": "Your {{planName}} plan includes {{credits}} credits/mo.",
-    "perMonth": "/mo"
+    "perMonth": "/mo",
+    "uiLanguage": "Langue de l'interface",
+    "uiLanguageDesc": "Votre préférence linguistique se synchronise sur tous les appareils lorsque vous êtes connecté."
   },
   "generating": {
     "title": "Moteur de Cohérence",
@@ -344,33 +388,8 @@
     "delete": "Supprimer",
     "confirm": "Confirmer",
     "unknownError": "Unknown error",
-    "toggleTheme": "Toggle theme"
-  },
-  "translations": {
-    "title": "1-Click Batch Localization",
-    "subtitle": "Translate all slides at once. Costs 1 credit per slide.",
-    "selectLanguage": "Select target language",
-    "deviceSizes": "Device sizes to translate",
-    "original": "original",
-    "formatsSelectedCost": "{{count}} format(s) selected - costs 1 credit per slide per format",
-    "translatingTo": "Translating all slides to {{language}}...",
-    "translatingBatch": "Translating batch...",
-    "translateAll": "Translate All Slides{{sizes}}",
-    "resultSummary": "{{count}} slide(s) translated to {{language}}",
-    "downloadAll": "Download All",
-    "done": "Done",
-    "failed": "Translation failed",
-    "unknownError": "Unknown error",
-    "noSlidesTranslated": "No slides were translated. Make sure generated slides exist.",
-    "toastSuccessTitle": "Translation to {{language}} completed!",
-    "toastSuccessDesc": "{{slides}} slide(s) translated across {{formats}} format(s).",
-    "description": "Translate all slides at once. Costs 1 credit per slide.",
-    "formatsSelected": "{{count}} format(s) selected — costs 1 credit per slide per format",
-    "translating": "Translating all slides to {{language}}...",
-    "translateAllSizes": "Translate All Slides ({{count}} sizes)",
-    "completed": "{{count}} slide(s) translated to {{language}}",
-    "noSlides": "No slides were translated. Make sure you have generated slides with images first.",
-    "cancel": "Cancel"
+    "toggleTheme": "Toggle theme",
+    "selectLanguage": "Sélectionnez la langue"
   },
   "step": {
     "project": {
@@ -409,6 +428,18 @@
         "iphone69": "Pro Max",
         "iphone65": "Max / Plus",
         "ipad129": "Pro"
+      },
+      "outputLanguageOptions": {
+        "en": "Anglais",
+        "fr": "Français",
+        "de": "Allemand",
+        "es": "espagnol",
+        "it": "Italien",
+        "pt": "Portugais",
+        "ja": "japonais",
+        "ko": "coréen",
+        "zh": "Chinois",
+        "ar": "arabe"
       }
     },
     "appInfo": {
@@ -653,13 +684,310 @@
       }
     }
   },
-  "generatingPhases": {
-    "analyzingBrand": "Analyzing brand identity",
-    "processingVisuals": "Processing visual references",
-    "buildingDirection": "Building creative direction",
-    "planningSlides": "Planning slide compositions",
-    "renderingVisuals": "Rendering slide visuals",
-    "harmonizingSet": "Harmonizing set consistency",
-    "allGenerated": "All slides generated"
+  "localization": {
+    "title": "Localisation par lots en 1 clic",
+    "description": "Traduisez toutes les diapositives en même temps. Coûte 1 crédit par diapositive.",
+    "selectLanguage": "Sélectionnez la langue cible",
+    "deviceSizes": "Tailles d'appareils à traduire",
+    "formatsSelected": "{{count}} format(s) sélectionné(s) – coûte 1 crédit par diapositive et par format",
+    "translating": "Traduction de toutes les diapositives en {{language}}...",
+    "translateAll": "Traduire toutes les diapositives",
+    "translateAllSizes": "Traduire toutes les diapositives (tailles {{count}})",
+    "translatingBatch": "Traduction du lot...",
+    "completed": "{{count}} diapositive(s) traduite(s) en {{language}}",
+    "downloadAll": "Télécharger tout",
+    "noSlides": "Aucune diapositive n'a été traduite. Assurez-vous d'abord d'avoir généré des diapositives avec des images.",
+    "done": "Fait",
+    "cancel": "Annuler",
+    "subtitle": "Traduisez toutes les diapositives en même temps. Coûte 1 crédit par diapositive.",
+    "original": "original",
+    "formatsSelectedCost": "{{count}} format(s) sélectionné(s) - coûte 1 crédit par diapositive et par format",
+    "translatingTo": "Traduction de toutes les diapositives en {{language}}...",
+    "resultSummary": "{{count}} diapositive(s) traduite(s) en {{language}}",
+    "failed": "La traduction a échoué",
+    "unknownError": "Erreur inconnue",
+    "noSlidesTranslated": "Aucune diapositive n'a été traduite. Assurez-vous que les diapositives générées existent.",
+    "toastSuccessTitle": "Traduction vers {{language}} terminée !",
+    "toastSuccessDesc": "{{slides}} diapositive(s) traduite(s) dans {{formats}} format(s)."
+  },
+  "landing": {
+    "featureShowcase": {
+      "titlePrefix": "Des outils de précision pour",
+      "titleHighlight": "résultats parfaits",
+      "titleSuffix": ".",
+      "items": {
+        "planner": {
+          "title": "Le planificateur de capture d'écran",
+          "description": "Arrêtez de deviner ce qui se passe sur la diapositive 4. Définissez le flux narratif, les titres et l'accent pour un maximum de 10 diapositives avant de générer quoi que ce soit."
+        },
+        "references": {
+          "title": "Génération basée sur des références",
+          "description": "Importez des moodboards ou des captures d’écran de concurrents. ShotApp AI extrait la mise en page, l'ambiance et la hiérarchie sans copier leur identité visuelle."
+        },
+        "editing": {
+          "title": "Édition chirurgicale",
+          "description": "Vous avez trouvé une faute de frappe ou avez besoin d'une mise en page différente pour la diapositive 3 ? Régénérez les pièces isolées sans perdre la cohérence visuelle avec les diapositives 1, 2, 4 et 5."
+        },
+        "localization": {
+          "title": "Localisation instantanée",
+          "description": "Dupliquez un ensemble complet de 10 diapositives et échangez la langue. Le design s’adapte intelligemment aux typographies plus longues sans casser la mise en page."
+        }
+      },
+      "planner": {
+        "title": "Planificateur de capture d'écran",
+        "subtitle": "Définissez le contenu et l’objectif de chaque diapositive.",
+        "slidesLabel": "DIAPOSITIVES :",
+        "slides": [
+          {
+            "num": 1,
+            "objective": "Héros / première impression",
+            "headline": "Votre grande promesse ici",
+            "sub": "Proposition de valeur",
+            "tags": [
+              "maison",
+              "mise au point du texte"
+            ],
+            "importance": "haut"
+          },
+          {
+            "num": 2,
+            "objective": "Principal avantage",
+            "headline": "La raison n°1 de télécharger",
+            "sub": "Ce qui vous rend unique",
+            "tags": [
+              "tableau de bord",
+              "Focus sur l'interface utilisateur"
+            ],
+            "importance": "haut"
+          }
+        ]
+      },
+      "references": {
+        "inputSlides": [
+          "Rencontrez Nuageux",
+          "Briefing quotidien"
+        ],
+        "outputSlides": [
+          "Rencontrez Tripora",
+          "Votre voyage",
+          "Voyagez magnifiquement"
+        ]
+      },
+      "editing": {
+        "slides": [
+          "Diapositive 1",
+          "Diapositive 2",
+          "Diapositive 3"
+        ]
+      },
+      "localization": {
+        "sourceLabel": "Anglais",
+        "targetLabel": "japonais",
+        "sourceAlt": "Version anglaise",
+        "targetAlt": "Version japonaise"
+      }
+    },
+    "workflow": {
+      "badge": "Le flux de travail",
+      "title": "Des écrans bruts aux ensembles cohérents.",
+      "steps": [
+        {
+          "id": 1,
+          "title": "Télécharger des écrans d'application bruts",
+          "description": "Plus besoin de jouer avec les calques Figma. Faites simplement glisser et déposez vos captures d'écran brutes iOS ou Android directement dans la forge."
+        },
+        {
+          "id": 2,
+          "title": "Injectez votre Kit de Marque",
+          "description": "Téléchargez votre logo, définissez vos couleurs primaires et sélectionnez votre typographie. ShotApp AI les verrouille en tant que variables globales."
+        },
+        {
+          "id": 3,
+          "title": "Choisissez des modèles ou des références",
+          "description": "Choisissez parmi notre bibliothèque de modèles premium ou téléchargez des images de moodboard comme références visuelles pour que l'IA corresponde."
+        },
+        {
+          "id": 4,
+          "title": "Planifier le scénario",
+          "description": "Définissez l'objectif, le titre et l'accent mis sur chaque diapositive. Le moteur de cohérence garantit qu’ils appartiennent tous à la même famille."
+        },
+        {
+          "id": 5,
+          "title": "Génération par lots instantanée",
+          "description": "Appuyez sur Générer. Regardez l'IA créer simultanément jusqu'à 10 captures d'écran prêtes à être stockées, parfaitement alignées et stylisées."
+        },
+        {
+          "id": 6,
+          "title": "Exporter l'ensemble complet",
+          "description": "Téléchargez l'intégralité de la capture d'écran haute résolution au format ZIP, prête à être téléchargée directement sur App Store Connect."
+        }
+      ],
+      "rawAlts": [
+        "Capture d'écran brute 1",
+        "Capture d'écran brute 2"
+      ],
+      "brandKitAlt": "IA ShotApp",
+      "brandKitFont": "\"SF Pro\", interface utilisateur système",
+      "templateNames": [
+        "Luxe élégant",
+        "Sport et mascotte",
+        "Jeux de RPG",
+        "Frais Bio"
+      ],
+      "planCards": [
+        {
+          "title": "Héros / Première impression",
+          "priority": "haut",
+          "input": "Votre parcours de remise en forme commence ici"
+        },
+        {
+          "title": "Fonctionnalité principale",
+          "priority": "haut",
+          "input": "Plans d'entraînement basés sur l'IA"
+        },
+        {
+          "title": "Preuve sociale",
+          "priority": "moyen",
+          "input": "Rejoignez plus de 500 000 utilisateurs actifs"
+        }
+      ],
+      "export": {
+        "fileName": "ShotApp-Set.zip",
+        "meta": "10 PNG haute résolution (10,4 Mo)",
+        "readyLabel": "Prêt pour App Store Connect"
+      }
+    },
+    "gallery": {
+      "title": "Des résultats qui rivalisent avec les meilleures agences.",
+      "subtitle": "Découvrez la qualité et la variété des styles générés par notre moteur de cohérence.",
+      "items": [
+        {
+          "title": "HabitudeForge",
+          "style": "Sombre et vibrant"
+        },
+        {
+          "title": "Modèle mental",
+          "style": "Éditorial Premium"
+        },
+        {
+          "title": "Clone Zenly",
+          "style": "3D ludique"
+        },
+        {
+          "title": "Se reproduire",
+          "style": "Technologie Néon"
+        },
+        {
+          "title": "Traqueur d'eau",
+          "style": "Sympathique mascotte"
+        },
+        {
+          "title": "Pause sucre",
+          "style": "Motivation cinématographique"
+        },
+        {
+          "title": "Assistante d'aura",
+          "style": "Pastel 3D doux"
+        },
+        {
+          "title": "Scribe IA",
+          "style": "Entreprise propre"
+        },
+        {
+          "title": "Formateur IA",
+          "style": "Sport à haute énergie"
+        },
+        {
+          "title": "Empileur",
+          "style": "Brutaliste audacieux"
+        },
+        {
+          "title": "FitMax IA",
+          "style": "Sport et mascotte"
+        },
+        {
+          "title": "Cashback Stackr",
+          "style": "Jaune gras"
+        },
+        {
+          "title": "Vœu",
+          "style": "Luxe élégant"
+        },
+        {
+          "title": "LinguaQuest",
+          "style": "Jeux de RPG"
+        },
+        {
+          "title": "Fourrer",
+          "style": "Néon minimal"
+        },
+        {
+          "title": "AdBlockPro",
+          "style": "Technologie sombre"
+        },
+        {
+          "title": "Sommeil dérivé",
+          "style": "Ambiance sombre"
+        },
+        {
+          "title": "Coach de synchronisation",
+          "style": "Bien-être Bio"
+        },
+        {
+          "title": "Ruban adhésif",
+          "style": "Foncé Chaud"
+        },
+        {
+          "title": "Solo",
+          "style": "Bleu corporatif"
+        },
+        {
+          "title": "Goutte d'esprit",
+          "style": "Or Foncé Premium"
+        },
+        {
+          "title": "Flux de repas",
+          "style": "Frais Bio"
+        },
+        {
+          "title": "Sauter",
+          "style": "Finances sombres"
+        },
+        {
+          "title": "LinguaFlow",
+          "style": "Dégradé Vibrant"
+        },
+        {
+          "title": "Nestlé Accueil",
+          "style": "Éditorial Minimal"
+        },
+        {
+          "title": "Plan de vie",
+          "style": "Aventure chaleureuse"
+        },
+        {
+          "title": "FoxApprendre",
+          "style": "Enfants colorés"
+        }
+      ]
+    },
+    "batchGeneration": {
+      "titlePrefix": "Générer",
+      "titleHighlight": "10 visuels parfaits",
+      "titleSuffix": "en un clic.",
+      "subtitle": "Pourquoi construire écran par écran lorsque le moteur comprend l’intégralité de votre récit ? ShotApp AI génère l'ensemble complet simultanément.",
+      "slideLabels": [
+        "Apprenants 3M",
+        "Tout-en-un",
+        "En bouchée",
+        "Parlant",
+        "Traînée",
+        "Widgets",
+        "Culture",
+        "Progrès",
+        "Récompenses",
+        "Clôture"
+      ]
+    }
   }
 }

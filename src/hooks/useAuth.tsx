@@ -2,11 +2,14 @@ import { createContext, useContext, useEffect, useState, useCallback, ReactNode 
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import type { PlanId } from "@/lib/plans";
+import i18n from "@/i18n";
+import { normalizeUiLanguage, type UiLanguageCode } from "@/lib/ui-languages";
 
 interface Profile {
   plan: PlanId;
   credits: number;
   subscriptionEnd?: string | null;
+  preferredUiLanguage?: UiLanguageCode | null;
 }
 
 interface AuthContextType {
@@ -37,15 +40,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchProfile = useCallback(async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
-      .select("plan, credits")
+      .select("plan, credits, preferred_ui_language")
       .eq("id", userId)
       .single();
 
     if (data) {
+      const nextLanguage = normalizeUiLanguage(data.preferred_ui_language);
       setProfile((prev) => ({
         plan: (data.plan as PlanId) ?? prev?.plan ?? "free",
         credits: typeof data.credits === "number" ? data.credits : (prev?.credits ?? 0),
         subscriptionEnd: prev?.subscriptionEnd ?? null,
+        preferredUiLanguage: nextLanguage,
       }));
     }
   }, []);
@@ -67,6 +72,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           plan: (data.plan ?? prev?.plan ?? "free") as PlanId,
           credits: typeof data.credits === "number" ? data.credits : (prev?.credits ?? 0),
           subscriptionEnd: data.subscription_end ?? prev?.subscriptionEnd ?? null,
+          preferredUiLanguage: prev?.preferredUiLanguage ?? null,
         }));
       }
     } catch {
@@ -111,6 +117,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   plan: (payload.new?.plan as PlanId) ?? prev.plan,
                   credits: typeof payload.new?.credits === "number" ? payload.new.credits : prev.credits,
                   subscriptionEnd: payload.new?.subscription_end ?? prev.subscriptionEnd,
+                  preferredUiLanguage: payload.new?.preferred_ui_language
+                    ? normalizeUiLanguage(payload.new.preferred_ui_language)
+                    : prev.preferredUiLanguage,
                 };
               });
             }
@@ -157,6 +166,46 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       window.removeEventListener("focus", onFocus);
     };
   }, [session?.user?.id, refreshProfile]);
+
+  useEffect(() => {
+    if (!session?.user?.id || !profile?.preferredUiLanguage) return;
+
+    const currentLanguage = normalizeUiLanguage(i18n.resolvedLanguage ?? i18n.language);
+    if (currentLanguage === profile.preferredUiLanguage) return;
+
+    void i18n.changeLanguage(profile.preferredUiLanguage);
+  }, [profile?.preferredUiLanguage, session?.user?.id]);
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const onLanguageChanged = async (language: string) => {
+      const normalizedLanguage = normalizeUiLanguage(language);
+      if (profile?.preferredUiLanguage === normalizedLanguage) return;
+
+      setProfile((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          preferredUiLanguage: normalizedLanguage,
+        };
+      });
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({ preferred_ui_language: normalizedLanguage })
+        .eq("id", session.user.id);
+
+      if (error) {
+        console.error("[AUTH] Failed to persist UI language:", error.message);
+      }
+    };
+
+    i18n.on("languageChanged", onLanguageChanged);
+    return () => {
+      i18n.off("languageChanged", onLanguageChanged);
+    };
+  }, [profile?.preferredUiLanguage, session?.user?.id]);
 
   const signOut = async () => {
     await supabase.auth.signOut();

@@ -41,7 +41,49 @@
   },
   "faq": {
     "title": "常见问题",
-    "subtitle": "关于 ShotApp AI 您需要知道的一切。"
+    "subtitle": "关于 ShotApp AI 您需要知道的一切。",
+    "items": [
+      {
+        "q": "使用 ShotApp AI 需要设计技能吗？",
+        "a": "一点也不。 ShotApp AI 专为自动化设计过程而构建。您提供应用程序屏幕截图和文本，我们的引擎负责处理布局、一致性、照明和排版。"
+      },
+      {
+        "q": "我可以使用自己的字体和品牌颜色吗？",
+        "a": "是的。在 Pro 和 Agency 计划中，您可以上传完整的品牌套件，包括自定义 TTF/OTF 字体和精确的十六进制代码。引擎会将这些锁定在整个屏幕截图集中。"
+      },
+      {
+        "q": "AI如何保证一致性？",
+        "a": "与通用图像生成器不同，ShotApp AI 使用由一致性引擎控制的确定性布局和样式管道。它同时在一组幻灯片中应用全局样式图，而不是单独渲染它们。"
+      },
+      {
+        "q": "我可以获得什么格式的最终​​屏幕截图？",
+        "a": "您会收到一个尺寸完美、高分辨率的 ZIP 文件，其中包含经过优化的 PNG，可立即上传到 App Store Connect 和 Google Play Console。"
+      },
+      {
+        "q": "我可以只重新生成一张幻灯片吗？",
+        "a": "是的。我们的手术编辑功能可让您重新生成单张幻灯片，而不会破坏整个批次的视觉连贯性。"
+      },
+      {
+        "q": "信用体系如何运作？",
+        "a": "每生成或重新生成幻灯片需花费 1 个学分。翻译幻灯片每种语言需花费 1 个学分。积分会根据您的计划每月补充，未使用的积分可滚动 30 天。"
+      },
+      {
+        "q": "典型的屏幕截图集有多少张幻灯片？",
+        "a": "标准的 App Store 集包含 5-10 张屏幕截图。 ShotApp AI 在一次会话中生成完整、连贯的 5-10 张幻灯片。免费计划可让您预览第一张幻灯片；付费计划解锁全套。"
+      },
+      {
+        "q": "支持哪些平台？",
+        "a": "我们支持 Apple App Store (iOS/iPadOS) 和 Google Play Store (Android)。每个平台都有特定的宽高比要求，我们的引擎会自动处理它们。"
+      },
+      {
+        "q": "有免费试用吗？",
+        "a": "是的。免费计划包含 3 个积分，可用于尝试完整的生成工作流程。无需信用卡即可启动。"
+      },
+      {
+        "q": "你们的退款政策是什么？",
+        "a": "我们为您的第一笔订阅付款提供 7 天无条件退款。对于后续的计费周期，退款将根据具体情况进行处理。在您的账单日期后 48 小时内联系 support@shotapp.ai。"
+      }
+    ]
   },
   "footer": {
     "cta": "准备好生成您的高端截图集了吗？",
@@ -165,7 +207,9 @@
     "email": "Email",
     "plan": "Plan",
     "planIncludes": "Your {{planName}} plan includes {{credits}} credits/mo.",
-    "perMonth": "/mo"
+    "perMonth": "/mo",
+    "uiLanguage": "界面语言",
+    "uiLanguageDesc": "当您登录时，您的语言首选项会在设备之间同步。"
   },
   "generating": {
     "title": "Consistency Engine",
@@ -245,32 +289,6 @@
     "translations": "Translations",
     "sizes": "{{count}} sizes",
     "zip": "ZIP"
-  },
-  "translations": {
-    "title": "1-Click Batch Localization",
-    "subtitle": "Translate all slides at once. Costs 1 credit per slide.",
-    "selectLanguage": "Select target language",
-    "deviceSizes": "Device sizes to translate",
-    "original": "original",
-    "formatsSelectedCost": "{{count}} format(s) selected - costs 1 credit per slide per format",
-    "translatingTo": "Translating all slides to {{language}}...",
-    "translatingBatch": "Translating batch...",
-    "translateAll": "Translate All Slides{{sizes}}",
-    "resultSummary": "{{count}} slide(s) translated to {{language}}",
-    "downloadAll": "Download All",
-    "done": "Done",
-    "failed": "Translation failed",
-    "unknownError": "Unknown error",
-    "noSlidesTranslated": "No slides were translated. Make sure generated slides exist.",
-    "toastSuccessTitle": "Translation to {{language}} completed!",
-    "toastSuccessDesc": "{{slides}} slide(s) translated across {{formats}} format(s).",
-    "description": "Translate all slides at once. Costs 1 credit per slide.",
-    "formatsSelected": "{{count}} format(s) selected — costs 1 credit per slide per format",
-    "translating": "Translating all slides to {{language}}...",
-    "translateAllSizes": "Translate All Slides ({{count}} sizes)",
-    "completed": "{{count}} slide(s) translated to {{language}}",
-    "noSlides": "No slides were translated. Make sure you have generated slides with images first.",
-    "cancel": "Cancel"
   },
   "newProject": {
     "steps": {
@@ -355,6 +373,18 @@
         "iphone69": "Pro Max",
         "iphone65": "Max / Plus",
         "ipad129": "Pro"
+      },
+      "outputLanguageOptions": {
+        "en": "英语",
+        "fr": "法国人",
+        "de": "德语",
+        "es": "西班牙语",
+        "it": "意大利人",
+        "pt": "葡萄牙语",
+        "ja": "日本人",
+        "ko": "韩国人",
+        "zh": "中国人",
+        "ar": "阿拉伯"
       }
     },
     "appInfo": {
@@ -539,7 +569,8 @@
     "delete": "Delete",
     "confirm": "Confirm",
     "unknownError": "Unknown error",
-    "toggleTheme": "Toggle theme"
+    "toggleTheme": "Toggle theme",
+    "selectLanguage": "选择语言"
   },
   "privacyPage": {
     "backHome": "Back to home",
@@ -653,13 +684,310 @@
       }
     }
   },
-  "generatingPhases": {
-    "analyzingBrand": "Analyzing brand identity",
-    "processingVisuals": "Processing visual references",
-    "buildingDirection": "Building creative direction",
-    "planningSlides": "Planning slide compositions",
-    "renderingVisuals": "Rendering slide visuals",
-    "harmonizingSet": "Harmonizing set consistency",
-    "allGenerated": "All slides generated"
+  "localization": {
+    "title": "1-Click Batch Localization",
+    "subtitle": "Translate all slides at once. Costs 1 credit per slide.",
+    "selectLanguage": "Select target language",
+    "deviceSizes": "Device sizes to translate",
+    "original": "original",
+    "formatsSelectedCost": "{{count}} format(s) selected - costs 1 credit per slide per format",
+    "translatingTo": "Translating all slides to {{language}}...",
+    "translatingBatch": "Translating batch...",
+    "translateAll": "Translate All Slides{{sizes}}",
+    "resultSummary": "{{count}} slide(s) translated to {{language}}",
+    "downloadAll": "Download All",
+    "done": "Done",
+    "failed": "Translation failed",
+    "unknownError": "Unknown error",
+    "noSlidesTranslated": "No slides were translated. Make sure generated slides exist.",
+    "toastSuccessTitle": "Translation to {{language}} completed!",
+    "toastSuccessDesc": "{{slides}} slide(s) translated across {{formats}} format(s).",
+    "description": "Translate all slides at once. Costs 1 credit per slide.",
+    "formatsSelected": "{{count}} format(s) selected — costs 1 credit per slide per format",
+    "translating": "Translating all slides to {{language}}...",
+    "translateAllSizes": "Translate All Slides ({{count}} sizes)",
+    "completed": "{{count}} slide(s) translated to {{language}}",
+    "noSlides": "No slides were translated. Make sure you have generated slides with images first.",
+    "cancel": "Cancel"
+  },
+  "landing": {
+    "featureShowcase": {
+      "titlePrefix": "精密工具用于",
+      "titleHighlight": "完美的输出",
+      "titleSuffix": "。",
+      "items": {
+        "planner": {
+          "title": "屏幕截图规划器",
+          "description": "停止猜测幻灯片 4 上的内容。在生成任何内容之前，定义最多 10 张幻灯片的叙述流程、标题和重点。"
+        },
+        "references": {
+          "title": "基于参考的生成",
+          "description": "导入情绪板或竞争对手的屏幕截图。 ShotApp AI 提取布局、情绪和层次结构，而不复制其视觉标识。"
+        },
+        "editing": {
+          "title": "外科手术编辑",
+          "description": "发现拼写错误或需要为幻灯片 3 使用不同的布局？重新生成孤立的部分，而不失去与幻灯片 1、2、4 和 5 的视觉一致性。"
+        },
+        "localization": {
+          "title": "即时本地化",
+          "description": "复制完整的 10 张幻灯片集并交换语言。该设计智能地适应更长的版式，而不会破坏布局。"
+        }
+      },
+      "planner": {
+        "title": "屏幕截图规划器",
+        "subtitle": "定义每张幻灯片的内容和目标。",
+        "slidesLabel": "幻灯片：",
+        "slides": [
+          {
+            "num": 1,
+            "objective": "英雄/第一印象",
+            "headline": "你的伟大承诺在这里",
+            "sub": "价值主张",
+            "tags": [
+              "家",
+              "文本焦点"
+            ],
+            "importance": "高的"
+          },
+          {
+            "num": 2,
+            "objective": "主要好处",
+            "headline": "下载的第一大理由",
+            "sub": "是什么让你独一无二",
+            "tags": [
+              "仪表板",
+              "用户界面焦点"
+            ],
+            "importance": "高的"
+          }
+        ]
+      },
+      "references": {
+        "inputSlides": [
+          "认识多云",
+          "每日简报"
+        ],
+        "outputSlides": [
+          "认识特里波拉",
+          "您的旅行",
+          "美丽旅行"
+        ]
+      },
+      "editing": {
+        "slides": [
+          "幻灯片 1",
+          "幻灯片 2",
+          "幻灯片 3"
+        ]
+      },
+      "localization": {
+        "sourceLabel": "英语",
+        "targetLabel": "日本人",
+        "sourceAlt": "英文版",
+        "targetAlt": "日文版"
+      }
+    },
+    "workflow": {
+      "badge": "工作流程",
+      "title": "从原始屏幕到有凝聚力的场景。",
+      "steps": [
+        {
+          "id": 1,
+          "title": "上传原始应用程序屏幕",
+          "description": "不再混乱 Figma 图层。只需将原始 iOS 或 Android 屏幕截图直接拖放到 forge 中即可。"
+        },
+        {
+          "id": 2,
+          "title": "注入您的品牌套件",
+          "description": "上传您的徽标，定义您的主要颜色，然后选择您的版式。 ShotApp AI 将它们锁定为全局变量。"
+        },
+        {
+          "id": 3,
+          "title": "选择模板或参考",
+          "description": "从我们的高级模板库中进行选择，或上传情绪板图像作为 AI 匹配的视觉参考。"
+        },
+        {
+          "id": 4,
+          "title": "规划故事情节",
+          "description": "定义每张幻灯片的目标、标题和重点。一致性引擎确保它们都属于同一个家族。"
+        },
+        {
+          "id": 5,
+          "title": "批量即时生成",
+          "description": "点击生成。观看 AI 同时构建多达 10 个商店就绪的屏幕截图，完美对齐和设计风格。"
+        },
+        {
+          "id": 6,
+          "title": "导出全套",
+          "description": "将整个高分辨率屏幕截图集下载为 ZIP，准备好直接上传到 App Store Connect。"
+        }
+      ],
+      "rawAlts": [
+        "原始截图1",
+        "原始截图2"
+      ],
+      "brandKitAlt": "射击应用人工智能",
+      "brandKitFont": "“SF Pro”，系统用户界面",
+      "templateNames": [
+        "奢华优雅",
+        "运动及吉祥物",
+        "角色扮演游戏",
+        "新鲜有机"
+      ],
+      "planCards": [
+        {
+          "title": "英雄/第一印象",
+          "priority": "高的",
+          "input": "您的健身之旅从这里开始"
+        },
+        {
+          "title": "核心特征",
+          "priority": "高的",
+          "input": "人工智能驱动的锻炼计划"
+        },
+        {
+          "title": "社会证明",
+          "priority": "中等的",
+          "input": "加入超过 50 万活跃用户"
+        }
+      ],
+      "export": {
+        "fileName": "ShotApp-Set.zip",
+        "meta": "10 个高分辨率 PNG (10.4 MB)",
+        "readyLabel": "准备好 App Store Connect"
+      }
+    },
+    "gallery": {
+      "title": "产出可与顶级机构相媲美。",
+      "subtitle": "探索我们的一致性引擎生成的纯粹品质和各种风格。",
+      "items": [
+        {
+          "title": "习惯锻造",
+          "style": "黑暗而充满活力"
+        },
+        {
+          "title": "心理模型",
+          "style": "高级社论"
+        },
+        {
+          "title": "Zenly 克隆",
+          "style": "好玩的3D"
+        },
+        {
+          "title": "复发",
+          "style": "霓虹科技"
+        },
+        {
+          "title": "水追踪器",
+          "style": "友好的吉祥物"
+        },
+        {
+          "title": "糖碎",
+          "style": "电影动机"
+        },
+        {
+          "title": "光环助手",
+          "style": "柔和的 3D 粉彩"
+        },
+        {
+          "title": "抄写员人工智能",
+          "style": "清洁企业"
+        },
+        {
+          "title": "人工智能训练师",
+          "style": "高能运动"
+        },
+        {
+          "title": "斯塔克",
+          "style": "大胆的野兽派"
+        },
+        {
+          "title": "FitMax人工智能",
+          "style": "运动及吉祥物"
+        },
+        {
+          "title": "Stackr 现金返还",
+          "style": "黄色粗体"
+        },
+        {
+          "title": "发誓",
+          "style": "奢华优雅"
+        },
+        {
+          "title": "语言探索",
+          "style": "角色扮演游戏"
+        },
+        {
+          "title": "补习班",
+          "style": "最小霓虹灯"
+        },
+        {
+          "title": "广告拦截专业版",
+          "style": "黑暗科技"
+        },
+        {
+          "title": "漂移睡眠",
+          "style": "黑暗环境"
+        },
+        {
+          "title": "同步教练",
+          "style": "有机健康"
+        },
+        {
+          "title": "磁带",
+          "style": "深色 温暖"
+        },
+        {
+          "title": "独奏",
+          "style": "企业蓝"
+        },
+        {
+          "title": "心灵掉落",
+          "style": "深金高级版"
+        },
+        {
+          "title": "膳食流",
+          "style": "新鲜有机"
+        },
+        {
+          "title": "避难所",
+          "style": "金融黑暗"
+        },
+        {
+          "title": "语言流",
+          "style": "渐变活力"
+        },
+        {
+          "title": "雀巢之家",
+          "style": "编辑最少"
+        },
+        {
+          "title": "人生计划",
+          "style": "温馨冒险"
+        },
+        {
+          "title": "福克斯学习网",
+          "style": "孩子们多彩"
+        }
+      ]
+    },
+    "batchGeneration": {
+      "titlePrefix": "产生",
+      "titleHighlight": "10个完美的视觉效果",
+      "titleSuffix": "一键点击。",
+      "subtitle": "当引擎理解你的整个叙述时，为什么要逐屏构建呢？ ShotApp AI 同时生成完整的集合。",
+      "slideLabels": [
+        "3M 学习者",
+        "多合一",
+        "一口大小",
+        "请讲",
+        "条纹",
+        "小部件",
+        "文化",
+        "进步",
+        "奖励",
+        "闭幕式"
+      ]
+    }
   }
 }
