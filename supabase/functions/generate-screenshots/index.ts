@@ -278,7 +278,7 @@ serve(async (req: Request) => {
       templateSetAnalysis = cachedTemplateAnalysis.analysis as TemplateSetAnalysis;
       console.log(`[TEMPLATE] ♻️ Reusing cached template analysis for "${templateKey}"`);
     } else if (templateImage) {
-      templateSetAnalysis = await analyzeTemplateSet(ai, templateImage.data, templateImage.mimeType);
+      templateSetAnalysis = await analyzeTemplateSet(ai as any, templateImage.data, templateImage.mimeType);
       console.log(`[TEMPLATE] Template has ${templateSetAnalysis.totalSlides} slides. Project needs ${allSlides.length} slides.`);
 
       await adminClient.from("projects").update({

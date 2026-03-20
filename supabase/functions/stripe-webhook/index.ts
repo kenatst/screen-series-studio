@@ -209,14 +209,6 @@ serve(async (req) => {
           break;
         }
 
-        const priceId = subscription.items.data[0]?.price?.id;
-        const plan = isActive ? await resolvePlanFromPrice(stripe, priceId) : "free";
-        // Only reset credits on plan change, not on routine updates
-        const { data: currentProfile } = await supabase.from("profiles").select("plan, credits").eq("id", profile.id).single();
-        const planChanged = currentProfile?.plan !== plan;
-        const credits = planChanged ? (PLAN_CREDITS[plan] || 3) : (currentProfile?.credits ?? PLAN_CREDITS[plan] || 3);
-        await supabase.from("profiles").update({ plan, credits }).eq("id", profile.id);
-        logStep("Plan updated", { userId: profile.id, plan, credits, planChanged, status: subscription.status });
         const plan = isActive ? await resolvePlanFromSubscriptionItem(stripe, subscription.items.data[0]) : "free";
         await supabase.from("profiles").update({ plan }).eq("id", profile.id);
         logStep("Plan updated", { userId: profile.id, plan, status: subscription.status });
