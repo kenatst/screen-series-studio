@@ -40,12 +40,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchProfile = useCallback(async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
-      .select("plan, credits, preferred_ui_language")
+      .select("plan, credits")
       .eq("id", userId)
       .single();
 
     if (data) {
-      const nextLanguage = normalizeUiLanguage(data.preferred_ui_language);
+      // preferred_ui_language may exist in DB but not yet in generated types
+      const row = data as typeof data & { preferred_ui_language?: string };
+      const nextLanguage = normalizeUiLanguage(row.preferred_ui_language);
       setProfile((prev) => ({
         plan: (data.plan as PlanId) ?? prev?.plan ?? "free",
         credits: typeof data.credits === "number" ? data.credits : (prev?.credits ?? 0),
@@ -193,7 +195,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       const { error } = await supabase
         .from("profiles")
-        .update({ preferred_ui_language: normalizedLanguage })
+        .update({ preferred_ui_language: normalizedLanguage } as any)
         .eq("id", session.user.id);
 
       if (error) {
