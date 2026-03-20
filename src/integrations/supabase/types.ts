@@ -69,7 +69,6 @@ export type Database = {
           email: string | null
           id: string
           plan: string
-          preferred_ui_language: string
           stripe_customer_id: string | null
         }
         Insert: {
@@ -78,7 +77,6 @@ export type Database = {
           email?: string | null
           id: string
           plan?: string
-          preferred_ui_language?: string
           stripe_customer_id?: string | null
         }
         Update: {
@@ -87,7 +85,6 @@ export type Database = {
           email?: string | null
           id?: string
           plan?: string
-          preferred_ui_language?: string
           stripe_customer_id?: string | null
         }
         Relationships: []
