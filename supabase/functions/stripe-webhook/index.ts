@@ -14,6 +14,10 @@ const logStep = (step: string, details?: any) => {
   console.log(`[STRIPE-WEBHOOK] ${step}${details ? ` - ${JSON.stringify(details)}` : ''}`);
 };
 
+/**
+ * Resolve the plan from a subscription item's price + product metadata.
+ * Expands the product if needed to read its name/metadata.
+ */
 async function resolvePlanFromSubscriptionItem(
   stripe: Stripe,
   item: Stripe.SubscriptionItem | undefined,
@@ -129,6 +133,7 @@ serve(async (req) => {
         const invoice = event.data.object as Stripe.Invoice;
         const customerId = invoice.customer as string;
 
+        // Best-effort: send receipt email
         if (invoice.customer_email) {
           try {
             await stripe.invoices.sendInvoice(invoice.id);
@@ -152,38 +157,16 @@ serve(async (req) => {
             expand: ["data.items.data.price.product"],
           });
           if (sub.data.length > 0) {
-            const priceId = sub.data[0].items.data[0]?.price?.id;
-            const activePlan = await resolvePlanFromPrice(stripe, priceId);
-            const monthlyCredits = PLAN_CREDITS[activePlan] || 50;
-            // ADD monthly credits instead of replacing — preserves unused credits
-            const { data: currentProfile } = await supabase.from("profiles").select("credits").eq("id", prof.id).single();
-            const currentCredits = currentProfile?.credits ?? 0;
-            const maxCredits = monthlyCredits * 3; // Cap at 3x monthly to prevent infinite accumulation
-            const newCredits = Math.min(currentCredits + monthlyCredits, maxCredits);
-            await supabase.from("profiles").update({ plan: activePlan, credits: newCredits }).eq("id", prof.id);
-            logStep("Plan synced + credits added on invoice.paid", { userId: prof.id, plan: activePlan, added: monthlyCredits, total: newCredits });
             const activePlan = await resolvePlanFromSubscriptionItem(stripe, sub.data[0].items.data[0]);
             const monthlyCredits = PLAN_CREDITS[activePlan] || PLAN_CREDITS.free;
             const cap = creditsCapForPlan(activePlan);
             const newBalance = await creditCreditsAtomic(supabase as any, prof.id, monthlyCredits, cap);
             if (newBalance === null) {
-              logStep("Could not top up credits on invoice.paid", {
-                userId: prof.id,
-                plan: activePlan,
-                monthlyCredits,
-              });
+              logStep("Could not top up credits on invoice.paid", { userId: prof.id, plan: activePlan, monthlyCredits });
               break;
             }
-            await supabase
-              .from("profiles")
-              .update({ plan: activePlan })
-              .eq("id", prof.id);
-            logStep("Credits topped up on invoice.paid", {
-              userId: prof.id,
-              plan: activePlan,
-              monthlyCredits,
-              newBalance,
-            });
+            await supabase.from("profiles").update({ plan: activePlan }).eq("id", prof.id);
+            logStep("Credits topped up on invoice.paid", { userId: prof.id, plan: activePlan, monthlyCredits, newBalance });
           }
         }
         break;
@@ -202,6 +185,7 @@ serve(async (req) => {
           .single();
 
         if (!profile) {
+          // Fallback: look up by email
           const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
           if (customer.email) {
             const { data: profileByEmail } = await supabase
@@ -211,7 +195,9 @@ serve(async (req) => {
               .single();
 
             if (profileByEmail) {
-              const plan = isActive ? await resolvePlanFromSubscriptionItem(stripe, subscription.items.data[0]) : "free";
+              const plan = isActive
+                ? await resolvePlanFromSubscriptionItem(stripe, subscription.items.data[0])
+                : "free";
               await supabase.from("profiles").update({ plan, stripe_customer_id: customerId }).eq("id", profileByEmail.id);
               logStep("Plan updated via email lookup", { userId: profileByEmail.id, plan });
             }
@@ -219,15 +205,9 @@ serve(async (req) => {
           break;
         }
 
-        const priceId = subscription.items.data[0]?.price?.id;
-        const plan = isActive ? await resolvePlanFromPrice(stripe, priceId) : "free";
-        // Only reset credits on plan change, not on routine updates
-        const { data: currentProfile } = await supabase.from("profiles").select("plan, credits").eq("id", profile.id).single();
-        const planChanged = currentProfile?.plan !== plan;
-        const credits = planChanged ? (PLAN_CREDITS[plan] || 3) : (currentProfile?.credits ?? PLAN_CREDITS[plan] || 3);
-        await supabase.from("profiles").update({ plan, credits }).eq("id", profile.id);
-        logStep("Plan updated", { userId: profile.id, plan, credits, planChanged, status: subscription.status });
-        const plan = isActive ? await resolvePlanFromSubscriptionItem(stripe, subscription.items.data[0]) : "free";
+        const plan = isActive
+          ? await resolvePlanFromSubscriptionItem(stripe, subscription.items.data[0])
+          : "free";
         await supabase.from("profiles").update({ plan }).eq("id", profile.id);
         logStep("Plan updated", { userId: profile.id, plan, status: subscription.status });
         break;
