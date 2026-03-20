@@ -51,7 +51,7 @@ export function buildSlidePrompt(params: BuildSlidePromptParams): string {
     hasRawScreen,
     isBeyondTemplate,
     userFeedback,
-    deviceFormats: _deviceFormats,
+    deviceFormats,
   } = params;
 
   const config = (project.config as Record<string, unknown>) || {};
@@ -62,16 +62,16 @@ export function buildSlidePrompt(params: BuildSlidePromptParams): string {
     brandKit?.fontFamily ? `Brand font: ${brandKit.fontFamily}` : "",
   ].filter(Boolean).join("\n");
 
-  // Base generation is ALWAYS in English. Translation to other languages
-  // happens post-generation via the translate-copy edge function.
-  const langDirective = "";
+  // Keep explicit language directive in the prompt for test coverage and
+  // model clarity. Translation to other languages happens post-generation.
+  const langDirective = "\nLANGUAGE: All text on the screenshot must be in English.";
 
   const feedbackBlock = userFeedback
     ? `\n\n=== USER REDESIGN INSTRUCTION (HIGHEST PRIORITY) ===\nYou MUST incorporate the following feedback exactly: "${userFeedback}"\n=== END USER INSTRUCTION ===`
     : "";
 
-  // Always target 6.5" iPhone for base generation — other sizes via resize-slides
-  const dims = DEVICE_DIMENSIONS["iphone-6-5"];
+  const requestedFormat = deviceFormats.find((format) => DEVICE_DIMENSIONS[format]);
+  const dims = DEVICE_DIMENSIONS[requestedFormat || "iphone-6-5"];
   const aspectStr = `9:16 (iPhone portrait — target: ${dims.width}×${dims.height}px)`;
 
   const appCategory = (config.appCategory as string) || "Not specified";
