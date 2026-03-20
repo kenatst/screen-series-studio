@@ -23,7 +23,7 @@ import { saveAs } from "file-saver";
 import { useTranslation } from "react-i18next";
 import { resizeImageForDevice, DEVICE_DIMENSIONS } from "@/lib/image-resize";
 import { isStoragePath, resolveSignedUrl } from "@/lib/storage-utils";
-import { DEVICE_FORMAT_LABELS, FORMAT_SUFFIX } from "@/lib/localization";
+import { DEVICE_FORMAT_LABELS, FORMAT_SUFFIX, SIZE_SLUG } from "@/lib/localization";
 
 interface ResizedFormatSlide {
   slide_number: number;
@@ -189,34 +189,25 @@ const Results = () => {
     if (langTranslations.length === 0) return;
 
     const zip = new JSZip();
-    const langSlug = lang.toLowerCase().replace(/[^a-z]/g, '');
+    const langCode = lang.toLowerCase().slice(0, 2);
     const appLabel = project?.app_name || 'export';
-    const formats = [...new Set(langTranslations.map((t) => t.device_format || "iphone-6-5"))];
+
+    // ZIP structure: {appLabel}/{sizeSlug}/{langCode}/slide-01.png
     await Promise.all(
-      formats.map(async (fmt) => {
-        const fmtSlug = fmt.replace(/[^a-z0-9-]/g, "");
-        const folderName = formats.length > 1 ? `${appLabel}-${langSlug}-${fmtSlug}` : `${appLabel}-${langSlug}`;
-        const folder = zip.folder(folderName);
-        if (!folder) return;
-
-        const fmtTranslations = langTranslations.filter((t) => (t.device_format || "iphone-6-5") === fmt);
-        const files = await Promise.all(
-          fmtTranslations.map(async (tr) => {
-            const res = await fetch(tr.signedUrl!);
-            if (!res.ok) return null;
-            const blob = await res.blob();
-            return { slide: tr.slide_number, blob };
-          }),
-        );
-
-        files.filter(Boolean).forEach((file) => {
-          folder.file(`slide-${String(file!.slide).padStart(2, "0")}-${langSlug}.png`, file!.blob);
-        });
+      langTranslations.map(async (tr) => {
+        try {
+          const res = await fetch(tr.signedUrl!);
+          if (!res.ok) return;
+          const blob = await res.blob();
+          const trFormat = tr.device_format || "iphone-6-5";
+          const sizeSlug = SIZE_SLUG[trFormat] || "6-5";
+          zip.file(`${appLabel}/${sizeSlug}/${langCode}/slide-${String(tr.slide_number).padStart(2, "0")}.png`, blob);
+        } catch { /* skip */ }
       }),
     );
 
     const content = await zip.generateAsync({ type: 'blob' });
-    saveAs(content, `${appLabel}-${langSlug}.zip`);
+    saveAs(content, `${appLabel}-${langCode}.zip`);
   };
 
   // Group translations by language + format
@@ -243,18 +234,22 @@ const Results = () => {
   const resolvePersistedFormat = useCallback(async (format: string): Promise<ResizedFormatSlide[]> => {
     if (!projectId || !slides?.length || !user?.id) return [];
     const suffix = FORMAT_SUFFIX[format];
-    if (!suffix) return [];
+    const sizeSlug = SIZE_SLUG[format];
+    if (!suffix && !sizeSlug) return [];
 
     const resolved = await Promise.all(
       slides.map(async (slide) => {
-        const storagePath = `${user.id}/${projectId}/slide-${slide.slide_number}-${suffix}.png`;
-        const signed = await resolveSignedUrl("generated-outputs", storagePath);
-        if (!signed) return null;
-        return {
-          slide_number: slide.slide_number,
-          imageUrl: signed,
-          storagePath,
-        };
+        // Try new organized path first: {userId}/{projectId}/{size}/en/slide-{n}.png
+        const newPath = `${user.id}/${projectId}/${sizeSlug}/en/slide-${slide.slide_number}.png`;
+        let signed = await resolveSignedUrl("generated-outputs", newPath);
+        if (signed) return { slide_number: slide.slide_number, imageUrl: signed, storagePath: newPath };
+
+        // Fallback to old flat path: {userId}/{projectId}/slide-{n}-{suffix}.png
+        const oldPath = `${user.id}/${projectId}/slide-${slide.slide_number}-${suffix}.png`;
+        signed = await resolveSignedUrl("generated-outputs", oldPath);
+        if (signed) return { slide_number: slide.slide_number, imageUrl: signed, storagePath: oldPath };
+
+        return null;
       }),
     );
 
@@ -423,46 +418,54 @@ const Results = () => {
     try {
       const zip = new JSZip();
       const appLabel = project?.app_name || project?.name || 'export';
-      const dims = DEVICE_DIMENSIONS[primaryFormat];
-      const folderLabel = dims ? `${appLabel}-${primaryFormat}-${dims.width}x${dims.height}` : `${appLabel}-${primaryFormat}`;
+      const primarySizeSlug = SIZE_SLUG[primaryFormat] || "6-5";
 
-      // Original format slides — resized to exact App Store dimensions
-      const originalFolder = zip.folder(folderLabel);
+      // ZIP structure: {appLabel}/{sizeSlug}/en/slide-01.png
       let count = 0;
-      if (originalFolder) {
-        for (const slide of slides) {
-          const url = getImageUrl(slide);
-          if (!url) continue;
-          try {
-            const res = await fetch(url);
-            if (!res.ok) continue;
-            let blob = await res.blob();
-            // Resize to exact App Store pixel dimensions
-            blob = await resizeImageForDevice(blob, primaryFormat);
-            originalFolder.file(`slide-${String(slide.slide_number).padStart(2, '0')}.png`, blob);
-            count++;
-          } catch { /* skip */ }
-        }
+
+      // Primary format (6.5") — English originals
+      for (const slide of slides) {
+        const url = getImageUrl(slide);
+        if (!url) continue;
+        try {
+          const res = await fetch(url);
+          if (!res.ok) continue;
+          let blob = await res.blob();
+          blob = await resizeImageForDevice(blob, primaryFormat);
+          zip.file(`${appLabel}/${primarySizeSlug}/en/slide-${String(slide.slide_number).padStart(2, '0')}.png`, blob);
+          count++;
+        } catch { /* skip */ }
       }
 
-      // Include resized format slides in separate subfolders
+      // Additional resized formats — English
       for (const [fmt, fmtSlides] of Object.entries(resizedFormats)) {
         if (!fmtSlides?.length) continue;
-        const fmtDims = DEVICE_DIMENSIONS[fmt];
-        const fmtFolderLabel = fmtDims ? `${appLabel}-${fmt}-${fmtDims.width}x${fmtDims.height}` : `${appLabel}-${fmt}`;
-        const fmtFolder = zip.folder(fmtFolderLabel);
-        if (!fmtFolder) continue;
+        const fmtSizeSlug = SIZE_SLUG[fmt] || fmt.replace(/[^a-z0-9-]/g, '');
         for (const slide of fmtSlides) {
           try {
             const res = await fetch(slide.imageUrl);
             if (!res.ok) continue;
             let blob = await res.blob();
-            // Resize to exact App Store pixel dimensions
             blob = await resizeImageForDevice(blob, fmt);
-            fmtFolder.file(`slide-${String(slide.slide_number).padStart(2, '0')}.png`, blob);
+            zip.file(`${appLabel}/${fmtSizeSlug}/en/slide-${String(slide.slide_number).padStart(2, '0')}.png`, blob);
             count++;
           } catch { /* skip */ }
         }
+      }
+
+      // Translated slides — organized by size/lang
+      for (const tr of savedTranslations) {
+        if (!tr.signedUrl) continue;
+        const trFormat = tr.device_format || "iphone-6-5";
+        const trSizeSlug = SIZE_SLUG[trFormat] || "6-5";
+        const langCode = tr.target_language.toLowerCase().slice(0, 2);
+        try {
+          const res = await fetch(tr.signedUrl);
+          if (!res.ok) continue;
+          const blob = await res.blob();
+          zip.file(`${appLabel}/${trSizeSlug}/${langCode}/slide-${String(tr.slide_number).padStart(2, '0')}.png`, blob);
+          count++;
+        } catch { /* skip */ }
       }
 
       if (count === 0) { toast({ title: t('results.noImages'), variant: "destructive" }); return; }
