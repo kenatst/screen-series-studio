@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
 import { creditCreditsAtomic, debitCreditsAtomic } from "../_shared/credits.ts";
 import { arrayBufferToBase64, base64ToUint8Array } from "../_shared/base64.ts";
 import { checkFunctionRateLimit } from "../_shared/rate-limit.ts";
+import { slidePath, langSlug } from "../_shared/storage-paths.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -37,8 +38,6 @@ serve(async (req) => {
     const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
     const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
 
-    // We need native Gemini for image generation (gateway doesn't support IMAGE modality)
-    // Use GoogleGenAI if available, otherwise fail gracefully
     const apiKey = geminiApiKey || lovableApiKey;
     if (!apiKey) {
       return new Response(JSON.stringify({ error: "AI API key not configured" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -66,7 +65,6 @@ serve(async (req) => {
     };
     const activeFormat = device_format || "iphone-6-5";
     const fmtConfig = FORMAT_CONFIG[activeFormat] || FORMAT_CONFIG["iphone-6-5"];
-    const formatSuffix = fmtConfig.suffix;
     const isPrimary = !device_format || device_format === "iphone-6-5";
     const aspectRatio = fmtConfig.aspectRatio;
 
@@ -86,7 +84,7 @@ serve(async (req) => {
       });
     }
 
-    // Fetch slides - check for completed status OR slides with image_url
+    // Fetch slides
     const { data: slides, error } = await adminClient
       .from("project_slides")
       .select("id, slide_number, image_url, headline, subheadline, status")
@@ -99,8 +97,6 @@ serve(async (req) => {
     }
 
     const allSlides = (slides || []) as SlideRow[];
-
-    // Filter to slides that have an image (completed or already rendered)
     const completedSlides = allSlides.filter((slide) => Boolean(slide.image_url));
 
     if (completedSlides.length === 0) {
@@ -126,6 +122,16 @@ serve(async (req) => {
     const translatedSlides: { slide_number: number; imageUrl: string }[] = [];
     let insufficientCreditsDuringRun = false;
 
+    /** Try to download a file, attempting new path then falling back to old path. */
+    const downloadWithFallback = async (newPath: string, oldPath: string) => {
+      const { data, error: err1 } = await adminClient.storage.from("generated-outputs").download(newPath);
+      if (!err1 && data) return data;
+      // Fallback to old flat path layout
+      const { data: fallback, error: err2 } = await adminClient.storage.from("generated-outputs").download(oldPath);
+      if (!err2 && fallback) return fallback;
+      return null;
+    };
+
     const processSlide = async (slide: SlideRow) => {
       let reservedCredit = false;
       try {
@@ -136,23 +142,28 @@ serve(async (req) => {
         }
         reservedCredit = true;
 
-        // Resolve storage path based on device format
-        let storagePath: string;
+        // Resolve source image path
+        let fileData: Blob | null = null;
         if (isPrimary) {
-          // Primary format — use original slide image
-          if (slide.image_url?.startsWith("http")) {
-            storagePath = `${userId}/${project_id}/slide-${slide.slide_number}.png`;
-          } else {
-            storagePath = slide.image_url || `${userId}/${project_id}/slide-${slide.slide_number}.png`;
+          // Primary format — use original slide image from DB path
+          if (slide.image_url && !slide.image_url.startsWith("http")) {
+            fileData = (await adminClient.storage.from("generated-outputs").download(slide.image_url)).data;
+          }
+          if (!fileData) {
+            // Try new organized path, then old flat path
+            const newPath = slidePath(userId, project_id, slide.slide_number);
+            const oldPath = `${userId}/${project_id}/slide-${slide.slide_number}.png`;
+            fileData = await downloadWithFallback(newPath, oldPath);
           }
         } else {
-          // Non-primary format — load from resized path
-          storagePath = `${userId}/${project_id}/slide-${slide.slide_number}-${formatSuffix}.png`;
+          // Non-primary format — load resized version
+          const newPath = slidePath(userId, project_id, slide.slide_number, activeFormat, "en");
+          const oldPath = `${userId}/${project_id}/slide-${slide.slide_number}-${fmtConfig.suffix}.png`;
+          fileData = await downloadWithFallback(newPath, oldPath);
         }
 
-        const { data: fileData, error: downloadError } = await adminClient.storage.from("generated-outputs").download(storagePath);
-        if (downloadError || !fileData) {
-          throw new Error(`Download failed for slide ${slide.slide_number} (${storagePath})`);
+        if (!fileData) {
+          throw new Error(`Download failed for slide ${slide.slide_number} (format: ${activeFormat})`);
         }
 
         const arrayBuffer = await fileData.arrayBuffer();
@@ -182,7 +193,7 @@ CRITICAL RULES:
           contents,
           config: {
             responseModalities: ["TEXT", "IMAGE"],
-            imageConfig: { aspectRatio },  // ← REMOVED imageSize: "2K" - let Gemini auto-scale per aspect ratio
+            imageConfig: { aspectRatio },
           },
         });
 
@@ -199,12 +210,10 @@ CRITICAL RULES:
           throw new Error(`No translated image generated for slide ${slide.slide_number}`);
         }
 
-        // Upload translated image
-        const langCode = target_language.toLowerCase().replace(/[^a-z0-9]/g, "-").slice(0, 5);
-        const formatTag = isPrimary ? "" : `-${formatSuffix}`;
-        const translatedPath = `${userId}/${project_id}/slide-${slide.slide_number}${formatTag}-${langCode}.png`;
+        // Upload translated image — organized: {userId}/{projectId}/{size}/{lang}/slide-{n}.png
+        const lang = langSlug(target_language);
+        const translatedPath = slidePath(userId, project_id, slide.slide_number, activeFormat, lang);
 
-        // Chunked decode
         const imageBytes = base64ToUint8Array(newImageBase64);
 
         await adminClient.storage.from("generated-outputs").upload(translatedPath, imageBytes, {
@@ -235,7 +244,7 @@ CRITICAL RULES:
           throw translationUpsertError;
         }
 
-        console.log(`[TRANSLATE] Slide ${slide.slide_number} translated to ${target_language}`);
+        console.log(`[TRANSLATE] Slide ${slide.slide_number} translated to ${target_language} → ${translatedPath}`);
 
       } catch (err: unknown) {
         if (reservedCredit) {

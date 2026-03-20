@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ChevronLeft, ChevronRight, ImageDown, Loader2, Lock, Send, Sparkles, Wand2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Gauge, ImageDown, Loader2, Lock, Send, Sparkles, Wand2 } from "lucide-react";
 import type { TFunction } from "i18next";
 
 export interface SlideDetailPanelSlide {
@@ -12,6 +12,8 @@ export interface SlideDetailPanelSlide {
   subheadline: string | null;
   objective: string | null;
   emphasis: string | null;
+  quality_score?: number | null;
+  generation_ms?: number | null;
 }
 
 interface SlideDetailPanelProps {
@@ -108,6 +110,19 @@ export const SlideDetailPanel = ({
             {primaryDimensions && (
               <Badge variant="secondary" className="text-xs font-mono">
                 {primaryDimensions.width}&times;{primaryDimensions.height}px
+              </Badge>
+            )}
+            {slide.quality_score != null && (
+              <Badge
+                variant="secondary"
+                className={`text-xs font-mono ${
+                  slide.quality_score >= 80 ? "bg-green-500/20 text-green-400" :
+                  slide.quality_score >= 60 ? "bg-yellow-500/20 text-yellow-400" :
+                  "bg-red-500/20 text-red-400"
+                }`}
+              >
+                <Gauge className="h-3 w-3 mr-1" />
+                {slide.quality_score}/100
               </Badge>
             )}
           </div>

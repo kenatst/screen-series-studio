@@ -8,6 +8,7 @@ import { checkFunctionRateLimit } from "../_shared/rate-limit.ts";
 import { buildSlidePrompt, DEVICE_DIMENSIONS } from "./prompt-builder.ts";
 import { analyzeTemplateSet, type TemplateSetAnalysis } from "./template-analysis.ts";
 import { parseQualityScore } from "./quality.ts";
+import { slidePath } from "../_shared/storage-paths.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -322,7 +323,10 @@ serve(async (req: Request) => {
 
         for (const contextSlide of contextSlides) {
           try {
-            const contextPath = `${userId}/${projectId}/slide-${contextSlide.slide_number}.png`;
+            // Use DB image_url (works for both old flat paths and new organized paths)
+            const contextPath = contextSlide.image_url?.startsWith("http")
+              ? slidePath(userId, projectId, contextSlide.slide_number)
+              : (contextSlide.image_url || slidePath(userId, projectId, contextSlide.slide_number));
             const { data: contextData } = await adminClient.storage.from("generated-outputs").download(contextPath);
             if (!contextData) continue;
             const ab = await contextData.arrayBuffer();
@@ -499,8 +503,8 @@ serve(async (req: Request) => {
             // Add to context chain for next slide
             previousSlideImages.push({ mimeType: "image/png", data: imageBase64 });
 
-            // Upload to storage
-            const storagePath = `${userId}/${projectId}/slide-${displayNum}.png`;
+            // Upload to storage — organized: {userId}/{projectId}/6-5/en/slide-{n}.png
+            const storagePath = slidePath(userId, projectId, displayNum);
             const imageBytes = base64ToUint8Array(imageBase64);
             await adminClient.storage.from("generated-outputs").upload(storagePath, imageBytes, {
               contentType: "image/png", upsert: true,

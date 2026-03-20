@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
 import { FORMAT_SUFFIX } from "../../../shared/localization.ts";
+import { slidePath, SIZE_SLUG } from "../_shared/storage-paths.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -188,6 +189,15 @@ serve(async (req) => {
     const zipFiles: { name: string; data: Uint8Array }[] = [];
     const primaryFormat = deviceFormats[0] || "iphone-6-5";
 
+    /** Try downloading from new organized path, then old flat path. */
+    const downloadFile = async (newPath: string, oldPath: string): Promise<Uint8Array | null> => {
+      const { data } = await adminClient.storage.from("generated-outputs").download(newPath);
+      if (data) return new Uint8Array(await data.arrayBuffer());
+      const { data: fallback } = await adminClient.storage.from("generated-outputs").download(oldPath);
+      if (fallback) return new Uint8Array(await fallback.arrayBuffer());
+      return null;
+    };
+
     const addSlideToZip = async (storagePath: string, fileName: string) => {
       const { data: fileData } = await adminClient.storage.from("generated-outputs").download(storagePath);
       if (!fileData) return false;
@@ -196,24 +206,63 @@ serve(async (req) => {
       return true;
     };
 
+    // Fetch translations for this project
+    const { data: translations } = await adminClient
+      .from("project_translations")
+      .select("slide_number, target_language, storage_path, device_format")
+      .eq("project_id", projectId)
+      .order("slide_number");
+
+    // Collect all languages with translations
+    const translatedLangs = [...new Set((translations || []).map((t: any) => t.target_language))];
+
     for (const slide of slides) {
       if (!slide.image_url) continue;
-
       const paddedNum = String(slide.slide_number).padStart(2, "0");
+      const sizeSlug = SIZE_SLUG[primaryFormat] || "6-5";
 
-      // Primary format (original)
-      const primaryPath = slide.image_url.startsWith("http")
+      // Primary format — English original
+      // ZIP: {safeName}/6-5/en/slide-01.png
+      const newPrimaryPath = slidePath(userId, projectId, slide.slide_number);
+      const oldPrimaryPath = slide.image_url.startsWith("http")
         ? `${userId}/${projectId}/slide-${slide.slide_number}.png`
         : slide.image_url;
-      await addSlideToZip(primaryPath, `${safeName}/${locale}/${primaryFormat}/slide-${paddedNum}.png`);
 
-      // Additional resized formats, if they exist.
+      const primaryData = await downloadFile(newPrimaryPath, oldPrimaryPath);
+      if (primaryData) {
+        zipFiles.push({ name: `${safeName}/${sizeSlug}/en/slide-${paddedNum}.png`, data: primaryData });
+      }
+
+      // Additional resized formats — English
       for (const format of deviceFormats) {
         if (format === primaryFormat) continue;
+        const fmtSizeSlug = SIZE_SLUG[format];
+        if (!fmtSizeSlug) continue;
+
+        const newResizedPath = slidePath(userId, projectId, slide.slide_number, format, "en");
         const suffix = FORMAT_SUFFIX[format];
-        if (!suffix) continue;
-        const resizedPath = `${userId}/${projectId}/slide-${slide.slide_number}-${suffix}.png`;
-        await addSlideToZip(resizedPath, `${safeName}/${locale}/${format}/slide-${paddedNum}.png`);
+        const oldResizedPath = `${userId}/${projectId}/slide-${slide.slide_number}-${suffix}.png`;
+
+        const resizedData = await downloadFile(newResizedPath, oldResizedPath);
+        if (resizedData) {
+          zipFiles.push({ name: `${safeName}/${fmtSizeSlug}/en/slide-${paddedNum}.png`, data: resizedData });
+        }
+      }
+    }
+
+    // Add translated slides — organized by size/lang
+    for (const tr of (translations || []) as any[]) {
+      const trFormat = tr.device_format || "iphone-6-5";
+      const trSizeSlug = SIZE_SLUG[trFormat] || "6-5";
+      const paddedNum = String(tr.slide_number).padStart(2, "0");
+
+      // Try the stored path directly (works for both old and new)
+      const added = await addSlideToZip(
+        tr.storage_path,
+        `${safeName}/${trSizeSlug}/${tr.target_language.toLowerCase().slice(0, 2)}/slide-${paddedNum}.png`,
+      );
+      if (!added) {
+        console.warn(`[EXPORT] Missing translation: slide ${tr.slide_number} ${tr.target_language} ${trFormat}`);
       }
     }
 

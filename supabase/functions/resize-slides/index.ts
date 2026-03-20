@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
 import { creditCreditsAtomic, debitCreditsAtomic } from "../_shared/credits.ts";
 import { arrayBufferToBase64, base64ToUint8Array } from "../_shared/base64.ts";
 import { checkFunctionRateLimit } from "../_shared/rate-limit.ts";
+import { slidePath } from "../_shared/storage-paths.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -111,7 +112,6 @@ serve(async (req) => {
 
     const resizedSlides: { slide_number: number; imageUrl: string; format: string; storage_path: string }[] = [];
     let insufficientCreditsDuringRun = false;
-    const appName = project.app_name || project.name || "App";
     const isIpad = target_format.includes("ipad");
 
     for (const slide of completedSlides) {
@@ -124,15 +124,12 @@ serve(async (req) => {
         }
         reservedCredit = true;
 
-        // Download original slide
-        let storagePath: string;
-        if (slide.image_url?.startsWith("http")) {
-          storagePath = `${userId}/${project_id}/slide-${slide.slide_number}.png`;
-        } else {
-          storagePath = slide.image_url || `${userId}/${project_id}/slide-${slide.slide_number}.png`;
-        }
+        // Download original slide — use DB path (works for both old and new layout)
+        const sourcePath = slide.image_url?.startsWith("http")
+          ? slidePath(userId, project_id, slide.slide_number)
+          : (slide.image_url || slidePath(userId, project_id, slide.slide_number));
 
-        const { data: fileData, error: downloadError } = await adminClient.storage.from("generated-outputs").download(storagePath);
+        const { data: fileData, error: downloadError } = await adminClient.storage.from("generated-outputs").download(sourcePath);
         if (downloadError || !fileData) {
           throw new Error(`Download failed for slide ${slide.slide_number}`);
         }
@@ -176,7 +173,7 @@ CRITICAL RULES:
           contents,
           config: {
             responseModalities: ["TEXT", "IMAGE"],
-            imageConfig: { aspectRatio: formatConfig.aspectRatio, imageSize: "2K" },
+            imageConfig: { aspectRatio: formatConfig.aspectRatio },
           },
         });
 
@@ -193,8 +190,8 @@ CRITICAL RULES:
           throw new Error(`No resized image generated for slide ${slide.slide_number}`);
         }
 
-        // Upload resized image
-        const resizedPath = `${userId}/${project_id}/slide-${slide.slide_number}-${formatConfig.suffix}.png`;
+        // Upload resized image — organized: {userId}/{projectId}/{size}/en/slide-{n}.png
+        const resizedPath = slidePath(userId, project_id, slide.slide_number, target_format, "en");
         const imageBytes = base64ToUint8Array(newImageBase64);
 
         await adminClient.storage.from("generated-outputs").upload(resizedPath, imageBytes, {

@@ -1,4 +1,4 @@
-import { DEVICE_FORMAT_LABELS, FORMAT_SUFFIX } from "../../shared/localization";
+import { DEVICE_FORMAT_LABELS, FORMAT_SUFFIX, SIZE_SLUG } from "../../shared/localization";
 
 export const LANGUAGE_OPTIONS = [
   { value: "French", label: "French (Francais)" },
@@ -19,4 +19,4 @@ export const LANGUAGE_LABELS: Record<string, string> = Object.fromEntries(
   LANGUAGE_OPTIONS.map((lang) => [lang.value, lang.label]),
 );
 
-export { DEVICE_FORMAT_LABELS, FORMAT_SUFFIX };
+export { DEVICE_FORMAT_LABELS, FORMAT_SUFFIX, SIZE_SLUG };
