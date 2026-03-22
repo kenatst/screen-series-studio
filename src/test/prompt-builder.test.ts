@@ -35,7 +35,7 @@ describe("buildSlidePrompt", () => {
       deviceFormats: ["iphone-6-9"],
     });
 
-    expect(prompt).toContain("LANGUAGE: All text on the screenshot");
+    expect(prompt).toContain("LANGUAGE: All text on the screenshot must be in French");
     expect(prompt).toContain("Move headline higher");
     expect(prompt).toContain("1320 × 2868");
     expect(prompt).toContain("Track every expense");

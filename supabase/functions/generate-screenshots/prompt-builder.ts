@@ -62,9 +62,16 @@ export function buildSlidePrompt(params: BuildSlidePromptParams): string {
     brandKit?.fontFamily ? `Brand font: ${brandKit.fontFamily}` : "",
   ].filter(Boolean).join("\n");
 
-  // Keep explicit language directive in the prompt for test coverage and
-  // model clarity. Translation to other languages happens post-generation.
-  const langDirective = "\nLANGUAGE: All text on the screenshot must be in English.";
+  // Use the project's chosen output language for generation.
+  // Additional languages can still be produced post-generation via translate-copy.
+  const OUTPUT_LANGUAGE_NAMES: Record<string, string> = {
+    en: "English", fr: "French", de: "German", es: "Spanish",
+    it: "Italian", pt: "Portuguese", ja: "Japanese", ko: "Korean",
+    zh: "Chinese", ar: "Arabic",
+  };
+  const outputLangCode = project.output_language || "en";
+  const outputLangName = OUTPUT_LANGUAGE_NAMES[outputLangCode] || "English";
+  const langDirective = `\nLANGUAGE: All text on the screenshot must be in ${outputLangName}.`;
 
   const feedbackBlock = userFeedback
     ? `\n\n=== USER REDESIGN INSTRUCTION (HIGHEST PRIORITY) ===\nYou MUST incorporate the following feedback exactly: "${userFeedback}"\n=== END USER INSTRUCTION ===`

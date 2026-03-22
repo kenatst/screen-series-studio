@@ -328,3 +328,56 @@ describe("buildSlidePrompt – brand kit variations", () => {
     expect(prompt).toContain("#FF0000, #00FF00, #0000FF");
   });
 });
+
+describe("buildSlidePrompt – output language", () => {
+  it("uses project output_language in the language directive", () => {
+    const languages: [string, string][] = [
+      ["en", "English"],
+      ["fr", "French"],
+      ["de", "German"],
+      ["es", "Spanish"],
+      ["it", "Italian"],
+      ["pt", "Portuguese"],
+      ["ja", "Japanese"],
+      ["ko", "Korean"],
+      ["zh", "Chinese"],
+      ["ar", "Arabic"],
+    ];
+
+    for (const [code, name] of languages) {
+      const prompt = buildSlidePrompt({
+        slide: baseSlide,
+        project: { ...baseProject, output_language: code },
+        brandKit: baseBrandKit,
+        templateSetAnalysis: baseTemplateSetAnalysis,
+        slideLayout: null,
+        isFirstSlide: false,
+        totalSlides: 5,
+        hasPreviousSlides: true,
+        hasRawScreen: true,
+        isBeyondTemplate: true,
+        deviceFormats: ["iphone-6-5"],
+      });
+
+      expect(prompt, `Language ${code}`).toContain(`must be in ${name}`);
+    }
+  });
+
+  it("defaults to English when output_language is null", () => {
+    const prompt = buildSlidePrompt({
+      slide: baseSlide,
+      project: { ...baseProject, output_language: null },
+      brandKit: baseBrandKit,
+      templateSetAnalysis: baseTemplateSetAnalysis,
+      slideLayout: null,
+      isFirstSlide: false,
+      totalSlides: 5,
+      hasPreviousSlides: true,
+      hasRawScreen: true,
+      isBeyondTemplate: true,
+      deviceFormats: ["iphone-6-5"],
+    });
+
+    expect(prompt).toContain("must be in English");
+  });
+});

@@ -354,7 +354,7 @@
       "outputLanguageHint": "The language used for headlines and subheadlines.",
       "deviceFormats": "Device formats (App Store Compliance)",
       "deviceFormatsRequired": "Required",
-      "deviceFormatsHint": "Assets will be batch-generated for all selected device metrics.",
+      "deviceFormatsHint": "Base screenshots are generated at 6.5\". Other sizes are available via 1-click resize on the results page (1 cr/slide).",
       "goals": {
         "installs": "Increase installs",
         "features": "Highlight features",
